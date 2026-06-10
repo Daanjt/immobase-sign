@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Vertrag unterschreiben — D&T Homes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #fefcf7;
+      color: #1a1814;
+      font-size: 15px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 24px 20px 80px;
+    }
+    
+    @media (max-width: 480px) {
+      .container { padding: 16px 14px 60px; }
+    }
+    
+    /* HEADER */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0 24px;
+      border-bottom: 1px solid #e1d8c5;
+      margin-bottom: 24px;
+    }
+    
+    .logo {
+      font-family: 'Manrope', sans-serif;
+      font-weight: 200;
+      font-size: 22px;
+      letter-spacing: .3em;
+      color: #1a1814;
+    }
+    
+    .logo-subtitle {
+      font-size: 9px;
+      color: #8a8174;
+      text-transform: uppercase;
+      letter-spacing: .25em;
+      margin-top: 2px;
+      font-weight: 400;
+    }
+    
+    /* HEADINGS */
+    .h1 {
+      font-family: 'Manrope', sans-serif;
+      font-size: 24px;
+      font-weight: 300;
+      letter-spacing: -.01em;
+      color: #1a1814;
+      margin: 24px 0 6px;
+    }
+    
+    .h2 {
+      font-size: 11px;
+      color: #8a8174;
+      text-transform: uppercase;
+      letter-spacing: .3em;
+      font-weight: 500;
+      margin: 0 0 18px;
+    }
+    
+    /* CARD */
+    .card {
+      background: #fff;
+      border: 1px solid #e1d8c5;
+      border-radius: 10px;
+      padding: 20px 22px;
+      margin-bottom: 20px;
+    }
+    
+    @media (max-width: 480px) {
+      .card { padding: 16px 16px; }
+    }
+    
+    .card-title {
+      font-size: 10px;
+      color: #8a8174;
+      text-transform: uppercase;
+      letter-spacing: .3em;
+      font-weight: 500;
+      margin: 0 0 14px;
+    }
+    
+    /* INFO ROW */
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 9px 0;
+      border-bottom: 1px solid #f5efe2;
+      gap: 16px;
+    }
+    
+    .info-row:last-child { border-bottom: none; }
+    
+    .info-label {
+      font-size: 12px;
+      color: #8a8174;
+      flex-shrink: 0;
+    }
+    
+    .info-value {
+      font-size: 14px;
+      color: #1a1814;
+      text-align: right;
+      font-weight: 500;
+    }
+    
+    /* BUTTONS */
+    .btn-primary {
+      width: 100%;
+      background: #1a1814;
+      color: #fefcf7;
+      border: none;
+      border-radius: 8px;
+      padding: 16px 20px;
+      font-family: 'Manrope', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: .05em;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    
+    .btn-primary:hover:not(:disabled) {
+      background: #2a2620;
+      transform: translateY(-1px);
+    }
+    
+    .btn-primary:disabled {
+      background: #c5b89e;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .btn-secondary {
+      background: transparent;
+      color: #8a8174;
+      border: 1px solid #e1d8c5;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-family: 'Manrope', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: .02em;
+      cursor: pointer;
+    }
+    
+    /* LOADING */
+    .spinner {
+      width: 28px;
+      height: 28px;
+      border: 2.5px solid #e1d8c5;
+      border-top-color: #1a1814;
+      border-radius: 50%;
+      animation: spin .9s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .loading-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      gap: 16px;
+    }
+    
+    .loading-text {
+      color: #8a8174;
+      font-size: 13px;
+      letter-spacing: .05em;
+    }
+    
+    /* ERROR / STATUS */
+    .status-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      text-align: center;
+      padding: 0 20px;
+    }
+    
+    .status-icon {
+      font-size: 56px;
+      margin-bottom: 16px;
+      filter: grayscale(.2);
+    }
+    
+    .status-title {
+      font-family: 'Manrope', sans-serif;
+      font-size: 22px;
+      font-weight: 300;
+      color: #1a1814;
+      margin: 0 0 10px;
+    }
+    
+    .status-message {
+      font-size: 14px;
+      color: #4a4439;
+      max-width: 380px;
+      line-height: 1.6;
+      margin: 0 0 24px;
+    }
+    
+    .status-code {
+      font-size: 10px;
+      color: #bab2a0;
+      text-transform: uppercase;
+      letter-spacing: .3em;
+      margin-top: 16px;
+    }
+    
+    /* PDF VIEWER */
+    .pdf-frame {
+      width: 100%;
+      height: 60vh;
+      min-height: 420px;
+      max-height: 720px;
+      border: 1px solid #e1d8c5;
+      border-radius: 8px;
+      background: #fff;
+      display: block;
+    }
+    
+    .pdf-hint {
+      font-size: 11px;
+      color: #8a8174;
+      margin: 6px 0 0;
+      font-style: italic;
+      text-align: center;
+    }
+    
+    /* SIGNATURE PAD */
+    .signature-canvas {
+      width: 100%;
+      height: 160px;
+      border: 1.5px dashed #c5b89e;
+      border-radius: 8px;
+      background: #fff;
+      cursor: crosshair;
+      touch-action: none;
+      display: block;
+      margin-top: 6px;
+    }
+    
+    .signature-canvas.signed {
+      border-style: solid;
+      border-color: #5a6e4a;
+    }
+    
+    .signature-placeholder {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 12px;
+      color: #bab2a0;
+      pointer-events: none;
+      font-style: italic;
+    }
+    
+    .signature-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+    }
+    
+    .signature-status {
+      font-size: 11px;
+    }
+    
+    .signature-status.has { color: #5a6e4a; font-weight: 500; }
+    .signature-status.empty { color: #bab2a0; }
+    
+    /* CHECKBOX */
+    .accept-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 16px 0 8px;
+      cursor: pointer;
+    }
+    
+    .accept-row input[type="checkbox"] {
+      margin: 2px 0 0 0;
+      width: 18px;
+      height: 18px;
+      accent-color: #1a1814;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    
+    .accept-label {
+      font-size: 13px;
+      color: #4a4439;
+      line-height: 1.5;
+    }
+    
+    /* AUDIT INFO */
+    .audit-box {
+      background: #f5efe2;
+      border: 1px solid #e1d8c5;
+      border-radius: 6px;
+      padding: 12px 14px;
+      margin-top: 16px;
+      font-size: 11px;
+      color: #5a5448;
+      line-height: 1.6;
+    }
+    
+    .audit-box strong {
+      color: #1a1814;
+      font-weight: 600;
+    }
+    
+    /* FOOTER */
+    .footer {
+      margin-top: 36px;
+      padding-top: 20px;
+      border-top: 1px solid #e1d8c5;
+      text-align: center;
+      font-size: 11px;
+      color: #8a8174;
+      line-height: 1.6;
+    }
+    
+    .footer a {
+      color: #5a5448;
+      text-decoration: none;
+      border-bottom: 1px dotted #c5b89e;
+    }
+    
+    /* PROGRESS STEPS */
+    .progress {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    
+    .progress-step {
+      width: 38px;
+      height: 3px;
+      border-radius: 2px;
+      background: #e1d8c5;
+      transition: background .3s;
+    }
+    
+    .progress-step.active {
+      background: #1a1814;
+    }
+    
+    /* SUCCESS ANIMATION */
+    .success-checkmark {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: #e8eadb;
+      border: 2px solid #5a6e4a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      animation: pop .4s cubic-bezier(.34,1.56,.64,1);
+    }
+    
+    .success-checkmark::after {
+      content: "✓";
+      color: #5a6e4a;
+      font-size: 42px;
+      font-weight: 300;
+    }
+    
+    @keyframes pop {
+      0% { transform: scale(0); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  
+  <script type="text/babel" data-type="module">
+    const { useState, useEffect, useRef, useCallback } = React;
+    
+    // ════════════════════════════════════════════════════════════════════════
+    // SUPABASE SETUP
+    // ════════════════════════════════════════════════════════════════════════
+    const SUPABASE_URL = "https://aohcqrxpsqronlcwssrk.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_mvggPdBZNwNIhLBMyGOZVA_4-HFYpEA";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // ════════════════════════════════════════════════════════════════════════
+    // HELPERS
+    // ════════════════════════════════════════════════════════════════════════
+    function chf(n) {
+      if (n == null || isNaN(+n)) return "—";
+      return "CHF " + (+n).toLocaleString("de-CH", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    }
+    
+    function formatDate(d) {
+      if (!d) return "—";
+      const dt = new Date(d);
+      if (isNaN(dt)) return "—";
+      return dt.toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "numeric" });
+    }
+    
+    function formatDateTime(d) {
+      if (!d) return "—";
+      const dt = new Date(d);
+      if (isNaN(dt)) return "—";
+      return dt.toLocaleDateString("de-CH", { 
+        day: "2-digit", month: "2-digit", year: "numeric",
+        hour: "2-digit", minute: "2-digit"
+      });
+    }
+    
+    // ════════════════════════════════════════════════════════════════════════
+    // SIGNATURE PAD (1:1 wiederverwendet aus ImmoBase)
+    // ════════════════════════════════════════════════════════════════════════
+    function SignaturePad({ value, onChange, placeholder }) {
+      const canvasRef = useRef(null);
+      const [isDrawing, setIsDrawing] = useState(false);
+      const lastPos = useRef({ x: 0, y: 0 });
+      const [hasDrawn, setHasDrawn] = useState(!!value);
+      
+      useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const rect = canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        const ctx = canvas.getContext("2d");
+        ctx.scale(dpr, dpr);
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.strokeStyle = "#1a1814";
+        ctx.lineWidth = 2.5;
+        if (value) {
+          const img = new Image();
+          img.onload = () => ctx.drawImage(img, 0, 0, rect.width, rect.height);
+          img.src = value;
+        }
+      }, []);
+      
+      function getPos(e) {
+        const canvas = canvasRef.current;
+        const rect = canvas.getBoundingClientRect();
+        if (e.touches && e.touches[0]) {
+          return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+        }
+        return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      }
+      
+      function start(e) {
+        e.preventDefault();
+        setIsDrawing(true);
+        setHasDrawn(true);
+        lastPos.current = getPos(e);
+      }
+      
+      function draw(e) {
+        if (!isDrawing) return;
+        e.preventDefault();
+        const ctx = canvasRef.current.getContext("2d");
+        const pos = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(lastPos.current.x, lastPos.current.y);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+        lastPos.current = pos;
+      }
+      
+      function end() {
+        if (!isDrawing) return;
+        setIsDrawing(false);
+        const dataUrl = canvasRef.current.toDataURL("image/png");
+        onChange(dataUrl);
+      }
+      
+      function clear() {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext("2d");
+        const rect = canvas.getBoundingClientRect();
+        ctx.clearRect(0, 0, rect.width, rect.height);
+        setHasDrawn(false);
+        onChange("");
+      }
+      
+      return (
+        <div style={{ position: "relative", marginTop: 6 }}>
+          <canvas
+            ref={canvasRef}
+            className={hasDrawn ? "signature-canvas signed" : "signature-canvas"}
+            onMouseDown={start}
+            onMouseMove={draw}
+            onMouseUp={end}
+            onMouseLeave={end}
+            onTouchStart={start}
+            onTouchMove={draw}
+            onTouchEnd={end}
+          />
+          {!hasDrawn && (
+            <div className="signature-placeholder">
+              {placeholder || "Mit Finger oder Maus hier unterschreiben"}
+            </div>
+          )}
+          <div className="signature-meta">
+            <span className={hasDrawn ? "signature-status has" : "signature-status empty"}>
+              {hasDrawn ? "✓ Unterschrift erfasst" : "Noch keine Unterschrift"}
+            </span>
+            {hasDrawn && (
+              <button onClick={clear} className="btn-secondary" style={{ color: "#9b4a3e", borderColor: "#e0bcb0" }}>
+                ✕ Zurücksetzen
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+    
+    // ════════════════════════════════════════════════════════════════════════
+    // HEADER
+    // ════════════════════════════════════════════════════════════════════════
+    function Header() {
+      return (
+        <div className="header">
+          <div>
+            <div className="logo">D&amp;T</div>
+            <div className="logo-subtitle">Homes Vertragsunterschrift</div>
+          </div>
+          <div style={{ fontSize: 10, color: "#8a8174", textTransform: "uppercase", letterSpacing: ".2em" }}>
+            sign.dthomes.ch
+          </div>
+        </div>
+      );
+    }
+    
+    // ════════════════════════════════════════════════════════════════════════
+    // LOADING SCREEN
+    // ════════════════════════════════════════════════════════════════════════
+    function LoadingScreen() {
+      return (
+        <div className="container">
+          <Header />
+          <div className="loading-center">
+            <div className="spinner"></div>
+            <div className="loading-text">Vertrag wird geladen…</div>
+          </div>
+        </div>
+      );
+    }
+    
+    // ════════════════════════════════════════════════════════════════════════
+    // ERROR / STATUS SCREENS
+    // ════════════════════════════════════════════════════════════════════════
+    function StatusScreen({ icon, title, message, code }) {
+      return (
+        <div className="container">
+          <Header />
+          <div className="status-screen">
+            <div className="status-icon">{icon}</div>
+            <div className="status-title">{title}</div>
+            <div className="status-message">{message}</div>
+            {code && <div className="status-code">Code: {code}</div>}
+          </div>
+        </div>
+      );
+    }
+    
+    // ════════════════════════════════════════════════════════════════════════
+    // SUCCESS SCREEN
+    // ════════════════════════════════════════════════════════════════════════
+    function SuccessScreen({ contract }) {
+      return (
+        <div className="container">
+          <Header />
+          <div className="status-screen">
+            <div className="success-checkmark"></div>
+            <div className="status-title">Vertrag unterzeichnet</div>
+            <div className="status-message">
+              Vielen Dank, {contract?.mieter_vorname}. Dein Vertrag wurde erfolgreich unterzeichnet.
+              <br /><br />
+              Du erhältst in Kürze eine Bestätigung per E-Mail mit dem fertigen PDF.
+              D&amp;T Homes wird sich für die nächsten Schritte (Schlüsselübergabe, Kaution, etc.) bei dir melden.
+            </div>
+            <div className="audit-box" style={{ maxWidth: 380, textAlign: "left" }}>
+              <strong>Unterzeichnet:</strong> {formatDateTime(new Date())}<br />
+              <strong>Vertragsnr.:</strong> {contract?.id?.substring(0, 8)}…
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // ════════════════════════════════════════════════════════════════════════
+    // CONTRACT DETAILS
+    // ════════════════════════════════════════════════════════════════════════
+    function ContractDetails({ contract }) {
+      const data = contract.contract_data || {};
+      const apt = data.apt || {};
+      const room = data.room || {};
+      
+      return (
+        <div className="card">
+          <div className="card-title">📋 Vertragsdetails</div>
+          
+          <div className="info-row">
+            <span className="info-label">Vertragsart</span>
+            <span className="info-value">
+              {contract.contract_type === "anfangsmietzins" && "Anfangsmietzinsformular"}
+              {contract.contract_type === "untermietvertrag" && "Untermietvertrag"}
+              {contract.contract_type === "untermietvertrag_und_anfangsmietzins" && "Untermietvertrag + Anfangsmietzinsformular"}
+            </span>
+          </div>
+          
+          <div className="info-row">
+            <span className="info-label">Untermieter</span>
+            <span className="info-value">{contract.mieter_vorname} {contract.mieter_nachname}</span>
+          </div>
+          
+          {apt.adresse && (
+            <div className="info-row">
+              <span className="info-label">Wohnung</span>
+              <span className="info-value">{apt.adresse}</span>
+            </div>
+          )}
+          
+          {room.id && (
+            <div className="info-row">
+              <span className="info-label">Zimmer</span>
+              <span className="info-value">{room.id}</span>
+            </div>
+          )}
+          
+          {data.einzug && (
+            <div className="info-row">
+              <span className="info-label">Einzug</span>
+              <span className="info-value">{formatDate(data.einzug)}</span>
+            </div>
+          )}
+          
+          {data.bruttomiete != null && (
+            <div className="info-row">
+              <span className="info-label">Bruttomiete / Mt.</span>
+              <span className="info-value">{chf(data.bruttomiete)}</span>
+            </div>
+          )}
+          
+          {data.kaution != null && (
+            <div className="info-row">
+              <span className="info-label">Kaution</span>
+              <span className="info-value">{chf(data.kaution)}</span>
+            </div>
+          )}
+          
+          {contract.expires_at && (
+            <div className="info-row">
+              <span className="info-label">Link gültig bis</span>
+              <span className="info-value" style={{ fontSize: 12, color: "#8a8174" }}>
+                {formatDate(contract.expires_at)}
+              </span>
+            </div>
+          )}
+        </div>
+      );
+    }
+    
+    // ════════════════════════════════════════════════════════════════════════
+    // PDF VIEWER
+    // ════════════════════════════════════════════════════════════════════════
+    function PdfViewer({ signedUrl }) {
+      if (!signedUrl) return null;
+      
+      return (
+        <div className="card">
+          <div className="card-title">📄 Vertrag — Bitte komplett durchlesen</div>
+          <iframe
+            src={signedUrl + "#toolbar=1&navpanes=0"}
+            className="pdf-frame"
+            title="Vertrag PDF"
+          />
+          <div className="pdf-hint">
+            Tipp: Scroll im PDF, um alle Seiten zu sehen. Bei Problemen kannst du das PDF auch{" "}
+            <a href={signedUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#5a5448" }}>
+              hier öffnen
+            </a>.
+          </div>
+        </div>
+      );
+    }
+    
+    // ════════════════════════════════════════════════════════════════════════
+    // MAIN SIGN PAGE
+    // ════════════════════════════════════════════════════════════════════════
+    function SignPage({ token }) {
+      const [loading, setLoading] = useState(true);
+      const [contract, setContract] = useState(null);
+      const [pdfUrl, setPdfUrl] = useState(null);
+      const [error, setError] = useState(null);
+      const [signature, setSignature] = useState("");
+      const [accepted, setAccepted] = useState(false);
+      const [submitting, setSubmitting] = useState(false);
+      const [success, setSuccess] = useState(false);
+      
+      // Lade Vertrag
+      useEffect(() => {
+        async function load() {
+          try {
+            // 1. Fetch contract by token
+            const { data, error: dbErr } = await supabase
+              .from("contracts")
+              .select("*")
+              .eq("token", token)
+              .maybeSingle();
+            
+            if (dbErr) {
+              setError({
+                icon: "⚠️",
+                title: "Fehler beim Laden",
+                message: "Der Vertrag konnte nicht geladen werden. Bitte versuche es später erneut oder kontaktiere D&T Homes.",
+                code: "DB_ERROR"
+              });
+              setLoading(false);
+              return;
+            }
+            
+            if (!data) {
+              setError({
+                icon: "🔍",
+                title: "Vertrag nicht gefunden",
+                message: "Dieser Link ist ungültig oder existiert nicht mehr. Bitte überprüfe den Link aus deiner E-Mail oder kontaktiere D&T Homes.",
+                code: "NOT_FOUND"
+              });
+              setLoading(false);
+              return;
+            }
+            
+            // 2. Status-Checks
+            if (data.status === "storniert") {
+              setError({
+                icon: "🚫",
+                title: "Vertrag storniert",
+                message: "Dieser Vertrag wurde von D&T Homes storniert und ist nicht mehr gültig. Bitte kontaktiere uns für weitere Informationen.",
+                code: "CANCELLED"
+              });
+              setContract(data);
+              setLoading(false);
+              return;
+            }
+            
+            if (data.status === "signiert") {
+              setError({
+                icon: "✓",
+                title: "Bereits unterzeichnet",
+                message: `Dieser Vertrag wurde bereits am ${formatDateTime(data.signed_at)} unterzeichnet. Du erhältst das fertige PDF per E-Mail.`,
+                code: "ALREADY_SIGNED"
+              });
+              setContract(data);
+              setLoading(false);
+              return;
+            }
+            
+            const expired = data.status === "abgelaufen" || (data.expires_at && new Date(data.expires_at) < new Date());
+            if (expired) {
+              setError({
+                icon: "⏰",
+                title: "Link abgelaufen",
+                message: `Dieser Vertragslink ist seit dem ${formatDate(data.expires_at)} abgelaufen. Bitte kontaktiere D&T Homes für einen neuen Link.`,
+                code: "EXPIRED"
+              });
+              setContract(data);
+              setLoading(false);
+              return;
+            }
+            
+            // 3. Lade signed URL für PDF
+            let urlData = null;
+            if (data.unsigned_pdf_path) {
+              const { data: signed } = await supabase.storage
+                .from("contracts")
+                .createSignedUrl(data.unsigned_pdf_path, 3600);
+              urlData = signed?.signedUrl;
+            }
+            
+            // 4. Update status zu 'geoeffnet' (Audit-Trail)
+            // Wir setzen nur opened_at + user_agent — IP wird beim Submit via Edge Function gesetzt
+            if (data.status === "gesendet") {
+              await supabase
+                .from("contracts")
+                .update({
+                  status: "geoeffnet",
+                  opened_at: new Date().toISOString(),
+                  opened_user_agent: navigator.userAgent
+                })
+                .eq("token", token);
+            }
+            
+            setContract(data);
+            setPdfUrl(urlData);
+            setLoading(false);
+            
+          } catch (e) {
+            console.error("Load error:", e);
+            setError({
+              icon: "⚠️",
+              title: "Unerwarteter Fehler",
+              message: "Bitte lade die Seite neu oder kontaktiere D&T Homes.",
+              code: "UNEXPECTED"
+            });
+            setLoading(false);
+          }
+        }
+        
+        load();
+      }, [token]);
+      
+      async function handleSubmit() {
+        if (!signature) {
+          alert("Bitte unterschreibe zuerst im Unterschriftenfeld.");
+          return;
+        }
+        if (!accepted) {
+          alert("Bitte bestätige, dass du den Vertrag gelesen und verstanden hast.");
+          return;
+        }
+        
+        setSubmitting(true);
+        
+        try {
+          const response = await fetch(`${SUPABASE_URL}/functions/v1/finalize-contract`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "apikey": SUPABASE_ANON_KEY,
+              "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+            },
+            body: JSON.stringify({
+              token,
+              signature_png: signature,
+              user_agent: navigator.userAgent
+            })
+          });
+          
+          if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(errText || `Fehler ${response.status}`);
+          }
+          
+          setSuccess(true);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        } catch (e) {
+          console.error("Submit error:", e);
+          alert("Es ist ein Fehler aufgetreten:\n\n" + e.message + "\n\nBitte versuche es erneut oder kontaktiere D&T Homes.");
+          setSubmitting(false);
+        }
+      }
+      
+      // ───── RENDER ─────────────────────────────────────────────
+      if (loading) return <LoadingScreen />;
+      if (error) return <StatusScreen {...error} />;
+      if (success) return <SuccessScreen contract={contract} />;
+      
+      return (
+        <div className="container">
+          <Header />
+          
+          <div className="progress">
+            <div className="progress-step active"></div>
+            <div className="progress-step active"></div>
+            <div className={signature ? "progress-step active" : "progress-step"}></div>
+          </div>
+          
+          <div className="h1">Bitte unterzeichne deinen Vertrag</div>
+          <div style={{ fontSize: 13, color: "#8a8174", marginBottom: 20 }}>
+            Lies den Vertrag sorgfältig durch und unterschreibe unten. Daan Theijse hat im Voraus bereits unterschrieben.
+          </div>
+          
+          <ContractDetails contract={contract} />
+          <PdfViewer signedUrl={pdfUrl} />
+          
+          <div className="card">
+            <div className="card-title">✍️ Deine Unterschrift</div>
+            <div style={{ fontSize: 13, color: "#4a4439", lineHeight: 1.5, marginBottom: 6 }}>
+              Unterschreibe mit dem Finger (Handy/Tablet) oder mit der Maus (Computer).
+              Die Unterschrift wird automatisch in dein PDF eingefügt.
+            </div>
+            
+            <SignaturePad
+              value={signature}
+              onChange={setSignature}
+              placeholder="↓ Hier mit Finger oder Maus unterschreiben ↓"
+            />
+            
+            <label className="accept-row">
+              <input
+                type="checkbox"
+                checked={accepted}
+                onChange={(e) => setAccepted(e.target.checked)}
+              />
+              <span className="accept-label">
+                Ich habe den Vertrag gelesen, verstanden und akzeptiere alle Bedingungen.
+                Mir ist bewusst, dass meine Unterschrift hier rechtlich bindend ist und
+                den Vertragsabschluss bestätigt.
+              </span>
+            </label>
+            
+            <div className="audit-box">
+              <strong>🔒 Datenschutz-Hinweis</strong><br />
+              Beim Unterzeichnen werden folgende Daten zu deinem Schutz und für rechtliche Nachweisbarkeit gespeichert:
+              IP-Adresse, Browser-Information, Zeitpunkt und deine Unterschrift. Diese Daten sind verschlüsselt
+              und werden nur im Falle einer rechtlichen Auseinandersetzung verwendet.
+            </div>
+            
+            <div style={{ marginTop: 20 }}>
+              <button
+                className="btn-primary"
+                onClick={handleSubmit}
+                disabled={submitting || !signature || !accepted}
+              >
+                {submitting ? "Wird verarbeitet…" : "🖋️ Vertrag rechtsgültig unterzeichnen"}
+              </button>
+            </div>
+            
+            <div style={{ fontSize: 11, color: "#8a8174", textAlign: "center", marginTop: 12, lineHeight: 1.5 }}>
+              Mit dem Klick auf den Button bestätigst du die Unterzeichnung des Vertrags
+              gemäss schweizerischem Obligationenrecht (Art. 11 OR).
+            </div>
+          </div>
+          
+          <div className="footer">
+            <div style={{ fontWeight: 500, marginBottom: 4 }}>D&amp;T Partners GmbH</div>
+            <div>D&amp;T Homes · Zürich · Schweiz</div>
+            <div style={{ marginTop: 10 }}>
+              Fragen? <a href="mailto:daan.theijse@dthomes.ch">daan.theijse@dthomes.ch</a>
+              {" · "}
+              <a href="tel:+41786756500">+41 78 675 65 00</a>
+            </div>
+            <div style={{ marginTop: 14, fontSize: 10, color: "#bab2a0" }}>
+              Diese Seite ist verschlüsselt (HTTPS) und nur über deinen persönlichen Link erreichbar.
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // ════════════════════════════════════════════════════════════════════════
+    // APP ROOT
+    // ════════════════════════════════════════════════════════════════════════
+    function App() {
+      // Extract token from URL pathname
+      const path = window.location.pathname.replace(/^\//, "").replace(/\/$/, "");
+      
+      // Token-Validierung (mindestens 16 Zeichen)
+      if (!path || path.length < 16) {
+        return (
+          <StatusScreen
+            icon="🔗"
+            title="Ungültiger Link"
+            message="Diese Seite kann nur über einen persönlichen Vertragslink besucht werden. Bitte überprüfe den Link aus deiner E-Mail von D&T Homes."
+            code="INVALID_URL"
+          />
+        );
+      }
+      
+      return <SignPage token={path} />;
+    }
+    
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
