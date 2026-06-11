@@ -13,6 +13,13 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.7.76/pdf.min.mjs" type="module"></script>
+  <script type="module">
+    // PDF.js Setup — Worker für PDF Rendering
+    import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.7.76/pdf.min.mjs";
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.7.76/pdf.worker.min.mjs";
+    window.pdfjsLib = pdfjsLib;
+  </script>
   
   <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -701,7 +708,7 @@
     }
     
     // ════════════════════════════════════════════════════════════════════════
-    // PDFS VIEWER — Mehrere PDFs sequentiell anzeigen
+    // PDFS VIEWER — Mozilla PDF.js (funktioniert auf allen Geräten incl. iOS Safari)
     // ════════════════════════════════════════════════════════════════════════
     function PdfsViewer({ pdfs }) {
       if (!pdfs || pdfs.length === 0) return null;
@@ -709,24 +716,118 @@
       return (
         <>
           {pdfs.map((pdf, idx) => (
-            <div className="card" key={pdf.path || idx}>
-              <div className="card-title">
-                📄 {pdfs.length > 1 ? `${idx + 1}/${pdfs.length}: ` : ""}{pdf.name || "Vertrag"} — Bitte komplett durchlesen
-              </div>
-              <iframe
-                src={pdf.url + "#toolbar=1&navpanes=0"}
-                className="pdf-frame"
-                title={pdf.name || "Vertrag PDF"}
-              />
-              <div className="pdf-hint">
-                Tipp: Scroll im PDF, um alle Seiten zu sehen. Bei Problemen kannst du das PDF auch{" "}
-                <a href={pdf.url} target="_blank" rel="noopener noreferrer" style={{ color: "#5a5448" }}>
-                  hier öffnen
-                </a>.
-              </div>
-            </div>
+            <PdfRenderer key={pdf.path || idx} pdf={pdf} index={idx} total={pdfs.length} />
           ))}
         </>
+      );
+    }
+    
+    function PdfRenderer({ pdf, index, total }) {
+      const containerRef = useRef(null);
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState(null);
+      const [numPages, setNumPages] = useState(0);
+      
+      useEffect(() => {
+        let cancelled = false;
+        async function renderPdf() {
+          if (!pdf.url || !containerRef.current) return;
+          if (!window.pdfjsLib) {
+            setError("PDF.js noch nicht geladen — bitte Seite neu laden");
+            setLoading(false);
+            return;
+          }
+          try {
+            setLoading(true);
+            setError(null);
+            // Container leeren
+            containerRef.current.innerHTML = "";
+            
+            const loadingTask = window.pdfjsLib.getDocument(pdf.url);
+            const pdfDoc = await loadingTask.promise;
+            if (cancelled) return;
+            
+            setNumPages(pdfDoc.numPages);
+            const containerWidth = containerRef.current.clientWidth || 800;
+            
+            for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+              if (cancelled) return;
+              const page = await pdfDoc.getPage(pageNum);
+              const viewport = page.getViewport({ scale: 1.0 });
+              const scale = (containerWidth - 4) / viewport.width;
+              const scaledViewport = page.getViewport({ scale });
+              
+              const canvas = document.createElement("canvas");
+              canvas.width = scaledViewport.width * window.devicePixelRatio;
+              canvas.height = scaledViewport.height * window.devicePixelRatio;
+              canvas.style.width = scaledViewport.width + "px";
+              canvas.style.height = scaledViewport.height + "px";
+              canvas.style.display = "block";
+              canvas.style.margin = "0 auto 10px";
+              canvas.style.boxShadow = "0 1px 3px rgba(0,0,0,0.08)";
+              canvas.style.background = "#fff";
+              
+              const ctx = canvas.getContext("2d");
+              ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+              
+              if (containerRef.current && !cancelled) {
+                containerRef.current.appendChild(canvas);
+              }
+              
+              await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
+            }
+            
+            if (!cancelled) setLoading(false);
+          } catch (err) {
+            console.error("PDF render error:", err);
+            if (!cancelled) {
+              setError(err.message || "Unbekannter Fehler");
+              setLoading(false);
+            }
+          }
+        }
+        renderPdf();
+        return () => { cancelled = true; };
+      }, [pdf.url]);
+      
+      return (
+        <div className="card">
+          <div className="card-title">
+            📄 {total > 1 ? `${index + 1}/${total}: ` : ""}{pdf.name || "Vertrag"}
+            {numPages > 0 && <span style={{ fontWeight: 400, color: "#8a8174", fontSize: 12, marginLeft: 8 }}>· {numPages} {numPages === 1 ? "Seite" : "Seiten"}</span>}
+          </div>
+          {loading && (
+            <div style={{ padding: "40px 20px", textAlign: "center", color: "#8a8174", fontSize: 13 }}>
+              <div style={{ marginBottom: 10 }}>📥 Wird geladen…</div>
+              <div style={{ fontSize: 11 }}>Bei langsamer Verbindung kann das etwas dauern.</div>
+            </div>
+          )}
+          {error && (
+            <div style={{ padding: "20px", textAlign: "center", color: "#a03333", fontSize: 13, background: "#fdecec", borderRadius: 8 }}>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>⚠️ PDF konnte nicht geladen werden</div>
+              <div style={{ fontSize: 11, color: "#5a1a1a", marginBottom: 10 }}>{error}</div>
+              <a href={pdf.url} target="_blank" rel="noopener noreferrer" style={{ color: "#1a1814", textDecoration: "underline", fontSize: 12 }}>PDF direkt öffnen</a>
+            </div>
+          )}
+          <div 
+            ref={containerRef}
+            style={{
+              maxHeight: 600,
+              overflowY: "auto",
+              overflowX: "hidden",
+              background: "#f0eadd",
+              borderRadius: 8,
+              padding: 4,
+              display: error ? "none" : "block"
+            }}
+          ></div>
+          <div className="pdf-hint">
+            Scroll durch das PDF um alle Seiten zu sehen. Du kannst es auch{" "}
+            <a href={pdf.url} target="_blank" rel="noopener noreferrer" style={{ color: "#5a5448" }}>
+              hier in einem neuen Tab öffnen
+            </a>.
+          </div>
+        </div>
       );
     }
     
