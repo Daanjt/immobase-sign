@@ -701,26 +701,32 @@
     }
     
     // ════════════════════════════════════════════════════════════════════════
-    // PDF VIEWER
+    // PDFS VIEWER — Mehrere PDFs sequentiell anzeigen
     // ════════════════════════════════════════════════════════════════════════
-    function PdfViewer({ signedUrl }) {
-      if (!signedUrl) return null;
+    function PdfsViewer({ pdfs }) {
+      if (!pdfs || pdfs.length === 0) return null;
       
       return (
-        <div className="card">
-          <div className="card-title">📄 Vertrag — Bitte komplett durchlesen</div>
-          <iframe
-            src={signedUrl + "#toolbar=1&navpanes=0"}
-            className="pdf-frame"
-            title="Vertrag PDF"
-          />
-          <div className="pdf-hint">
-            Tipp: Scroll im PDF, um alle Seiten zu sehen. Bei Problemen kannst du das PDF auch{" "}
-            <a href={signedUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#5a5448" }}>
-              hier öffnen
-            </a>.
-          </div>
-        </div>
+        <>
+          {pdfs.map((pdf, idx) => (
+            <div className="card" key={pdf.path || idx}>
+              <div className="card-title">
+                📄 {pdfs.length > 1 ? `${idx + 1}/${pdfs.length}: ` : ""}{pdf.name || "Vertrag"} — Bitte komplett durchlesen
+              </div>
+              <iframe
+                src={pdf.url + "#toolbar=1&navpanes=0"}
+                className="pdf-frame"
+                title={pdf.name || "Vertrag PDF"}
+              />
+              <div className="pdf-hint">
+                Tipp: Scroll im PDF, um alle Seiten zu sehen. Bei Problemen kannst du das PDF auch{" "}
+                <a href={pdf.url} target="_blank" rel="noopener noreferrer" style={{ color: "#5a5448" }}>
+                  hier öffnen
+                </a>.
+              </div>
+            </div>
+          ))}
+        </>
       );
     }
     
@@ -730,7 +736,7 @@
     function SignPage({ token }) {
       const [loading, setLoading] = useState(true);
       const [contract, setContract] = useState(null);
-      const [pdfUrl, setPdfUrl] = useState(null);
+      const [pdfs, setPdfs] = useState([]); // Array von {name, url, type, path}
       const [error, setError] = useState(null);
       const [signature, setSignature] = useState("");
       const [accepted, setAccepted] = useState(false);
@@ -808,13 +814,38 @@
               return;
             }
             
-            // 3. Lade signed URL für PDF
-            let urlData = null;
-            if (data.unsigned_pdf_path) {
+            // 3. Lade signed URLs für PDFs
+            //    Neu: unsigned_pdfs array [{name, path, type}]
+            //    Alt: unsigned_pdf_path (single string) — Fallback für alte Verträge
+            let loadedPdfs = [];
+            if (data.unsigned_pdfs && Array.isArray(data.unsigned_pdfs) && data.unsigned_pdfs.length > 0) {
+              for (const pdf of data.unsigned_pdfs) {
+                if (!pdf.path) continue;
+                const { data: signed } = await supabase.storage
+                  .from("contracts")
+                  .createSignedUrl(pdf.path, 3600);
+                if (signed?.signedUrl) {
+                  loadedPdfs.push({
+                    name: pdf.name || "Vertrag",
+                    type: pdf.type || null,
+                    path: pdf.path,
+                    url: signed.signedUrl,
+                  });
+                }
+              }
+            } else if (data.unsigned_pdf_path) {
+              // Fallback für alte Verträge mit nur 1 PDF
               const { data: signed } = await supabase.storage
                 .from("contracts")
                 .createSignedUrl(data.unsigned_pdf_path, 3600);
-              urlData = signed?.signedUrl;
+              if (signed?.signedUrl) {
+                loadedPdfs.push({
+                  name: "Vertrag",
+                  type: null,
+                  path: data.unsigned_pdf_path,
+                  url: signed.signedUrl,
+                });
+              }
             }
             
             // 4. Update status zu 'geoeffnet' (Audit-Trail)
@@ -831,7 +862,7 @@
             }
             
             setContract(data);
-            setPdfUrl(urlData);
+            setPdfs(loadedPdfs);
             setLoading(false);
             
           } catch (e) {
@@ -907,11 +938,12 @@
           
           <div className="h1">Bitte unterzeichne deinen Vertrag</div>
           <div style={{ fontSize: 13, color: "#8a8174", marginBottom: 20 }}>
-            Lies den Vertrag sorgfältig durch und unterschreibe unten. Daan Theijse hat im Voraus bereits unterschrieben.
+            {pdfs.length > 1 ? "Lies beide Dokumente sorgfältig durch und unterschreibe unten." : "Lies den Vertrag sorgfältig durch und unterschreibe unten."}
+            {" "}Daan Theijse hat im Voraus bereits unterschrieben. Mit einer Unterschrift unterzeichnest du beide Dokumente.
           </div>
           
           <ContractDetails contract={contract} />
-          <PdfViewer signedUrl={pdfUrl} />
+          <PdfsViewer pdfs={pdfs} />
           
           <div className="card">
             <div className="card-title">✍️ Deine Unterschrift</div>
