@@ -92,10 +92,15 @@ export default async function handler(req, res) {
     await browser.close();
     browser = null;
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Length', pdfBuffer.length);
-    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-    return res.status(200).send(pdfBuffer);
+    // WICHTIG: res.end() statt res.send() — vermeidet potenzielle Binary-Encoding-Issues
+    // in Vercel Wrapper. Explizit Buffer als raw bytes senden.
+    res.writeHead(200, {
+      'Content-Type': 'application/pdf',
+      'Content-Length': pdfBuffer.length,
+      'Content-Disposition': `inline; filename="${filename}"`,
+      'Cache-Control': 'no-store',
+    });
+    return res.end(Buffer.from(pdfBuffer));
   } catch (err) {
     if (browser) {
       try {
