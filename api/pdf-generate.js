@@ -24,42 +24,52 @@ const ALLOWED_ORIGINS = [
 
 function setCors(req, res) {
   const origin = req.headers.origin || '';
-  if (ALLOWED_ORIGINS.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  } else {
-    res.setHeader('Access-Control-Allow-Origin', 'https://admin.dthomes.ch');
-  }
+  // Falls origin in der Liste, exakt zurückgeben. Sonst Default = admin
+  // (Browser akzeptieren nur exakte Matches, kein Wildcard mit credentials)
+  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : 'https://admin.dthomes.ch';
+  res.setHeader('Access-Control-Allow-Origin', allowed);
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   res.setHeader('Access-Control-Max-Age', '86400');
+  res.setHeader('Vary', 'Origin');
 }
 
 export default async function handler(req, res) {
+  // CORS Headers IMMER zuerst setzen, vor allem anderen
   setCors(req, res);
 
-  // Preflight
+  // Preflight: 204 + nur CORS-Headers, kein Body
   if (req.method === 'OPTIONS') {
-    return res.status(204).end();
+    res.statusCode = 204;
+    return res.end();
   }
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    res.statusCode = 405;
+    res.setHeader('Content-Type', 'application/json');
+    return res.end(JSON.stringify({ error: 'Method not allowed' }));
   }
 
-  // Validate origin (origin-based protection — keine API keys)
+  // Origin validation
   const origin = req.headers.origin || '';
   if (!ALLOWED_ORIGINS.includes(origin)) {
-    return res.status(403).json({ error: 'Origin not allowed', origin });
+    res.statusCode = 403;
+    res.setHeader('Content-Type', 'application/json');
+    return res.end(JSON.stringify({ error: 'Origin not allowed', origin }));
   }
 
   const { html, filename = 'document.pdf', format = 'A4' } = req.body || {};
 
   if (!html || typeof html !== 'string') {
-    return res.status(400).json({ error: 'Missing or invalid "html" in body' });
+    res.statusCode = 400;
+    res.setHeader('Content-Type', 'application/json');
+    return res.end(JSON.stringify({ error: 'Missing or invalid "html" in body' }));
   }
 
   if (html.length > 5_000_000) {
-    return res.status(413).json({ error: 'HTML too large (max 5MB)' });
+    res.statusCode = 413;
+    res.setHeader('Content-Type', 'application/json');
+    return res.end(JSON.stringify({ error: 'HTML too large (max 5MB)' }));
   }
 
   let browser;
@@ -77,11 +87,8 @@ export default async function handler(req, res) {
     });
 
     const page = await browser.newPage();
-
-    // Set content + wait for fonts/images
     await page.setContent(html, { waitUntil: 'networkidle0', timeout: 30000 });
 
-    // Generate PDF
     const pdfBuffer = await page.pdf({
       format,
       printBackground: true,
@@ -92,14 +99,12 @@ export default async function handler(req, res) {
     await browser.close();
     browser = null;
 
-    // WICHTIG: res.end() statt res.send() — vermeidet potenzielle Binary-Encoding-Issues
-    // in Vercel Wrapper. Explizit Buffer als raw bytes senden.
-    res.writeHead(200, {
-      'Content-Type': 'application/pdf',
-      'Content-Length': pdfBuffer.length,
-      'Content-Disposition': `inline; filename="${filename}"`,
-      'Cache-Control': 'no-store',
-    });
+    // WICHTIG: setHeader STATT writeHead — writeHead überschreibt sonst die CORS Headers!
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    res.setHeader('Cache-Control', 'no-store');
     return res.end(Buffer.from(pdfBuffer));
   } catch (err) {
     if (browser) {
@@ -108,9 +113,11 @@ export default async function handler(req, res) {
       } catch {}
     }
     console.error('PDF generation error:', err);
-    return res.status(500).json({
+    res.statusCode = 500;
+    res.setHeader('Content-Type', 'application/json');
+    return res.end(JSON.stringify({
       error: 'PDF generation failed',
       message: err.message,
-    });
+    }));
   }
 }
