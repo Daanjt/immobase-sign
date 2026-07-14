@@ -893,12 +893,12 @@
             }
             
             // 2. Status-Checks
-            if (data.status === "storniert") {
+            if (data.status === "storniert" || data.status === "zurueckgezogen") {
               setError({
                 icon: "🚫",
-                title: "Vertrag storniert",
-                message: "Dieser Vertrag wurde von D&T Homes storniert und ist nicht mehr gültig. Bitte kontaktiere uns für weitere Informationen.",
-                code: "CANCELLED"
+                title: "Vertrag zurückgezogen",
+                message: "Dieser Vertrag wurde von D&T Homes zurückgezogen und ist nicht mehr gültig. Bitte kontaktiere uns für weitere Informationen.",
+                code: "WITHDRAWN"
               });
               setContract(data);
               setLoading(false);
