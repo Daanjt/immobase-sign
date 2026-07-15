@@ -1330,13 +1330,12 @@
       const [signatureName, setSignatureName] = React.useState("");
       const [success, setSuccess] = React.useState(false);
       
-      // Raum-Kategorien (fixed)
+      // Raum-Kategorien (fixed): Mein Zimmer zuerst, keine Zaehler
       const RAEUME = [
+        { key: "zimmer", label: "Mein Zimmer", icon: "🛏️" },
         { key: "kueche", label: "Küche", icon: "🍳" },
         { key: "bad", label: "Bad / WC", icon: "🚿" },
         { key: "wohnbereich", label: "Wohnbereich / Flur", icon: "🛋️" },
-        { key: "zimmer", label: "Mein Zimmer", icon: "🛏️" },
-        { key: "zaehler", label: "Zähler (Strom / Wasser)", icon: "🔢" },
       ];
       
       // Lade Protokoll beim Start
