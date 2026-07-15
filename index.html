@@ -1329,6 +1329,8 @@
       const [submitting, setSubmitting] = React.useState(false);
       const [signatureName, setSignatureName] = React.useState("");
       const [success, setSuccess] = React.useState(false);
+      const [newMangel, setNewMangel] = React.useState(null);
+      // newMangel: null | { raum, text, tempPath, tempUrl, uploading }
       
       // Raum-Kategorien (fixed): Mein Zimmer zuerst, keine Zaehler
       const RAEUME = [
@@ -1417,6 +1419,98 @@
           }
         })();
       }, [token]);
+      
+      // Mangel-Formular starten fuer einen Raum
+      function startNewMangel(raumKey) {
+        setNewMangel({ raum: raumKey, text: "", tempPath: null, tempUrl: null, uploading: false });
+      }
+      
+      // Mangel-Formular abbrechen (temporaeres Foto loeschen falls vorhanden)
+      async function cancelNewMangel() {
+        if (newMangel && newMangel.tempPath) {
+          try { await supabase.storage.from("handover-photos").remove([newMangel.tempPath]); } catch(e){}
+        }
+        setNewMangel(null);
+      }
+      
+      // Temporaeres Foto entfernen (User will neues machen)
+      async function removeMangelTempPhoto() {
+        if (newMangel && newMangel.tempPath) {
+          try { await supabase.storage.from("handover-photos").remove([newMangel.tempPath]); } catch(e){}
+          setNewMangel(p => ({...p, tempPath: null, tempUrl: null}));
+        }
+      }
+      
+      // Foto fuer aktuellen Mangel hochladen
+      async function uploadMangelPhoto(file) {
+        if (!file || !newMangel) return;
+        setNewMangel(p => ({...p, uploading: true}));
+        try {
+          const compressed = await compressImage(file);
+          const filename = `${token}/${newMangel.raum}_${Date.now()}.jpg`;
+          const { error } = await supabase.storage
+            .from("handover-photos")
+            .upload(filename, compressed, { contentType: "image/jpeg", upsert: false });
+          if (error) throw error;
+          const { data: urlData } = supabase.storage.from("handover-photos").getPublicUrl(filename);
+          setNewMangel(p => ({...p, tempPath: filename, tempUrl: urlData.publicUrl, uploading: false}));
+        } catch (e) {
+          setNewMangel(p => ({...p, uploading: false}));
+          alert("Foto-Upload fehlgeschlagen: " + (e.message || e));
+        }
+      }
+      
+      // Aktuellen Mangel speichern (zu photos array hinzufuegen)
+      async function saveNewMangel() {
+        if (!newMangel) return;
+        if (!newMangel.text.trim() && !newMangel.tempPath) return;
+        const entry = {
+          raum: newMangel.raum,
+          path: newMangel.tempPath,
+          url: newMangel.tempUrl,
+          beschreibung: newMangel.text.trim(),
+          uploaded_at: new Date().toISOString(),
+        };
+        const updated = [...photos, entry];
+        setPhotos(updated);
+        setNewMangel(null);
+        try {
+          await supabase.from("handover_protocols").update({
+            photos: updated,
+            updated_at: new Date().toISOString()
+          }).eq("token", token);
+        } catch (e) {
+          alert("Speichern fehlgeschlagen: " + (e.message || e));
+        }
+      }
+      
+      // Bild komprimieren (shared helper)
+      function compressImage(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = e => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement("canvas");
+              const MAX = 1600;
+              let w = img.width, h = img.height;
+              if (w > MAX || h > MAX) {
+                if (w > h) { h = h * (MAX/w); w = MAX; }
+                else { w = w * (MAX/h); h = MAX; }
+              }
+              canvas.width = w;
+              canvas.height = h;
+              const ctx = canvas.getContext("2d");
+              ctx.drawImage(img, 0, 0, w, h);
+              canvas.toBlob(blob => resolve(blob), "image/jpeg", 0.85);
+            };
+            img.onerror = reject;
+            img.src = e.target.result;
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
       
       // Foto hochladen mit Komprimierung
       async function uploadPhoto(file, raumKey) {
@@ -1568,41 +1662,89 @@
         );
       }
       
-      // ═══ Step 2: Fotos ═══
+      // ═══ Step 2: Mängel pro Raum ═══
       if (step === 2) {
+        // Get Mängel grouped by raum
+        const maengelByRaum = {};
+        RAEUME.forEach(r => { maengelByRaum[r.key] = []; });
+        photos.forEach((p, idx) => {
+          if (maengelByRaum[p.raum] !== undefined) {
+            maengelByRaum[p.raum].push({...p, _idx: idx});
+          }
+        });
+        
         return (
           <div className="wrap">
             <div className="card">
-              <div style={{fontSize:11,color:"#8a8174",marginBottom:8}}>Schritt 2 von 4</div>
-              <h1>Fotos aufnehmen</h1>
-              <p style={{marginBottom:20}}>Bitte mache pro Raum mindestens 1-2 Fotos. Bei Mängeln zusätzlich Nahaufnahmen.</p>
+              <div style={{fontSize:11,color:"#8a8174",marginBottom:8}}>Schritt 2 von 3</div>
+              <h1>Mängel dokumentieren</h1>
+              <p style={{marginBottom:8}}>Wenn du in einem Raum einen Mangel entdeckst, mach ein Foto und beschreibe ihn kurz.</p>
+              <div style={{background:"#fdf2e0",border:"1px solid #e8c89c",borderRadius:8,padding:"10px 14px",marginBottom:20,fontSize:12,lineHeight:1.5,color:"#5a5044"}}>
+                <strong>Wichtig:</strong> Alle Mängel die du hier nicht meldest, könnten bei der Rückgabe der Wohnung zu deinen Lasten gehen.
+              </div>
               
               {RAEUME.map(r => {
-                const raumPhotos = photos.filter(p => p.raum === r.key);
+                const maengel = maengelByRaum[r.key] || [];
+                const isAddingHere = newMangel && newMangel.raum === r.key;
                 return (
                   <div key={r.key} style={{background:"#fafaf7",border:"1px solid #e1d8c5",borderRadius:8,padding:"14px 16px",marginBottom:14}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:maengel.length > 0 || isAddingHere ? 12 : 0}}>
                       <div style={{fontSize:14,fontWeight:600}}>{r.icon} {r.label}</div>
-                      <div style={{fontSize:11,color:"#8a8174"}}>{raumPhotos.length} Foto{raumPhotos.length !== 1 ? "s" : ""}</div>
-                    </div>
-                    {raumPhotos.length > 0 && (
-                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(80px, 1fr))",gap:6,marginBottom:10}}>
-                        {photos.map((p, i) => p.raum === r.key ? (
-                          <div key={i} style={{position:"relative",aspectRatio:"1",background:"#eee",borderRadius:6,overflow:"hidden"}}>
-                            <img src={p.url} style={{width:"100%",height:"100%",objectFit:"cover"}} alt=""/>
-                            <button onClick={()=>removePhoto(i)} style={{position:"absolute",top:2,right:2,background:"rgba(0,0,0,.7)",color:"#fff",border:"none",borderRadius:"50%",width:22,height:22,fontSize:12,cursor:"pointer",lineHeight:"22px",padding:0}}>×</button>
-                          </div>
-                        ) : null)}
+                      <div style={{fontSize:11,color:maengel.length > 0 ? "#8a3a2e" : "#8a8174",fontWeight:maengel.length > 0 ? 600 : 400}}>
+                        {maengel.length === 0 ? "keine Mängel" : `${maengel.length} Mangel${maengel.length !== 1 ? "s" : ""}`}
                       </div>
+                    </div>
+                    
+                    {maengel.map((m, i) => (
+                      <div key={m._idx} style={{background:"#fefcf7",border:"1px solid #e1d8c5",borderRadius:6,padding:"10px 12px",marginBottom:8,display:"flex",gap:10,alignItems:"flex-start"}}>
+                        {m.url && (
+                          <div style={{flexShrink:0,width:64,height:64,background:"#eee",borderRadius:4,overflow:"hidden"}}>
+                            <img src={m.url} style={{width:"100%",height:"100%",objectFit:"cover"}} alt=""/>
+                          </div>
+                        )}
+                        <div style={{flex:1,minWidth:0,fontSize:12.5,color:"#3a352d",lineHeight:1.4,paddingTop:m.url ? 0 : 4}}>
+                          {m.beschreibung || (m.url ? <span style={{color:"#8a8174",fontStyle:"italic"}}>Nur Foto, keine Beschreibung</span> : <span style={{color:"#8a8174",fontStyle:"italic"}}>Ohne Foto</span>)}
+                        </div>
+                        <button onClick={()=>removePhoto(m._idx)} style={{flexShrink:0,background:"none",color:"#9b4a3e",border:"none",fontSize:16,cursor:"pointer",padding:"0 4px",lineHeight:1}}>×</button>
+                      </div>
+                    ))}
+                    
+                    {isAddingHere ? (
+                      <div style={{background:"#fefcf7",border:"1px solid #a8c0d5",borderRadius:6,padding:"12px 14px"}}>
+                        <div style={{fontSize:11.5,color:"#3a5570",marginBottom:8,fontWeight:600}}>Neuer Mangel</div>
+                        <textarea
+                          value={newMangel.text}
+                          onChange={e=>setNewMangel(p=>({...p,text:e.target.value}))}
+                          placeholder="z.B. 'Kratzer auf Parkett', 'Türgriff locker'..."
+                          style={{width:"100%",minHeight:56,padding:"8px 10px",border:"1px solid #d8d0c0",borderRadius:5,fontSize:13,fontFamily:"inherit",lineHeight:1.5,boxSizing:"border-box",resize:"vertical",marginBottom:8}}
+                        />
+                        {newMangel.tempUrl ? (
+                          <div style={{position:"relative",width:120,height:120,marginBottom:8}}>
+                            <img src={newMangel.tempUrl} style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:5}} alt=""/>
+                            <button onClick={()=>removeMangelTempPhoto()} style={{position:"absolute",top:3,right:3,background:"rgba(0,0,0,.7)",color:"#fff",border:"none",borderRadius:"50%",width:22,height:22,fontSize:12,cursor:"pointer",lineHeight:"22px",padding:0}}>×</button>
+                          </div>
+                        ) : (
+                          <label style={{display:"inline-block",cursor:"pointer",background:newMangel.uploading ? "#f0ebe1" : "#e8efde",color:newMangel.uploading ? "#8a8174" : "#3a5230",border:"1px solid " + (newMangel.uploading ? "#d8d0c0" : "#c5d5b0"),borderRadius:5,padding:"7px 12px",fontSize:12,fontWeight:600,marginBottom:8}}>
+                            {newMangel.uploading ? "Lade hoch..." : "📸 Foto aufnehmen"}
+                            <input type="file" accept="image/*" capture="environment" disabled={newMangel.uploading} onChange={e=>{
+                              const file = e.target.files[0];
+                              if (file) uploadMangelPhoto(file);
+                              e.target.value = "";
+                            }} style={{display:"none"}}/>
+                          </label>
+                        )}
+                        <div style={{display:"flex",gap:6,marginTop:6}}>
+                          <button onClick={cancelNewMangel} style={{fontSize:12,padding:"6px 12px",background:"#f0ebe1",color:"#4a4439",border:"1px solid #d8d0c0",borderRadius:5,cursor:"pointer"}}>Abbrechen</button>
+                          <button onClick={saveNewMangel} disabled={!newMangel.text.trim() && !newMangel.tempPath} style={{fontSize:12,padding:"6px 12px",background: (!newMangel.text.trim() && !newMangel.tempPath) ? "#f0ebe1" : "#3a5230",color: (!newMangel.text.trim() && !newMangel.tempPath) ? "#8a8174" : "#fff",border: "1px solid " + ((!newMangel.text.trim() && !newMangel.tempPath) ? "#d8d0c0" : "#3a5230"),borderRadius:5,cursor: (!newMangel.text.trim() && !newMangel.tempPath) ? "not-allowed" : "pointer",fontWeight:600}}>
+                            ✓ Mangel speichern
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button onClick={()=>startNewMangel(r.key)} style={{width:"100%",padding:"9px 12px",background:"#fefcf7",color:"#4a4439",border:"1px dashed #d8d0c0",borderRadius:5,cursor:"pointer",fontSize:12.5,fontWeight:500}}>
+                        + Mangel hinzufügen
+                      </button>
                     )}
-                    <label style={{display:"block",cursor:"pointer",background: uploadingRaum === r.key ? "#f0ebe1" : "#e8efde",color: uploadingRaum === r.key ? "#8a8174" : "#3a5230",border:"1px solid " + (uploadingRaum === r.key ? "#d8d0c0" : "#c5d5b0"),borderRadius:6,padding:"10px 14px",fontSize:13,fontWeight:600,textAlign:"center"}}>
-                      {uploadingRaum === r.key ? "Lade hoch..." : "📸 Foto hinzufügen"}
-                      <input type="file" accept="image/*" capture="environment" disabled={uploadingRaum === r.key} onChange={e=>{
-                        const file = e.target.files[0];
-                        if (file) uploadPhoto(file, r.key);
-                        e.target.value = "";
-                      }} style={{display:"none"}}/>
-                    </label>
                   </div>
                 );
               })}
@@ -1616,51 +1758,33 @@
         );
       }
       
-      // ═══ Step 3: Mängel ═══
-      if (step === 3) {
-        return (
-          <div className="wrap">
-            <div className="card">
-              <div style={{fontSize:11,color:"#8a8174",marginBottom:8}}>Schritt 3 von 4</div>
-              <h1>Mängel melden</h1>
-              <p style={{marginBottom:20}}>Beschreibe hier alle Mängel oder Auffälligkeiten. Wenn alles in Ordnung ist, kannst du das Feld leer lassen.</p>
-              <textarea
-                value={mangelText}
-                onChange={e=>setMangelText(e.target.value)}
-                placeholder="z.B. 'Kratzer auf Parkett im Wohnzimmer', 'Wasserhahn im Bad tropft', 'Kühlschrank-Griff locker'..."
-                style={{width:"100%",minHeight:180,padding:"12px 14px",border:"1px solid #d8d0c0",borderRadius:8,fontSize:14,fontFamily:"inherit",lineHeight:1.6,boxSizing:"border-box",resize:"vertical"}}
-              />
-              <div style={{fontSize:11,color:"#8a8174",marginTop:8,marginBottom:20}}>
-                Tipp: Je konkreter du beschreibst und je mehr Fotos du hochgeladen hast, desto besser bist du bei der Rückgabe geschützt.
-              </div>
-              <div style={{display:"flex",gap:8,marginTop:20}}>
-                <button className="secondary" onClick={()=>setStep(2)} style={{flex:1}}>← Zurück</button>
-                <button className="primary" onClick={()=>setStep(4)} style={{flex:2}}>Weiter →</button>
-              </div>
-            </div>
-          </div>
-        );
-      }
-      
-      // ═══ Step 4: Signatur + Bestätigen ═══
-      const totalPhotos = photos.length;
+      // ═══ Step 3: Signatur + Bestätigen ═══
+      const totalMaengel = photos.length;
       return (
         <div className="wrap">
           <div className="card">
-            <div style={{fontSize:11,color:"#8a8174",marginBottom:8}}>Schritt 4 von 4</div>
+            <div style={{fontSize:11,color:"#8a8174",marginBottom:8}}>Schritt 3 von 3</div>
             <h1>Bestätigen und absenden</h1>
             <p style={{marginBottom:20}}>Bitte überprüfe deine Angaben und unterschreibe unten.</p>
             
             <div style={{background:"#fafaf7",border:"1px solid #e1d8c5",borderRadius:8,padding:"14px 16px",marginBottom:20,fontSize:13,lineHeight:1.7}}>
               <div style={{fontWeight:600,marginBottom:8}}>Zusammenfassung</div>
-              <div>📸 <strong>{totalPhotos}</strong> Foto{totalPhotos !== 1 ? "s" : ""} hochgeladen</div>
-              <div>📝 Mängel: <strong>{mangelText.trim() ? "angegeben" : "keine"}</strong></div>
+              <div>📋 <strong>{totalMaengel}</strong> Mangel{totalMaengel !== 1 ? "s" : ""} erfasst</div>
+              <div>{totalMaengel === 0 ? "Du hast keine Mängel gemeldet. Die Wohnung gilt somit als in einwandfreiem Zustand übernommen." : "Bitte prüfe im vorigen Schritt ob du alle Mängel erfasst hast."}</div>
             </div>
             
             <div style={{marginBottom:20}}>
-              <label style={{display:"block",fontSize:13,fontWeight:600,marginBottom:8}}>
-                Deine Unterschrift (Vor- und Nachname)
-              </label>
+              <label style={{display:"block",fontSize:13,fontWeight:600,marginBottom:8}}>Weitere Bemerkungen (optional)</label>
+              <textarea
+                value={mangelText}
+                onChange={e=>setMangelText(e.target.value)}
+                placeholder="Sonstige Anmerkungen die nicht raum-spezifisch sind..."
+                style={{width:"100%",minHeight:80,padding:"10px 12px",border:"1px solid #d8d0c0",borderRadius:8,fontSize:13,fontFamily:"inherit",lineHeight:1.6,boxSizing:"border-box",resize:"vertical"}}
+              />
+            </div>
+            
+            <div style={{marginBottom:20}}>
+              <label style={{display:"block",fontSize:13,fontWeight:600,marginBottom:8}}>Deine Unterschrift (Vor- und Nachname)</label>
               <input
                 type="text"
                 value={signatureName}
@@ -1675,7 +1799,7 @@
             </div>
             
             <div style={{display:"flex",gap:8}}>
-              <button className="secondary" onClick={()=>setStep(3)} disabled={submitting} style={{flex:1}}>← Zurück</button>
+              <button className="secondary" onClick={()=>setStep(2)} disabled={submitting} style={{flex:1}}>← Zurück</button>
               <button className="primary" onClick={submitProtocol} disabled={submitting || !signatureName.trim()} style={{flex:2}}>
                 {submitting ? "Sende..." : "✓ Protokoll absenden"}
               </button>
