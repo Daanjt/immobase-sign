@@ -1316,11 +1316,398 @@
     }
     
     // ════════════════════════════════════════════════════════════════════════
+    // UEBERNAHME PAGE - Übernahmeprotokoll-Wizard fuer Mieter
+    // ════════════════════════════════════════════════════════════════════════
+    function UebernahmePage({ token }) {
+      const [loading, setLoading] = React.useState(true);
+      const [error, setError] = React.useState(null);
+      const [protocol, setProtocol] = React.useState(null);
+      const [step, setStep] = React.useState(1);
+      const [photos, setPhotos] = React.useState([]); // [{raum, url, path, thumbnail}]
+      const [mangelText, setMangelText] = React.useState("");
+      const [uploadingRaum, setUploadingRaum] = React.useState(null);
+      const [submitting, setSubmitting] = React.useState(false);
+      const [signatureName, setSignatureName] = React.useState("");
+      const [success, setSuccess] = React.useState(false);
+      
+      // Raum-Kategorien (fixed)
+      const RAEUME = [
+        { key: "kueche", label: "Küche", icon: "🍳" },
+        { key: "bad", label: "Bad / WC", icon: "🚿" },
+        { key: "wohnbereich", label: "Wohnbereich / Flur", icon: "🛋️" },
+        { key: "zimmer", label: "Mein Zimmer", icon: "🛏️" },
+        { key: "zaehler", label: "Zähler (Strom / Wasser)", icon: "🔢" },
+      ];
+      
+      // Lade Protokoll beim Start
+      React.useEffect(() => {
+        (async () => {
+          try {
+            const { data, error: err } = await supabase
+              .from("handover_protocols")
+              .select("*")
+              .eq("token", token)
+              .single();
+            
+            if (err || !data) {
+              setError({
+                icon: "❌",
+                title: "Protokoll nicht gefunden",
+                message: "Dieser Link ist ungültig oder abgelaufen. Bitte kontaktiere D&T Homes.",
+                code: "NOT_FOUND"
+              });
+              setLoading(false);
+              return;
+            }
+            
+            // Status-Checks
+            if (data.status === "cancelled") {
+              setError({
+                icon: "🚫",
+                title: "Protokoll abgebrochen",
+                message: "Dieses Protokoll wurde von D&T Homes abgebrochen und ist nicht mehr aktiv.",
+                code: "CANCELLED"
+              });
+              setProtocol(data);
+              setLoading(false);
+              return;
+            }
+            
+            if (["submitted", "auto_accepted", "accepted"].includes(data.status)) {
+              setError({
+                icon: "✅",
+                title: "Protokoll bereits abgeschlossen",
+                message: "Du hast dieses Protokoll bereits eingereicht. Es sind keine weiteren Aktionen erforderlich.",
+                code: "ALREADY_SUBMITTED"
+              });
+              setProtocol(data);
+              setLoading(false);
+              return;
+            }
+            
+            // Deadline check
+            if (new Date(data.deadline) < new Date()) {
+              setError({
+                icon: "⌛",
+                title: "Frist abgelaufen",
+                message: "Die Frist für dieses Übernahmeprotokoll ist am " + new Date(data.deadline).toLocaleDateString("de-CH") + " abgelaufen. Bitte kontaktiere D&T Homes.",
+                code: "EXPIRED"
+              });
+              setProtocol(data);
+              setLoading(false);
+              return;
+            }
+            
+            // opened_at + status = in_progress setzen falls erstmalig
+            if (data.status === "sent" || !data.opened_at) {
+              await supabase.from("handover_protocols").update({
+                opened_at: data.opened_at || new Date().toISOString(),
+                status: "in_progress",
+                updated_at: new Date().toISOString()
+              }).eq("token", token);
+            }
+            
+            setProtocol(data);
+            setPhotos(data.photos || []);
+            setMangelText(data.mangel_notes || "");
+            setLoading(false);
+          } catch (e) {
+            console.error(e);
+            setError({ icon: "⚠️", title: "Fehler", message: "Etwas ist schiefgegangen: " + (e.message || e), code: "ERROR" });
+            setLoading(false);
+          }
+        })();
+      }, [token]);
+      
+      // Foto hochladen mit Komprimierung
+      async function uploadPhoto(file, raumKey) {
+        if (!file) return;
+        setUploadingRaum(raumKey);
+        try {
+          // Komprimieren via canvas
+          const compressed = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = e => {
+              const img = new Image();
+              img.onload = () => {
+                const canvas = document.createElement("canvas");
+                const MAX = 1600;
+                let w = img.width, h = img.height;
+                if (w > MAX || h > MAX) {
+                  if (w > h) { h = h * (MAX/w); w = MAX; }
+                  else { w = w * (MAX/h); h = MAX; }
+                }
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0, w, h);
+                canvas.toBlob(blob => resolve(blob), "image/jpeg", 0.85);
+              };
+              img.onerror = reject;
+              img.src = e.target.result;
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+          
+          const filename = `${token}/${raumKey}_${Date.now()}.jpg`;
+          const { data, error } = await supabase.storage
+            .from("handover-photos")
+            .upload(filename, compressed, { contentType: "image/jpeg", upsert: false });
+          
+          if (error) throw error;
+          
+          const { data: urlData } = supabase.storage
+            .from("handover-photos")
+            .getPublicUrl(filename);
+          
+          const newPhoto = {
+            raum: raumKey,
+            path: filename,
+            url: urlData.publicUrl,
+            uploaded_at: new Date().toISOString(),
+          };
+          
+          const updatedPhotos = [...photos, newPhoto];
+          setPhotos(updatedPhotos);
+          
+          // Sofort in DB speichern (Persistenz falls Fenster geschlossen wird)
+          await supabase.from("handover_protocols").update({
+            photos: updatedPhotos,
+            updated_at: new Date().toISOString()
+          }).eq("token", token);
+        } catch (e) {
+          alert("Foto-Upload fehlgeschlagen: " + (e.message || e));
+        }
+        setUploadingRaum(null);
+      }
+      
+      async function removePhoto(idx) {
+        if (!confirm("Foto entfernen?")) return;
+        const photo = photos[idx];
+        try {
+          if (photo.path) {
+            await supabase.storage.from("handover-photos").remove([photo.path]);
+          }
+          const updated = photos.filter((_, i) => i !== idx);
+          setPhotos(updated);
+          await supabase.from("handover_protocols").update({
+            photos: updated,
+            updated_at: new Date().toISOString()
+          }).eq("token", token);
+        } catch (e) {
+          alert("Foto konnte nicht entfernt werden: " + (e.message || e));
+        }
+      }
+      
+      async function submitProtocol() {
+        if (!signatureName.trim()) {
+          alert("Bitte gib deinen vollständigen Namen als Signatur ein.");
+          return;
+        }
+        setSubmitting(true);
+        try {
+          await supabase.from("handover_protocols").update({
+            photos: photos,
+            mangel_notes: mangelText,
+            tenant_signature: signatureName.trim(),
+            status: "submitted",
+            submitted_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }).eq("token", token);
+          setSuccess(true);
+        } catch (e) {
+          alert("Absenden fehlgeschlagen: " + (e.message || e));
+        }
+        setSubmitting(false);
+      }
+      
+      if (loading) return <StatusScreen icon="⏳" title="Lade..." message="Dein Übernahmeprotokoll wird geladen." />;
+      if (error) return <StatusScreen {...error} />;
+      if (success) {
+        return (
+          <StatusScreen
+            icon="✅"
+            title="Protokoll eingereicht"
+            message="Vielen Dank! Dein Übernahmeprotokoll wurde erfolgreich an D&T Homes gesendet. Du erhältst in Kürze eine Bestätigung per E-Mail."
+            code="SUBMITTED"
+          />
+        );
+      }
+      
+      const deadline = new Date(protocol.deadline);
+      const daysLeft = Math.ceil((deadline - new Date()) / (1000*60*60*24));
+      
+      // ═══ Step 1: Welcome ═══
+      if (step === 1) {
+        return (
+          <div className="wrap">
+            <div className="card">
+              <div className="brand">D&T Homes</div>
+              <h1>Übernahmeprotokoll</h1>
+              <p className="lead">
+                Hallo {protocol.mieter_vorname || ""}!
+              </p>
+              <p style={{marginBottom:20}}>
+                Willkommen in deinem neuen Zuhause. Bitte prüfe die Wohnung sorgfältig und dokumentiere allfällige Mängel mit Fotos. Das schützt dich bei der Rückgabe der Wohnung.
+              </p>
+              <div style={{background:"#fdf2e0",border:"1px solid #e8c89c",borderRadius:8,padding:"14px 16px",marginBottom:20,fontSize:14,lineHeight:1.5}}>
+                <div style={{fontWeight:600,marginBottom:6}}>⏱ Frist bis {deadline.toLocaleDateString("de-CH",{day:"2-digit",month:"long",year:"numeric"})}</div>
+                <div style={{color:"#5a5044"}}>Du hast noch <strong>{daysLeft} Tage</strong> Zeit, das Protokoll einzureichen. Danach gilt die Wohnung automatisch als in einwandfreiem Zustand übernommen.</div>
+              </div>
+              <div style={{marginBottom:24}}>
+                <div style={{fontWeight:600,marginBottom:10,fontSize:14}}>Was du tun musst:</div>
+                <ol style={{paddingLeft:20,lineHeight:1.7,fontSize:14,color:"#3a352d"}}>
+                  <li>Räume dokumentieren (Fotos pro Raum)</li>
+                  <li>Mängel angeben (Text + optional Fotos)</li>
+                  <li>Unterschreiben und absenden</li>
+                </ol>
+              </div>
+              <button className="primary" onClick={()=>setStep(2)}>Los geht's →</button>
+            </div>
+          </div>
+        );
+      }
+      
+      // ═══ Step 2: Fotos ═══
+      if (step === 2) {
+        return (
+          <div className="wrap">
+            <div className="card">
+              <div style={{fontSize:11,color:"#8a8174",marginBottom:8}}>Schritt 2 von 4</div>
+              <h1>Fotos aufnehmen</h1>
+              <p style={{marginBottom:20}}>Bitte mache pro Raum mindestens 1-2 Fotos. Bei Mängeln zusätzlich Nahaufnahmen.</p>
+              
+              {RAEUME.map(r => {
+                const raumPhotos = photos.filter(p => p.raum === r.key);
+                return (
+                  <div key={r.key} style={{background:"#fafaf7",border:"1px solid #e1d8c5",borderRadius:8,padding:"14px 16px",marginBottom:14}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                      <div style={{fontSize:14,fontWeight:600}}>{r.icon} {r.label}</div>
+                      <div style={{fontSize:11,color:"#8a8174"}}>{raumPhotos.length} Foto{raumPhotos.length !== 1 ? "s" : ""}</div>
+                    </div>
+                    {raumPhotos.length > 0 && (
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(80px, 1fr))",gap:6,marginBottom:10}}>
+                        {photos.map((p, i) => p.raum === r.key ? (
+                          <div key={i} style={{position:"relative",aspectRatio:"1",background:"#eee",borderRadius:6,overflow:"hidden"}}>
+                            <img src={p.url} style={{width:"100%",height:"100%",objectFit:"cover"}} alt=""/>
+                            <button onClick={()=>removePhoto(i)} style={{position:"absolute",top:2,right:2,background:"rgba(0,0,0,.7)",color:"#fff",border:"none",borderRadius:"50%",width:22,height:22,fontSize:12,cursor:"pointer",lineHeight:"22px",padding:0}}>×</button>
+                          </div>
+                        ) : null)}
+                      </div>
+                    )}
+                    <label style={{display:"block",cursor:"pointer",background: uploadingRaum === r.key ? "#f0ebe1" : "#e8efde",color: uploadingRaum === r.key ? "#8a8174" : "#3a5230",border:"1px solid " + (uploadingRaum === r.key ? "#d8d0c0" : "#c5d5b0"),borderRadius:6,padding:"10px 14px",fontSize:13,fontWeight:600,textAlign:"center"}}>
+                      {uploadingRaum === r.key ? "Lade hoch..." : "📸 Foto hinzufügen"}
+                      <input type="file" accept="image/*" capture="environment" disabled={uploadingRaum === r.key} onChange={e=>{
+                        const file = e.target.files[0];
+                        if (file) uploadPhoto(file, r.key);
+                        e.target.value = "";
+                      }} style={{display:"none"}}/>
+                    </label>
+                  </div>
+                );
+              })}
+              
+              <div style={{display:"flex",gap:8,marginTop:20}}>
+                <button className="secondary" onClick={()=>setStep(1)} style={{flex:1}}>← Zurück</button>
+                <button className="primary" onClick={()=>setStep(3)} style={{flex:2}}>Weiter →</button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+      
+      // ═══ Step 3: Mängel ═══
+      if (step === 3) {
+        return (
+          <div className="wrap">
+            <div className="card">
+              <div style={{fontSize:11,color:"#8a8174",marginBottom:8}}>Schritt 3 von 4</div>
+              <h1>Mängel melden</h1>
+              <p style={{marginBottom:20}}>Beschreibe hier alle Mängel oder Auffälligkeiten. Wenn alles in Ordnung ist, kannst du das Feld leer lassen.</p>
+              <textarea
+                value={mangelText}
+                onChange={e=>setMangelText(e.target.value)}
+                placeholder="z.B. 'Kratzer auf Parkett im Wohnzimmer', 'Wasserhahn im Bad tropft', 'Kühlschrank-Griff locker'..."
+                style={{width:"100%",minHeight:180,padding:"12px 14px",border:"1px solid #d8d0c0",borderRadius:8,fontSize:14,fontFamily:"inherit",lineHeight:1.6,boxSizing:"border-box",resize:"vertical"}}
+              />
+              <div style={{fontSize:11,color:"#8a8174",marginTop:8,marginBottom:20}}>
+                Tipp: Je konkreter du beschreibst und je mehr Fotos du hochgeladen hast, desto besser bist du bei der Rückgabe geschützt.
+              </div>
+              <div style={{display:"flex",gap:8,marginTop:20}}>
+                <button className="secondary" onClick={()=>setStep(2)} style={{flex:1}}>← Zurück</button>
+                <button className="primary" onClick={()=>setStep(4)} style={{flex:2}}>Weiter →</button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+      
+      // ═══ Step 4: Signatur + Bestätigen ═══
+      const totalPhotos = photos.length;
+      return (
+        <div className="wrap">
+          <div className="card">
+            <div style={{fontSize:11,color:"#8a8174",marginBottom:8}}>Schritt 4 von 4</div>
+            <h1>Bestätigen und absenden</h1>
+            <p style={{marginBottom:20}}>Bitte überprüfe deine Angaben und unterschreibe unten.</p>
+            
+            <div style={{background:"#fafaf7",border:"1px solid #e1d8c5",borderRadius:8,padding:"14px 16px",marginBottom:20,fontSize:13,lineHeight:1.7}}>
+              <div style={{fontWeight:600,marginBottom:8}}>Zusammenfassung</div>
+              <div>📸 <strong>{totalPhotos}</strong> Foto{totalPhotos !== 1 ? "s" : ""} hochgeladen</div>
+              <div>📝 Mängel: <strong>{mangelText.trim() ? "angegeben" : "keine"}</strong></div>
+            </div>
+            
+            <div style={{marginBottom:20}}>
+              <label style={{display:"block",fontSize:13,fontWeight:600,marginBottom:8}}>
+                Deine Unterschrift (Vor- und Nachname)
+              </label>
+              <input
+                type="text"
+                value={signatureName}
+                onChange={e=>setSignatureName(e.target.value)}
+                placeholder={`z.B. ${protocol.mieter_vorname || ""} ${protocol.mieter_nachname || ""}`.trim()}
+                style={{width:"100%",padding:"12px 14px",border:"1px solid #d8d0c0",borderRadius:8,fontSize:15,fontFamily:"inherit",boxSizing:"border-box"}}
+              />
+            </div>
+            
+            <div style={{fontSize:12,color:"#5a5044",lineHeight:1.6,padding:"12px 14px",background:"#fdf2e0",border:"1px solid #e8c89c",borderRadius:8,marginBottom:20}}>
+              Mit dem Absenden bestätige ich, dass ich die Wohnung dokumentiert habe und dass die oben angegebenen Mängel den Zustand bei Übernahme wiedergeben. Später gemeldete Mängel, die nicht aufgeführt sind, können mir bei der Rückgabe angerechnet werden. Versteckte Mängel bleiben vorbehalten (Art. 256 OR).
+            </div>
+            
+            <div style={{display:"flex",gap:8}}>
+              <button className="secondary" onClick={()=>setStep(3)} disabled={submitting} style={{flex:1}}>← Zurück</button>
+              <button className="primary" onClick={submitProtocol} disabled={submitting || !signatureName.trim()} style={{flex:2}}>
+                {submitting ? "Sende..." : "✓ Protokoll absenden"}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // ════════════════════════════════════════════════════════════════════════
     // APP ROOT
     // ════════════════════════════════════════════════════════════════════════
     function App() {
       // Extract token from URL pathname
       const path = window.location.pathname.replace(/^\//, "").replace(/\/$/, "");
+      
+      // Handover-Route: /uebernahme/{token}
+      if (path.startsWith("uebernahme/")) {
+        const handoverToken = path.substring("uebernahme/".length);
+        if (!handoverToken || handoverToken.length < 16) {
+          return (
+            <StatusScreen
+              icon="🔗"
+              title="Ungültiger Link"
+              message="Diese Seite kann nur über einen persönlichen Übernahmelink besucht werden. Bitte überprüfe den Link aus deiner E-Mail von D&T Homes."
+              code="INVALID_URL"
+            />
+          );
+        }
+        return <UebernahmePage token={handoverToken} />;
+      }
       
       // Token-Validierung (mindestens 16 Zeichen)
       if (!path || path.length < 16) {
