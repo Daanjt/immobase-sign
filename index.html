@@ -1332,6 +1332,8 @@
       const [success, setSuccess] = React.useState(false);
       const [newMangel, setNewMangel] = React.useState(null);
       // newMangel: null | { raum, text, tempPath, tempUrl, uploading }
+      const [customRaeume, setCustomRaeume] = React.useState([]);
+      // customRaeume: [{key, label, icon}] - vom Mieter dynamisch hinzugefuegte Raeume
       
       // Raum-Kategorien (fixed): Mein Zimmer zuerst, keine Zaehler
       const RAEUME = [
@@ -1412,6 +1414,7 @@
             setProtocol(data);
             setPhotos(data.photos || []);
             setMangelText(data.mangel_notes || "");
+            setCustomRaeume(data.custom_raeume || []);
             setLoading(false);
           } catch (e) {
             console.error(e);
@@ -1621,8 +1624,9 @@
       if (success) {
         const submittedDate = new Date().toLocaleDateString("de-CH", {day:"2-digit",month:"long",year:"numeric"});
         const submittedTime = new Date().toLocaleTimeString("de-CH", {hour:"2-digit",minute:"2-digit"});
+        const alleRaeume = [...RAEUME, ...customRaeume];
         const maengelByRaum = {};
-        RAEUME.forEach(r => { maengelByRaum[r.key] = []; });
+        alleRaeume.forEach(r => { maengelByRaum[r.key] = []; });
         photos.forEach(p => {
           if (maengelByRaum[p.raum] !== undefined) maengelByRaum[p.raum].push(p);
         });
@@ -1920,10 +1924,25 @@
                 <div className="person-grid">
                   <span className="pl">Vorname:</span><span>{protocol.mieter_vorname || "-"}</span>
                   <span className="pl">Nachname:</span><span>{protocol.mieter_nachname || "-"}</span>
+                  {protocol.mieter_geburtsdatum && <><span className="pl">Geburtsdatum:</span><span>{new Date(protocol.mieter_geburtsdatum).toLocaleDateString("de-CH",{day:"2-digit",month:"long",year:"numeric"})}</span></>}
+                  {protocol.mieter_nationalitaet && <><span className="pl">Nationalität:</span><span>{protocol.mieter_nationalitaet}</span></>}
                   <span className="pl">E-Mail:</span><span>{protocol.mieter_email || "-"}</span>
-                  <span className="pl">Eingereicht am:</span><span>{submittedDate}, {submittedTime}</span>
+                  {protocol.mieter_telefon && <><span className="pl">Telefon:</span><span>{protocol.mieter_telefon}</span></>}
+                  {protocol.mieter_adresse && <><span className="pl">Bisherige Adresse:</span><span>{protocol.mieter_adresse}</span></>}
                 </div>
               </div>
+              
+              {(protocol.apt_adresse || protocol.room_label || protocol.einzug_datum) && (
+                <div className="info-section">
+                  <h3>Mietobjekt</h3>
+                  <div className="row" style={{display:"grid",gridTemplateColumns:"auto 1fr",gap:"8px 20px"}}>
+                    {protocol.apt_adresse && <><span className="lbl">Wohnung:</span><span>{protocol.apt_adresse}{protocol.apt_plz || protocol.apt_ort ? ", " : ""}{protocol.apt_plz||""} {protocol.apt_ort||""}</span></>}
+                    {protocol.room_label && <><span className="lbl">Zimmer:</span><span>{protocol.room_label}</span></>}
+                    {protocol.einzug_datum && <><span className="lbl">Einzug am:</span><span>{new Date(protocol.einzug_datum).toLocaleDateString("de-CH",{day:"2-digit",month:"long",year:"numeric"})}</span></>}
+                    <span className="lbl">Eingereicht am:</span><span>{submittedDate}, {submittedTime}</span>
+                  </div>
+                </div>
+              )}
               
               {(schluesselNr || extraSchluessel) && (
                 <div className="info-section">
@@ -1942,7 +1961,7 @@
                   Keine Mängel gemeldet. Die Wohnung wurde in einwandfreiem Zustand übernommen.
                 </div>
               ) : (
-                RAEUME.map(r => {
+                alleRaeume.map(r => {
                   const maengel = maengelByRaum[r.key] || [];
                   if (maengel.length === 0) return null;
                   return (
@@ -1975,7 +1994,7 @@
                 <ol className="erklaerung-list">
                   <li>Die Mietpartei bestätigt den Erhalt der unter «Schlüsselübergabe» aufgeführten Schlüssel{schluesselNr ? <> (Schlüsselnummer: <strong>{schluesselNr}</strong>{extraSchluessel ? <>; zusätzlich: {extraSchluessel.replace(/\n/g, ", ")}</> : null})</> : null} und verpflichtet sich, diese sorgfältig zu verwahren, nicht an unberechtigte Dritte weiterzugeben und am Ende des Mietverhältnisses vollzählig zurückzugeben. Bei Verlust trägt die Mietpartei die Kosten für Ersatz und allfällige Schliessanlagen-Anpassungen.</li>
                   <li>Die Mietpartei bestätigt, dass die Wohnung bzw. das Zimmer im obenstehend dokumentierten Zustand übernommen wurde. Sichtbare Mängel, die innerhalb der 14-tägigen Frist nach Einzug nicht in diesem Protokoll aufgeführt wurden, gelten als nicht vorhanden und können bei der Rückgabe nicht geltend gemacht werden.</li>
-                  <li>Verdeckte Mängel, die bei der Übernahme trotz sorgfältiger Prüfung nicht erkennbar waren (z.B. Schimmel hinter Möbeln, Defekte an Anlagen ausserhalb der Heizperiode), sind der Hauptmieterin (D&amp;T Partners GmbH) innert <strong>10 Tagen ab Entdeckung</strong> schriftlich zu melden (Art. 256 OR).</li>
+                  <li>Verdeckte Mängel, die bei der Übernahme trotz sorgfältiger Prüfung nicht erkennbar waren (z.B. Schimmel hinter Möbeln, Defekte an Anlagen ausserhalb der Heizperiode), sind der Hauptmieterin (D&amp;T Partners GmbH) innert 10 Tagen ab Entdeckung schriftlich zu melden (Art. 256 OR).</li>
                   <li>Die Mietpartei verpflichtet sich, das Mietobjekt sorgfältig zu nutzen und am Ende des Mietverhältnisses in vergleichbarem Zustand zurückzugeben (vorbehaltlich normaler Abnutzung gemäss Schweizer Mietrecht und Lebensdauertabelle MV/HEV).</li>
                   <li>Die Mietpartei bestätigt mit der digitalen Unterschrift, dass die Angaben in diesem Protokoll richtig sind und dass sie eine Kopie dieses Dokuments erhalten hat.</li>
                   <li>Bei Streitigkeiten gilt schweizerisches Recht; Gerichtsstand ist Chur.</li>
@@ -2007,9 +2026,17 @@
               <p className="lead">
                 Hallo {protocol.mieter_vorname || ""}!
               </p>
-              <p style={{marginBottom:20}}>
+              <p style={{marginBottom:16}}>
                 Willkommen in deinem neuen Zuhause. Bitte prüfe die Wohnung sorgfältig und dokumentiere allfällige Mängel mit Fotos. Das schützt dich bei der Rückgabe der Wohnung.
               </p>
+              
+              {(protocol.apt_adresse || protocol.room_label) && (
+                <div style={{background:"#fafaf7",border:"1px solid #e1d8c5",borderRadius:8,padding:"12px 14px",marginBottom:16,fontSize:13,lineHeight:1.5}}>
+                  {protocol.apt_adresse && <div>📍 {protocol.apt_adresse}{protocol.apt_plz || protocol.apt_ort ? ", " : ""}{protocol.apt_plz||""} {protocol.apt_ort||""}</div>}
+                  {protocol.room_label && <div style={{marginTop:4}}>🚪 Zimmer {protocol.room_label}</div>}
+                  {protocol.einzug_datum && <div style={{marginTop:4,color:"#5a5044",fontSize:12}}>Einzug: {new Date(protocol.einzug_datum).toLocaleDateString("de-CH",{day:"2-digit",month:"long",year:"numeric"})}</div>}
+                </div>
+              )}
               
               {protocol.schluessel_info && (
                 <div style={{background:"#fefcf7",border:"1px solid #d8d0c0",borderRadius:8,padding:"14px 16px",marginBottom:20}}>
@@ -2036,11 +2063,57 @@
         );
       }
       
+      // Helper: add custom raum
+      async function addCustomRaum() {
+        const label = prompt("Name des Raums (z.B. Balkon, Keller, Waschkueche):");
+        if (!label || !label.trim()) return;
+        const key = "custom_" + Date.now();
+        const newRaum = { key, label: label.trim(), icon: "🚪" };
+        const updated = [...customRaeume, newRaum];
+        setCustomRaeume(updated);
+        try {
+          await supabase.from("handover_protocols").update({
+            custom_raeume: updated,
+            updated_at: new Date().toISOString()
+          }).eq("token", token);
+        } catch (e) {
+          alert("Speichern fehlgeschlagen: " + (e.message || e));
+        }
+      }
+      
+      async function removeCustomRaum(key) {
+        const raumPhotos = photos.filter(p => p.raum === key);
+        if (raumPhotos.length > 0) {
+          if (!confirm(`Dieser Raum enthält ${raumPhotos.length} Mangel${raumPhotos.length>1?"s":""}. Trotzdem entfernen?`)) return;
+        }
+        const updatedCustom = customRaeume.filter(r => r.key !== key);
+        const updatedPhotos = photos.filter(p => p.raum !== key);
+        // Storage cleanup fuer entfernte fotos
+        for (const p of raumPhotos) {
+          if (p.path) {
+            try { await supabase.storage.from("handover-photos").remove([p.path]); } catch(e){}
+          }
+        }
+        setCustomRaeume(updatedCustom);
+        setPhotos(updatedPhotos);
+        try {
+          await supabase.from("handover_protocols").update({
+            custom_raeume: updatedCustom,
+            photos: updatedPhotos,
+            updated_at: new Date().toISOString()
+          }).eq("token", token);
+        } catch(e) {
+          alert("Speichern fehlgeschlagen: " + (e.message || e));
+        }
+      }
+      
       // ═══ Step 2: Mängel pro Raum ═══
       if (step === 2) {
+        // Alle Raeume: fixe + custom
+        const alleRaeume = [...RAEUME, ...customRaeume];
         // Get Mängel grouped by raum
         const maengelByRaum = {};
-        RAEUME.forEach(r => { maengelByRaum[r.key] = []; });
+        alleRaeume.forEach(r => { maengelByRaum[r.key] = []; });
         photos.forEach((p, idx) => {
           if (maengelByRaum[p.raum] !== undefined) {
             maengelByRaum[p.raum].push({...p, _idx: idx});
@@ -2057,13 +2130,19 @@
                 <strong>Wichtig:</strong> Alle Mängel die du hier nicht meldest, könnten bei der Rückgabe der Wohnung zu deinen Lasten gehen.
               </div>
               
-              {RAEUME.map(r => {
+              {alleRaeume.map(r => {
                 const maengel = maengelByRaum[r.key] || [];
                 const isAddingHere = newMangel && newMangel.raum === r.key;
+                const isCustom = r.key.startsWith("custom_");
                 return (
                   <div key={r.key} style={{background:"#fafaf7",border:"1px solid #e1d8c5",borderRadius:8,padding:"14px 16px",marginBottom:14}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:maengel.length > 0 || isAddingHere ? 12 : 0}}>
-                      <div style={{fontSize:14,fontWeight:600}}>{r.icon} {r.label}</div>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:maengel.length > 0 || isAddingHere ? 12 : 0,gap:8}}>
+                      <div style={{fontSize:14,fontWeight:600,display:"flex",alignItems:"center",gap:8}}>
+                        <span>{r.icon} {r.label}</span>
+                        {isCustom && (
+                          <button onClick={()=>removeCustomRaum(r.key)} style={{background:"none",border:"none",color:"#9b4a3e",fontSize:14,cursor:"pointer",padding:"0 4px",lineHeight:1}} title="Raum entfernen">×</button>
+                        )}
+                      </div>
                       <div style={{fontSize:11,color:maengel.length > 0 ? "#8a3a2e" : "#8a8174",fontWeight:maengel.length > 0 ? 600 : 400}}>
                         {maengel.length === 0 ? "keine Mängel" : `${maengel.length} Mangel${maengel.length !== 1 ? "s" : ""}`}
                       </div>
@@ -2122,6 +2201,10 @@
                   </div>
                 );
               })}
+              
+              <button onClick={addCustomRaum} style={{width:"100%",padding:"11px 14px",background:"#fefcf7",color:"#4a4439",border:"1px dashed #b8b0a0",borderRadius:6,cursor:"pointer",fontSize:12.5,fontWeight:500,marginBottom:6}}>
+                + Weiteren Raum hinzufügen (z.B. Balkon, Keller)
+              </button>
               
               <div style={{display:"flex",gap:8,marginTop:20}}>
                 <button className="secondary" onClick={()=>setStep(1)} style={{flex:1}}>← Zurück</button>
