@@ -1335,6 +1335,24 @@
       const [customRaeume, setCustomRaeume] = React.useState([]);
       // customRaeume: [{key, label, icon}] - vom Mieter dynamisch hinzugefuegte Raeume
       
+      // Helper: formatiere Datum egal ob ISO (2003-03-22) oder deutsch (22.03.2003)
+      function formatDate(s) {
+        if (!s) return "";
+        const str = String(s).trim();
+        // TT.MM.JJJJ - direkt zurueckgeben mit langem Monat
+        const m = str.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+        if (m) {
+          const monate = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+          return `${parseInt(m[1])}. ${monate[parseInt(m[2])-1]} ${m[3]}`;
+        }
+        // ISO
+        try {
+          const d = new Date(str);
+          if (!isNaN(d.getTime())) return d.toLocaleDateString("de-CH", {day:"2-digit",month:"long",year:"numeric"});
+        } catch(e){}
+        return str;
+      }
+      
       // Raum-Kategorien (fixed): Mein Zimmer zuerst, keine Zaehler
       const RAEUME = [
         { key: "zimmer", label: "Mein Zimmer", icon: "🛏️" },
@@ -1924,7 +1942,7 @@
                 <div className="person-grid">
                   <span className="pl">Vorname:</span><span>{protocol.mieter_vorname || "-"}</span>
                   <span className="pl">Nachname:</span><span>{protocol.mieter_nachname || "-"}</span>
-                  {protocol.mieter_geburtsdatum && <><span className="pl">Geburtsdatum:</span><span>{new Date(protocol.mieter_geburtsdatum).toLocaleDateString("de-CH",{day:"2-digit",month:"long",year:"numeric"})}</span></>}
+                  {protocol.mieter_geburtsdatum && <><span className="pl">Geburtsdatum:</span><span>{formatDate(protocol.mieter_geburtsdatum)}</span></>}
                   {protocol.mieter_nationalitaet && <><span className="pl">Nationalität:</span><span>{protocol.mieter_nationalitaet}</span></>}
                   <span className="pl">E-Mail:</span><span>{protocol.mieter_email || "-"}</span>
                   {protocol.mieter_telefon && <><span className="pl">Telefon:</span><span>{protocol.mieter_telefon}</span></>}
@@ -1937,7 +1955,7 @@
                   <div className="row" style={{display:"grid",gridTemplateColumns:"auto 1fr",gap:"8px 20px"}}>
                     {protocol.apt_adresse && <><span className="lbl">Wohnung:</span><span>{protocol.apt_adresse}{protocol.apt_plz || protocol.apt_ort ? ", " : ""}{protocol.apt_plz||""} {protocol.apt_ort||""}</span></>}
                     {protocol.room_label && <><span className="lbl">Zimmer:</span><span>{protocol.room_label}</span></>}
-                    {protocol.einzug_datum && <><span className="lbl">Einzug am:</span><span>{new Date(protocol.einzug_datum).toLocaleDateString("de-CH",{day:"2-digit",month:"long",year:"numeric"})}</span></>}
+                    {protocol.einzug_datum && <><span className="lbl">Einzug am:</span><span>{formatDate(protocol.einzug_datum)}</span></>}
                     <span className="lbl">Eingereicht am:</span><span>{submittedDate}, {submittedTime}</span>
                   </div>
                 </div>
@@ -2033,7 +2051,7 @@
                 <div style={{background:"#fafaf7",border:"1px solid #e1d8c5",borderRadius:8,padding:"12px 14px",marginBottom:16,fontSize:13,lineHeight:1.5}}>
                   {protocol.apt_adresse && <div>📍 {protocol.apt_adresse}{protocol.apt_plz || protocol.apt_ort ? ", " : ""}{protocol.apt_plz||""} {protocol.apt_ort||""}</div>}
                   {protocol.room_label && <div style={{marginTop:4}}>🚪 Zimmer {protocol.room_label}</div>}
-                  {protocol.einzug_datum && <div style={{marginTop:4,color:"#5a5044",fontSize:12}}>Einzug: {new Date(protocol.einzug_datum).toLocaleDateString("de-CH",{day:"2-digit",month:"long",year:"numeric"})}</div>}
+                  {protocol.einzug_datum && <div style={{marginTop:4,color:"#5a5044",fontSize:12}}>Einzug: {formatDate(protocol.einzug_datum)}</div>}
                 </div>
               )}
               
