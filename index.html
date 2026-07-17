@@ -1707,162 +1707,150 @@
         return (
           <div className="protocol-doc">
             <style>{`
+              /* ═══ Design-System: einheitliche Typografie ═══ */
               .protocol-doc {
                 background: #f5f2ec;
                 min-height: 100vh;
-                padding: 24px 16px;
+                padding: 20px 12px;
                 font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+                color: #1a1a1a;
               }
               .protocol-actions {
-                max-width: 780px;
-                margin: 0 auto 20px;
+                max-width: 720px;
+                margin: 0 auto 16px;
                 display: flex;
                 gap: 10px;
                 align-items: center;
                 background: #e8efde;
                 border: 1px solid #c5d5b0;
                 border-radius: 8px;
-                padding: 14px 18px;
+                padding: 12px 16px;
               }
               .protocol-actions .btn {
                 background: #1a1814;
                 color: #fefcf7;
                 border: none;
                 border-radius: 6px;
-                padding: 10px 18px;
-                font-size: 14px;
-                font-weight: 600;
+                padding: 9px 16px;
+                font-size: 13px;
+                font-weight: 500;
                 cursor: pointer;
+                white-space: nowrap;
               }
               .protocol-page {
-                max-width: 780px;
+                max-width: 720px;
                 margin: 0 auto;
                 background: white;
-                padding: 40px 44px;
+                padding: 36px 40px;
                 border-radius: 4px;
                 box-shadow: 0 2px 12px rgba(0,0,0,.08);
-                font-size: 13px;
+                font-size: 11.5px;
                 line-height: 1.5;
                 color: #1a1a1a;
               }
+              
+              /* Doc Header */
               .doc-header {
                 display: flex;
                 justify-content: space-between;
                 align-items: flex-end;
-                padding-bottom: 18px;
+                padding-bottom: 14px;
                 border-bottom: 1.5px solid #1a1a1a;
-                margin-bottom: 26px;
+                margin-bottom: 20px;
               }
               .doc-header .label {
-                font-size: 10px;
+                font-size: 9px;
                 color: #888;
                 letter-spacing: .3em;
                 text-transform: uppercase;
                 font-weight: 500;
-                margin-bottom: 6px;
+                margin-bottom: 4px;
               }
               .doc-header h1 {
-                font-size: 28px;
+                font-size: 24px;
                 font-weight: 300;
                 color: #1a1a1a;
                 letter-spacing: -.3px;
                 margin: 0;
               }
-              .doc-header .brand-logo {
-                text-align: right;
+              .doc-header .brand-logo img {
+                width: 90px;
+                display: block;
+                margin-left: auto;
               }
-              .doc-header .brand-logo .brand-name {
-                font-family: Georgia, serif;
-                font-size: 22px;
-                font-weight: 400;
-                letter-spacing: .04em;
-                color: #1a1a1a;
-              }
-              .doc-header .brand-logo .brand-tag {
-                font-size: 9px;
-                color: #888;
-                letter-spacing: .3em;
-                text-transform: uppercase;
-                margin-top: 2px;
-              }
-              .person-card {
-                background: #faf8f3;
-                border-left: 3px solid #1a1a1a;
-                padding: 18px 22px;
-                margin-bottom: 22px;
-              }
-              .person-card .ph {
+              
+              /* Section Headers (einheitlich) */
+              .section-header {
                 font-size: 10px;
-                color: #888;
-                letter-spacing: .3em;
+                font-weight: 700;
+                letter-spacing: .2em;
                 text-transform: uppercase;
-                font-weight: 600;
+                color: #1a1a1a;
+                margin: 0 0 8px 0;
+              }
+              
+              /* Info cards */
+              .person-card, .info-section {
+                background: #faf8f3;
+                border-left: 2px solid #1a1a1a;
+                padding: 12px 16px;
                 margin-bottom: 12px;
+                page-break-inside: avoid;
               }
-              .person-grid {
+              .person-grid, .info-grid {
                 display: grid;
-                grid-template-columns: auto 1fr;
-                gap: 8px 20px;
-                font-size: 13px;
+                grid-template-columns: 130px 1fr;
+                gap: 4px 16px;
+                font-size: 11.5px;
               }
-              .person-grid .pl {
+              .person-grid .pl, .info-grid .lbl {
                 font-weight: 600;
                 color: #444;
               }
-              .info-section {
-                background: #fafafa;
-                border: 1px solid #e0e0e0;
+              .person-grid > span, .info-grid > span {
+                line-height: 1.5;
+              }
+              
+              /* Maengel section */
+              .maengel-header {
+                margin: 16px 0 10px 0;
+              }
+              .no-maengel {
+                background: #e8efde;
+                border: 1px solid #c5d5b0;
                 border-radius: 4px;
-                padding: 14px 18px;
-                margin: 18px 0;
-              }
-              .info-section h3 {
-                font-size: 12px;
-                font-weight: 700;
-                margin: 0 0 10px 0;
-                text-transform: uppercase;
-                letter-spacing: .12em;
-                color: #1a1a1a;
-              }
-              .info-section .row {
-                display: grid;
-                grid-template-columns: 1fr;
-                gap: 8px 20px;
-                font-size: 13px;
-              }
-              .info-section .row .lbl {
-                font-weight: 600;
-              }
-              .info-section .row .val {
-                white-space: pre-wrap;
+                padding: 10px 14px;
+                font-size: 11.5px;
+                color: #3a5230;
+                margin-bottom: 12px;
               }
               .raum-block {
-                margin-bottom: 22px;
+                margin-bottom: 12px;
                 page-break-inside: avoid;
               }
               .raum-block h3 {
-                font-size: 15px;
+                font-size: 12px;
                 font-weight: 700;
                 color: #1a1a1a;
-                padding: 10px 14px;
+                padding: 8px 12px;
                 background: #f5efe4;
-                border-left: 3px solid #1a1a1a;
-                margin: 0 0 12px 0;
+                border-left: 2px solid #1a1a1a;
+                margin: 0 0 8px 0;
               }
               .mangel-item {
                 display: flex;
-                gap: 14px;
+                gap: 12px;
                 background: #fafafa;
                 border: 1px solid #e0e0e0;
-                border-radius: 4px;
-                padding: 12px 14px;
-                margin-bottom: 8px;
+                border-radius: 3px;
+                padding: 10px 12px;
+                margin-bottom: 6px;
                 page-break-inside: avoid;
               }
               .mangel-item .mangel-photo {
                 flex-shrink: 0;
-                width: 120px;
-                height: 120px;
+                width: 90px;
+                height: 90px;
                 background: #eee;
                 border-radius: 3px;
                 overflow: hidden;
@@ -1875,53 +1863,41 @@
               }
               .mangel-item .mangel-text {
                 flex: 1;
-                font-size: 13px;
+                font-size: 11.5px;
                 line-height: 1.5;
-                padding-top: 4px;
+                padding-top: 2px;
               }
               .mangel-item .mangel-empty {
                 color: #888;
                 font-style: italic;
               }
-              .no-maengel {
-                background: #e8efde;
-                border: 1px solid #c5d5b0;
-                border-radius: 4px;
-                padding: 12px 16px;
-                font-size: 13px;
-                color: #3a5230;
-              }
+              
+              /* Erklaerung Vertragsparteien - kompakt und page-break-friendly */
               .schluss-erklaerung {
-                margin-top: 28px;
-                padding: 18px 22px;
+                margin-top: 16px;
+                padding: 12px 16px;
                 background: #faf8f3;
-                border-left: 3px solid #1a1a1a;
-                page-break-inside: avoid;
-              }
-              .schluss-erklaerung h3 {
-                font-size: 12px;
-                font-weight: 700;
-                color: #1a1a1a;
-                margin: 0 0 12px 0;
-                text-transform: uppercase;
-                letter-spacing: .15em;
+                border-left: 2px solid #1a1a1a;
               }
               .erklaerung-list {
                 margin: 0;
-                padding-left: 20px;
-                font-size: 12px;
-                line-height: 1.6;
+                padding-left: 18px;
+                font-size: 10.5px;
+                line-height: 1.55;
                 color: #2a2823;
               }
               .erklaerung-list li {
-                margin-bottom: 8px;
+                margin-bottom: 5px;
+                page-break-inside: avoid;
               }
               .erklaerung-list li:last-child {
                 margin-bottom: 0;
               }
+              
+              /* Signature */
               .signature-block {
-                margin-top: 28px;
-                padding-top: 14px;
+                margin-top: 20px;
+                padding-top: 12px;
                 border-top: 1px solid #1a1a1a;
                 page-break-inside: avoid;
               }
@@ -1931,42 +1907,43 @@
                 letter-spacing: .2em;
                 text-transform: uppercase;
                 font-weight: 600;
-                margin-bottom: 6px;
+                margin-bottom: 4px;
               }
               .signature-block .name {
                 font-family: Georgia, serif;
-                font-size: 22px;
+                font-size: 18px;
                 font-style: italic;
-                margin-bottom: 8px;
+                margin-bottom: 6px;
                 color: #1a1a1a;
               }
               .signature-block .meta {
-                font-size: 11px;
+                font-size: 10.5px;
                 color: #666;
               }
+              
               @media print {
                 .protocol-doc { background: white; padding: 0; }
                 .protocol-actions { display: none; }
-                .protocol-page { box-shadow: none; padding: 18mm; max-width: 100%; }
+                .protocol-page { box-shadow: none; padding: 15mm; max-width: 100%; font-size: 10.5px; }
                 @page { size: A4; margin: 0; }
               }
               @media (max-width: 640px) {
-                .protocol-page { padding: 24px 20px; }
-                .doc-header { flex-direction: column; align-items: flex-start; gap: 14px; }
-                .doc-header .brand-logo { text-align: left; }
-                .doc-header h1 { font-size: 22px; }
-                .person-grid { grid-template-columns: 1fr; gap: 4px; }
-                .person-grid .pl { margin-top: 8px; }
+                .protocol-page { padding: 20px 16px; }
+                .doc-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+                .doc-header .brand-logo img { margin-left: 0; }
+                .doc-header h1 { font-size: 20px; }
+                .person-grid, .info-grid { grid-template-columns: 1fr; gap: 2px; }
+                .person-grid .pl, .info-grid .lbl { margin-top: 6px; }
                 .mangel-item { flex-direction: column; }
-                .mangel-item .mangel-photo { width: 100%; height: 220px; }
+                .mangel-item .mangel-photo { width: 100%; height: 180px; }
               }
             `}</style>
             
             <div className="protocol-actions">
-              <span style={{fontSize:20}}>✅</span>
-              <div style={{flex:1,fontSize:13.5,color:"#3a5230"}}>
+              <span style={{fontSize:18}}>✅</span>
+              <div style={{flex:1,fontSize:13,color:"#3a5230"}}>
                 <div style={{fontWeight:600,marginBottom:2}}>Übernahmeprotokoll erfolgreich eingereicht</div>
-                <div style={{fontSize:12,opacity:.85}}>
+                <div style={{fontSize:11.5,opacity:.85}}>
                   {pdfEmailStatus === "idle" && "Wir versenden gleich eine PDF-Kopie an deine E-Mail-Adresse."}
                   {pdfEmailStatus === "generating" && "📄 PDF wird generiert..."}
                   {pdfEmailStatus === "sending" && "✉️ PDF wird an deine E-Mail versendet..."}
@@ -1984,12 +1961,12 @@
                   <h1>Übernahmeprotokoll</h1>
                 </div>
                 <div className="brand-logo">
-                  <img src={DT_LOGO_DATA_URI} alt="D&T Homes" style={{width:"110px",display:"block",marginLeft:"auto"}}/>
+                  <img src={DT_LOGO_DATA_URI} alt="D&T Homes"/>
                 </div>
               </div>
               
               <div className="person-card">
-                <div className="ph">Mieter*in</div>
+                <div className="section-header">Mieter*in</div>
                 <div className="person-grid">
                   <span className="pl">Vorname:</span><span>{protocol.mieter_vorname || "-"}</span>
                   <span className="pl">Nachname:</span><span>{protocol.mieter_nachname || "-"}</span>
@@ -2002,8 +1979,8 @@
               
               {(protocol.apt_adresse || protocol.room_label || protocol.einzug_datum) && (
                 <div className="info-section">
-                  <h3>Mietobjekt</h3>
-                  <div className="row" style={{display:"grid",gridTemplateColumns:"auto 1fr",gap:"8px 20px"}}>
+                  <div className="section-header">Mietobjekt</div>
+                  <div className="info-grid">
                     {protocol.apt_adresse && <><span className="lbl">Wohnung:</span><span>{protocol.apt_adresse}{protocol.apt_plz || protocol.apt_ort ? ", " : ""}{protocol.apt_plz||""} {protocol.apt_ort||""}</span></>}
                     {protocol.room_label && <><span className="lbl">Zimmer:</span><span>{protocol.room_label}</span></>}
                     {protocol.einzug_datum && <><span className="lbl">Einzug am:</span><span>{formatDate(protocol.einzug_datum)}</span></>}
@@ -2014,15 +1991,17 @@
               
               {(schluesselNr || extraSchluessel) && (
                 <div className="info-section">
-                  <h3>Schlüsselübergabe</h3>
-                  <div className="row">
-                    {schluesselNr && <div><span className="lbl">Schlüsselnummer: </span><span>{schluesselNr}</span></div>}
-                    {extraSchluessel && <div><span className="lbl">Extra-Schlüssel:</span><div className="val" style={{marginTop:4}}>{extraSchluessel}</div></div>}
+                  <div className="section-header">Schlüsselübergabe</div>
+                  <div className="info-grid">
+                    {schluesselNr && <><span className="lbl">Schlüsselnummer:</span><span>{schluesselNr}</span></>}
+                    {extraSchluessel && <><span className="lbl">Extra-Schlüssel:</span><span style={{whiteSpace:"pre-wrap"}}>{extraSchluessel}</span></>}
                   </div>
                 </div>
               )}
               
-              <div style={{marginTop:24,marginBottom:14,fontSize:11,color:"#888",letterSpacing:".2em",fontWeight:700,textTransform:"uppercase"}}>Erfasste Mängel ({photos.length})</div>
+              <div className="maengel-header">
+                <div className="section-header">Erfasste Mängel ({photos.length})</div>
+              </div>
               
               {photos.length === 0 ? (
                 <div className="no-maengel">
@@ -2052,19 +2031,19 @@
               
               {mangelText.trim() && (
                 <div className="info-section">
-                  <h3>Weitere Bemerkungen</h3>
-                  <div style={{fontSize:13,lineHeight:1.6,whiteSpace:"pre-wrap"}}>{mangelText}</div>
+                  <div className="section-header">Weitere Bemerkungen</div>
+                  <div style={{fontSize:11.5,lineHeight:1.5,whiteSpace:"pre-wrap"}}>{mangelText}</div>
                 </div>
               )}
               
               <div className="schluss-erklaerung">
-                <h3>Erklärung der Vertragsparteien</h3>
+                <div className="section-header" style={{marginBottom:10}}>Erklärung der Vertragsparteien</div>
                 <ol className="erklaerung-list">
-                  <li>Die Mietpartei bestätigt den Erhalt der unter «Schlüsselübergabe» aufgeführten Schlüssel{schluesselNr ? <> (Schlüsselnummer: {schluesselNr}{extraSchluessel ? <>; zusätzlich: {extraSchluessel.replace(/\n/g, ", ")}</> : null})</> : null} und verpflichtet sich, diese sorgfältig zu verwahren, nicht an unberechtigte Dritte weiterzugeben und am Ende des Mietverhältnisses vollzählig zurückzugeben. Bei Verlust trägt die Mietpartei die Kosten für Ersatz und allfällige Schliessanlagen-Anpassungen.</li>
-                  <li>Die Mietpartei bestätigt, dass die Wohnung bzw. das Zimmer im obenstehend dokumentierten Zustand übernommen wurde. Sichtbare Mängel, die innerhalb der 14-tägigen Frist nach Einzug nicht in diesem Protokoll aufgeführt wurden, gelten als nicht vorhanden und können bei der Rückgabe nicht geltend gemacht werden.</li>
-                  <li>Verdeckte Mängel, die bei der Übernahme trotz sorgfältiger Prüfung nicht erkennbar waren (z.B. Schimmel hinter Möbeln, Defekte an Anlagen ausserhalb der Heizperiode), sind der Hauptmieterin (D&amp;T Partners GmbH) innert 10 Tagen ab Entdeckung schriftlich zu melden (Art. 256 OR).</li>
-                  <li>Die Mietpartei verpflichtet sich, das Mietobjekt sorgfältig zu nutzen und am Ende des Mietverhältnisses in vergleichbarem Zustand zurückzugeben (vorbehaltlich normaler Abnutzung gemäss Schweizer Mietrecht und Lebensdauertabelle MV/HEV).</li>
-                  <li>Die Mietpartei bestätigt mit der digitalen Unterschrift, dass die Angaben in diesem Protokoll richtig sind und dass sie eine Kopie dieses Dokuments erhalten hat.</li>
+                  <li>Die Mietpartei bestätigt den Erhalt der aufgeführten Schlüssel{schluesselNr ? ` (Nr. ${schluesselNr}${extraSchluessel ? `; zusätzlich: ${extraSchluessel.replace(/\n/g, ", ")}` : ""})` : ""} und verpflichtet sich, diese sorgfältig zu verwahren und am Ende des Mietverhältnisses vollzählig zurückzugeben.</li>
+                  <li>Die Mietpartei bestätigt, dass die Wohnung im obenstehend dokumentierten Zustand übernommen wurde. Sichtbare Mängel, die innerhalb der 14-tägigen Frist nach Einzug nicht aufgeführt wurden, gelten als nicht vorhanden.</li>
+                  <li>Verdeckte Mängel, die bei der Übernahme trotz sorgfältiger Prüfung nicht erkennbar waren (z.B. Schimmel hinter Möbeln), sind der Hauptmieterin innert 10 Tagen ab Entdeckung schriftlich zu melden (Art. 256 OR).</li>
+                  <li>Die Mietpartei verpflichtet sich, das Mietobjekt sorgfältig zu nutzen und in vergleichbarem Zustand zurückzugeben (vorbehaltlich normaler Abnutzung gemäss Schweizer Mietrecht).</li>
+                  <li>Die Mietpartei bestätigt mit der digitalen Unterschrift die Richtigkeit der Angaben und den Erhalt einer Kopie dieses Protokolls.</li>
                   <li>Bei Streitigkeiten gilt schweizerisches Recht; Gerichtsstand ist Chur.</li>
                 </ol>
               </div>
