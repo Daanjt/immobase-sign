@@ -1622,12 +1622,31 @@
           setPdfEmailStatus("generating");
           // Wait for DOM update
           await new Promise(r => setTimeout(r, 400));
-          const pageEl = document.querySelector(".protocol-page");
-          if (!pageEl) throw new Error("Protocol page nicht gefunden");
-          const canvas = await window.html2canvas(pageEl, {
-            scale: 2, useCORS: true, allowTaint: true, backgroundColor: "#ffffff",
-            windowWidth: 800, logging: false,
+          const srcEl = document.querySelector(".protocol-page");
+          if (!srcEl) throw new Error("Protocol page nicht gefunden");
+          // Render into a fixed-width offscreen iframe so the emailed PDF is
+          // identical regardless of the submitting device (deterministic layout).
+          const styleEl = document.querySelector(".protocol-doc style");
+          const css = styleEl ? styleEl.textContent : "";
+          const iframe = document.createElement("iframe");
+          iframe.style.cssText = "position:fixed;left:-10000px;top:0;width:820px;height:100px;border:0;";
+          document.body.appendChild(iframe);
+          const idoc = iframe.contentDocument;
+          idoc.open();
+          idoc.write('<!DOCTYPE html><html><head><meta charset="utf-8"><style>' + css +
+            ' body{margin:0;background:#fff;} .protocol-doc{background:#fff !important;padding:0 !important;}</style></head>' +
+            '<body><div class="protocol-doc">' + srcEl.outerHTML + '</div></body></html>');
+          idoc.close();
+          await new Promise(r => setTimeout(r, 50));
+          const iframeImgs = Array.from(idoc.images || []);
+          await Promise.all(iframeImgs.map(im => im.complete ? Promise.resolve() : new Promise(r => { im.onload = r; im.onerror = r; })));
+          await new Promise(r => setTimeout(r, 250));
+          const target = idoc.querySelector(".protocol-page");
+          const canvas = await window.html2canvas(target, {
+            scale: 2, useCORS: true, allowTaint: true, backgroundColor: "#ffffff", logging: false,
           });
+          try { document.body.removeChild(iframe); } catch (e) {}
+
           const { jsPDF } = window.jspdf;
           const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
           const pageW = pdf.internal.pageSize.getWidth();
@@ -1637,18 +1656,37 @@
           const contentH = pageH - marginTop - marginBottom;
           const pxPerMm = canvas.width / contentW;
           const slicePxMax = Math.floor(contentH * pxPerMm);
+          const W = canvas.width, Htot = canvas.height;
+          const sctx = canvas.getContext("2d");
+          const imgData = sctx.getImageData(0, 0, W, Htot).data;
+          const whiteRow = (y) => {
+            const base = y * W * 4;
+            for (let x = 0; x < W; x += 6) {
+              const i = base + x * 4;
+              if (imgData[i] < 244 || imgData[i+1] < 244 || imgData[i+2] < 244) return false;
+            }
+            return true;
+          };
           let renderedPx = 0, pageIdx = 0;
-          while (renderedPx < canvas.height) {
-            const slicePx = Math.min(slicePxMax, canvas.height - renderedPx);
+          while (renderedPx < Htot) {
+            const targetPx = Math.min(renderedPx + slicePxMax, Htot);
+            let cut = targetPx;
+            if (targetPx < Htot) {
+              // Cut at the nearest whitespace row above the target so we never
+              // slice through a line of text or a photo.
+              const minCut = renderedPx + Math.floor(slicePxMax * 0.55);
+              for (let y = targetPx; y > minCut; y--) { if (whiteRow(y)) { cut = y; break; } }
+            }
+            const slicePx = cut - renderedPx;
             const tmp = document.createElement("canvas");
-            tmp.width = canvas.width; tmp.height = slicePx;
+            tmp.width = W; tmp.height = slicePx;
             const ctx = tmp.getContext("2d");
-            ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, tmp.width, tmp.height);
-            ctx.drawImage(canvas, 0, renderedPx, canvas.width, slicePx, 0, 0, canvas.width, slicePx);
+            ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W, slicePx);
+            ctx.drawImage(canvas, 0, renderedPx, W, slicePx, 0, 0, W, slicePx);
             const sliceMm = slicePx / pxPerMm;
             if (pageIdx > 0) pdf.addPage();
-            pdf.addImage(tmp.toDataURL("image/jpeg", 0.9), "JPEG", marginX, marginTop, contentW, sliceMm);
-            renderedPx += slicePx;
+            pdf.addImage(tmp.toDataURL("image/jpeg", 0.92), "JPEG", marginX, marginTop, contentW, sliceMm);
+            renderedPx = cut;
             pageIdx++;
           }
           const pdfBase64 = pdf.output("datauristring").split(",")[1];
@@ -1899,7 +1937,7 @@
                 .protocol-page { box-shadow: none; padding: 0; max-width: 100%; border-radius: 0; }
                 @page { size: A4; margin: 16mm 16mm 18mm; }
               }
-              @media (max-width: 640px) {
+              @media screen and (max-width: 640px) {
                 .protocol-page { padding: 22px 18px; }
                 .doc-header { flex-direction: column; align-items: flex-start; gap: 12px; }
                 .doc-header .brand-logo img { margin-left: 0; }
