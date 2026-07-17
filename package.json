@@ -5,7 +5,7 @@
   "description": "D&T Homes - Sign page + PDF generation API",
   "type": "module",
   "dependencies": {
-    "@sparticuz/chromium": "^131.0.1",
-    "puppeteer-core": "^23.10.4"
+    "@sparticuz/chromium": "131.0.1",
+    "puppeteer-core": "23.11.1"
   }
 }

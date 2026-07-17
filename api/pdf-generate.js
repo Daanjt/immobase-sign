@@ -2,6 +2,9 @@
 // Heavy chromium/puppeteer code is in async helper, NOT in main handler.
 // Main handler is SYNC, returns immediately for OPTIONS.
 
+// Give the serverless function enough time for Chromium cold start + render.
+export const config = { maxDuration: 60 };
+
 export default function handler(req, res) {
   // CORS headers FIRST, every response, no logic before this
   res.setHeader('Access-Control-Allow-Origin', '*');
