@@ -1,9 +1,7 @@
 // PDF generation — same skeleton as cors-test.js (which works)
 // Heavy chromium/puppeteer code is in async helper, NOT in main handler.
 // Main handler is SYNC, returns immediately for OPTIONS.
-
-// Give the serverless function enough time for Chromium cold start + render.
-export const config = { maxDuration: 60 };
+// Memory + maxDuration are configured in vercel.json (more memory = more CPU = faster Chromium).
 
 export default function handler(req, res) {
   // CORS headers FIRST, every response, no logic before this
@@ -62,6 +60,9 @@ async function generatePdf(req, res) {
   const puppeteerMod = await import('puppeteer-core');
   const chromium = chromiumMod.default || chromiumMod;
   const puppeteer = puppeteerMod.default || puppeteerMod;
+
+  // Skip the WebGL/graphics stack — not needed for PDF, speeds up cold start.
+  try { chromium.setGraphicsMode = false; } catch (e) {}
 
   let browser;
   try {

@@ -1,17 +1,41 @@
 {
   "rewrites": [
-    { "source": "/:token([a-f0-9]{32})", "destination": "/" },
-    { "source": "/uebernahme/:token([a-f0-9]{32})", "destination": "/" }
+    {
+      "source": "/:token([a-f0-9]{32})",
+      "destination": "/"
+    },
+    {
+      "source": "/uebernahme/:token([a-f0-9]{32})",
+      "destination": "/"
+    }
   ],
   "headers": [
     {
       "source": "/api/(.*)",
       "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "POST, GET, OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization, X-Requested-With" },
-        { "key": "Access-Control-Max-Age", "value": "86400" }
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "POST, GET, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization, X-Requested-With"
+        },
+        {
+          "key": "Access-Control-Max-Age",
+          "value": "86400"
+        }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/pdf-generate.js": {
+      "memory": 3009,
+      "maxDuration": 60
+    }
+  }
 }
