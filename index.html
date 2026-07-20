@@ -766,7 +766,8 @@
               const scaledViewport = page.getViewport({ scale });
               
               const canvas = document.createElement("canvas");
-              const dpr = window.devicePixelRatio || 1;
+              // Cap at 2x: retina-sharp but far less render work than 3x on mobile.
+              const dpr = Math.min(window.devicePixelRatio || 1, 2);
               canvas.width = scaledViewport.width * dpr;
               canvas.height = scaledViewport.height * dpr;
               canvas.style.width = scaledViewport.width + "px";
