@@ -645,8 +645,6 @@
     // CONTRACT DETAILS
     // ════════════════════════════════════════════════════════════════════════
     function ContractDetails({ contract }) {
-      const isVerlaengerung = contract.contract_type === "verlaengerung" || contract.contract_type === "nachtrag";
-      if (isVerlaengerung) return null;
       const data = contract.contract_data || {};
       const v = data.vertrag || {};
       const apt = v.apt || data.apt || {};
