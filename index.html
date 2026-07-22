@@ -620,17 +620,20 @@
     // SUCCESS SCREEN
     // ════════════════════════════════════════════════════════════════════════
     function SuccessScreen({ contract }) {
+      const isVerlaengerung = contract?.contract_type === "verlaengerung" || contract?.contract_type === "nachtrag";
       return (
         <div className="container">
           <Header />
           <div className="status-screen">
             <div className="success-checkmark"></div>
-            <div className="status-title">Vertrag unterzeichnet</div>
+            <div className="status-title">{isVerlaengerung ? "Verlängerung unterzeichnet" : "Vertrag unterzeichnet"}</div>
             <div className="status-message">
-              Vielen Dank, {contract?.mieter_vorname}. Dein Vertrag wurde erfolgreich unterzeichnet.
+              Vielen Dank, {contract?.mieter_vorname}. {isVerlaengerung ? "Die Verlängerung deines Mietvertrags wurde erfolgreich unterzeichnet." : "Dein Vertrag wurde erfolgreich unterzeichnet."}
               <br /><br />
               Du erhältst in Kürze eine Bestätigung per E-Mail mit dem fertigen PDF.
-              D&amp;T Homes wird sich für die nächsten Schritte (Schlüsselübergabe, Kaution, etc.) bei dir melden.
+              {isVerlaengerung
+                ? " Du musst nichts weiter tun. Dein Mietverhältnis läuft zu den bisherigen Bedingungen unverändert weiter bis zum vereinbarten Enddatum."
+                : " D\u0026T Homes wird sich für die nächsten Schritte (Schlüsselübergabe, Kaution, etc.) bei dir melden."}
             </div>
             <div className="audit-box" style={{ maxWidth: 380, textAlign: "left" }}>
               <strong>Unterzeichnet:</strong> {formatDateTime(new Date())}<br />
