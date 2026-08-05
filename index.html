@@ -4,7 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="robots" content="noindex, nofollow">
-  <title>Vertrag unterschreiben - D&T Homes</title>
+  <title>D&T Homes Mieterportal</title>
+  <meta property="og:title" content="D&T Homes Mieterportal">
+  <meta property="og:description" content="Sicherer Zugang zu deinen Unterlagen bei D&T Homes.">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
@@ -446,6 +450,14 @@
     const PORTAL_TOKEN = (() => {
       const p = window.location.pathname.replace(/^\//, "").replace(/\/$/, "");
       return p.startsWith("uebernahme/") ? p.substring("uebernahme/".length) : p;
+    })();
+    // Seitentitel passend zur Ansicht setzen (Tab-Titel und Link-Vorschau in
+    // WhatsApp etc.). Uebernahme-Links sollen nicht "Vertrag unterschreiben" zeigen.
+    (() => {
+      const istUebernahme = window.location.pathname.replace(/^\//, "").startsWith("uebernahme/");
+      document.title = istUebernahme
+        ? "Übernahmeprotokoll - D&T Homes"
+        : "Vertrag unterschreiben - D&T Homes";
     })();
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { "x-portal-token": PORTAL_TOKEN } }
