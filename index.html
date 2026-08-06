@@ -650,11 +650,9 @@
             <div className="status-title">{isVerlaengerung ? "Verlängerung unterzeichnet" : "Vertrag unterzeichnet"}</div>
             <div className="status-message">
               Vielen Dank, {contract?.mieter_vorname}. {isVerlaengerung ? "Die Verlängerung deines Mietvertrags wurde erfolgreich unterzeichnet." : "Dein Vertrag wurde erfolgreich unterzeichnet."}
-              <br /><br />
-              Du erhältst in Kürze eine Bestätigung per E-Mail mit dem fertigen PDF.
               {isVerlaengerung
-                ? " Dein Mietverhältnis läuft zu den bisherigen Bedingungen unverändert weiter bis zum vereinbarten Enddatum."
-                : " D\u0026T Homes wird sich für die nächsten Schritte bei dir melden."}
+                ? <><br /><br />Dein Mietverhältnis läuft zu den bisherigen Bedingungen unverändert weiter bis zum vereinbarten Enddatum.</>
+                : null}
             </div>
             <div className="audit-box" style={{ maxWidth: 380, textAlign: "left" }}>
               <strong>Unterzeichnet:</strong> {formatDateTime(new Date())}<br />
