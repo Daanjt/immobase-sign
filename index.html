@@ -474,7 +474,10 @@
     
     function formatDate(d) {
       if (!d) return "-";
-      const dt = new Date(d);
+      const s = String(d).trim();
+      const m = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/); // TT.MM.JJJJ direkt, nicht ueber new Date (sonst US-Interpretation)
+      if (m) return `${m[1].padStart(2,"0")}.${m[2].padStart(2,"0")}.${m[3]}`;
+      const dt = new Date(s);
       if (isNaN(dt)) return "-";
       return dt.toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "numeric" });
     }
