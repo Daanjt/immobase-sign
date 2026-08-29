@@ -702,7 +702,7 @@
           <Sec title="Mietobjekt" />
           <Row label="Wohnung" value={`${apt.id || "-"} · ${aptAdresse}`} bold />
           {v.zimmerId && <Row label="Zimmer" value={v.zimmerId} bold />}
-          <Row label="Möbliert" value={v.moebliert ? "Ja (CHF 990 einmalig)" : "Unmöbliert"} bold />
+          <Row label="Möbliert" value={v.moebliert ? `Ja (CHF ${v.moeblierungPauschale || (v.moeblierungModus==="monatlich"?150:990)}${v.moeblierungModus==="monatlich"?" / Monat":" einmalig"})` : "Unmöbliert"} bold />
           {v.einzug && <Row label="Einzug" value={formatDate(v.einzug)} bold />}
           {v.auszug && <Row label="Auszug" value={formatDate(v.auszug)} bold />}
           
