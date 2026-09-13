@@ -1862,6 +1862,7 @@
       }
       
       const [pdfEmailStatus, setPdfEmailStatus] = React.useState("idle");
+      const [pdfDownloadUrl, setPdfDownloadUrl] = React.useState(null);
       // idle | generating | sending | sent | error
       
       async function generateAndSendPdf() {
@@ -1936,7 +1937,9 @@
             renderedPx = cut;
             pageIdx++;
           }
-          const pdfBase64 = pdf.output("datauristring").split(",")[1];
+          const _dataUri = pdf.output("datauristring");
+          const pdfBase64 = _dataUri.split(",")[1];
+          try { setPdfDownloadUrl(_dataUri); } catch(e){}
           setPdfEmailStatus("sending");
           const { error: fnError } = await supabase.functions.invoke("send-handover-pdf", {
             body: { token: token, pdfBase64: pdfBase64 }
@@ -2196,18 +2199,23 @@
             `}</style>
 
             <div className="protocol-actions">
-              <span style={{fontSize:18}}>✅</span>
+              <span style={{fontSize:22}}>✅</span>
               <div style={{flex:1,fontSize:13,color:"#3a5230"}}>
-                <div style={{fontWeight:600,marginBottom:2}}>Übernahmeprotokoll erfolgreich eingereicht</div>
-                <div style={{fontSize:11.5,opacity:.85}}>
-                  {pdfEmailStatus === "idle" && "Wir versenden gleich eine PDF-Kopie an deine E-Mail-Adresse."}
-                  {pdfEmailStatus === "generating" && "📄 PDF wird generiert..."}
-                  {pdfEmailStatus === "sending" && "✉️ PDF wird an deine E-Mail versendet..."}
-                  {pdfEmailStatus === "sent" && "✉️ PDF wurde an deine E-Mail versendet."}
-                  {pdfEmailStatus === "error" && "⚠️ Automatischer E-Mail-Versand fehlgeschlagen. Bitte speichere lokal:"}
+                <div style={{fontWeight:700,marginBottom:3,fontSize:14.5}}>Vielen Dank{protocol?.mieter_vorname?`, ${protocol.mieter_vorname}`:""}! Die Übernahme ist abgeschlossen.</div>
+                <div style={{fontSize:12,opacity:.9,lineHeight:1.5}}>
+                  Deine Angaben und Mängel wurden erfolgreich eingereicht. Du erhältst das Protokoll als PDF per E-Mail.
+                  {pdfEmailStatus === "sending" && " (E-Mail wird gerade versendet ...)"}
+                  {pdfEmailStatus === "sent" && " Die E-Mail wurde soeben versendet."}
+                  {pdfEmailStatus === "error" && " Der automatische E-Mail-Versand hat nicht geklappt – bitte lade das PDF hier direkt herunter."}
+                  {" "}Du kannst es auch gleich hier herunterladen.
                 </div>
               </div>
-              <button className="btn" onClick={()=>window.print()}>🖨 Als PDF speichern</button>
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                {pdfDownloadUrl
+                  ? <a className="btn" href={pdfDownloadUrl} download="Uebernahmeprotokoll.pdf" style={{textDecoration:"none",textAlign:"center"}}>⬇ PDF herunterladen</a>
+                  : <button className="btn" disabled style={{opacity:.6}}>📄 PDF wird erstellt ...</button>}
+                <button className="btn" onClick={()=>window.print()} style={{background:"transparent",color:"#3a5230",border:"1px solid #c5d5b0"}}>🖨 Drucken</button>
+              </div>
             </div>
 
             <div className="protocol-page">
