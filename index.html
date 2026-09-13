@@ -1089,8 +1089,8 @@
       ["Der/die Mieter*in bestätigt, ein Doppel dieses Formulars erhalten zu haben.","The tenant confirms having received a copy of this form."],
       ["Datum:","Date:"],
       ["Unterschrift:","Signature:"],
-      ["Mietzins","Rent"],
-      ["Nebenkosten","Additional costs"],
+      [">Mietzins</th>",">Rent</th>"],
+      [">Nebenkosten</td>",">Additional costs</td>"],
       ["Auszug aus den massgeblichen Bestimmungen des Schweizerischen Obligationenrechts","Extract from the relevant provisions of the Swiss Code of Obligations"],
       ["Achter Titel: Die Miete · Zweiter Abschnitt: Schutz vor missbräuchlichen Mietzinsen und anderen missbräuchlichen Forderungen des Vermieters bei der Miete von Wohn- und Geschäftsräumen","Title Eight: The lease · Second section: Protection against abusive rents and other abusive claims by the landlord in the lease of residential and commercial premises"],
       ["Art. 269 (A. Missbräuchliche Mietzinse. I. Regel)","Art. 269 (A. Abusive rents. I. Rule)"],
@@ -1180,12 +1180,16 @@
       ["Gestützt auf Art. 270 Abs. 2 des Obligationenrechts (OR) und § 229 b des Einführungsgesetzes zum Schweizerischen Zivilgesetzbuch (EG ZGB) geben wir Ihnen im Zusammenhang mit dem Abschluss des neuen Mietvertrags folgenden früheren Mietzins und Anfangsmietzins bekannt:","Pursuant to Art. 270 para. 2 of the Code of Obligations (CO) and § 229b of the Introductory Act to the Swiss Civil Code (EG ZGB), in connection with the conclusion of the new rental agreement we hereby notify you of the following previous rent and initial rent:"],
       ["Vertragsentwurf bereit · Wähle","Contract draft ready · Choose"],
       [" einen "," one "],[" einer "," one "],[" zwei "," two "],[" drei "," three "],[" vier "," four "],[" fünf "," five "],[" sechs "," six "],[" sieben "," seven "],[" acht "," eight "],[" neun "," nine "],[" zehn "," ten "],[" elf "," eleven "],[" zwölf "," twelve "],
+      ["4. Kaution und Servicegebühr","4. Deposit and service fee"],
+      ["4. Kaution","4. Deposit"],
+      ["Anfangsmietzins - ","Initial Rent - "],
       ["Nein","No"]
     ];
     function translateGermanHtml(html){
       if(!html) return html;
       let out = html;
-      for (const [de,en] of DE_EN_MAP) { if(de && out.indexOf(de)!==-1) out = out.split(de).join(en); }
+      const _pairs = [...DE_EN_MAP].sort((a,b)=>b[0].length-a[0].length);
+      for (const [de,en] of _pairs) { if(de && out.indexOf(de)!==-1) out = out.split(de).join(en); }
       out = out.replace(/lang="de"/g,'lang="en"');
       return out;
     }
