@@ -693,7 +693,6 @@
       const kBetrag=v.kautionBetrag||((+v.bruttomiete||0)+(+v.strom||25))*kMon;
       const kf=v.kuendigungsfrist||3;
       const kfW={1:"one",2:"two",3:"three",4:"four",5:"five",6:"six"}[kf]||String(kf);
-      // Mietdauer
       function parseD(s){ if(!s) return null; const t=String(s).trim(); if(!t) return null; if(/^\d{4}-\d{2}-\d{2}/.test(t)){const d=new Date(t);return isNaN(d)?null:d;} const m=t.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/); if(m){const d=new Date(+m[3],+m[2]-1,+m[1]);return isNaN(d)?null:d;} const d=new Date(t); return isNaN(d)?null:d; }
       const beginn=parseD(v.einzug), endeDate=parseD(v.mietende||apt.mietende);
       let dauerText;
@@ -711,19 +710,53 @@
       }
       const svc=kMon<3?(kMon===2?"50":"100"):null;
       return `<style>
-      .enc{font-family:Georgia,'Times New Roman',serif;color:#1a1814;font-size:11.5pt;line-height:1.55}
-      .enc h1{font-size:17pt;margin:0 0 4px} .enc h2{font-size:12.5pt;margin:18px 0 6px;border-bottom:1px solid #d8cfbe;padding-bottom:3px}
-      .enc p{margin:6px 0} .enc .sub{color:#6a6456;font-size:10pt}
+      .enc{font-family:Georgia,'Times New Roman',serif;color:#1a1814;font-size:11.5pt;line-height:1.55;max-width:720px;margin:0 auto}
+      .enc .doc-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1a1814;padding-bottom:10px;margin-bottom:16px}
+      .enc .doc-label{font-size:9pt;letter-spacing:.25em;text-transform:uppercase;color:#8a8174}
+      .enc .doc-title{font-size:20pt;font-weight:700}
+      .enc .brand{font-family:Georgia,serif;font-size:15pt;font-weight:700;color:#3a352d}
+      .enc .person-card{background:#f6f2ea;border:1px solid #e1d8c5;border-radius:8px;padding:12px 14px;margin-bottom:16px}
+      .enc .ph{font-size:9pt;letter-spacing:.2em;text-transform:uppercase;color:#8a8174;margin-bottom:8px}
+      .enc .person-grid{display:grid;grid-template-columns:130px 1fr;row-gap:4px;font-size:10.5pt}
+      .enc .pl{color:#8a8174} .enc .pv{font-weight:600}
+      .enc h1{font-size:15pt;margin:0 0 4px} .enc h2{font-size:12.5pt;margin:18px 0 6px;border-bottom:1px solid #d8cfbe;padding-bottom:3px}
+      .enc p{margin:6px 0} .enc .welcome{font-weight:600}
       .enc table{width:100%;border-collapse:collapse;margin:8px 0} .enc td{padding:5px 8px;border-bottom:1px solid #eee} .enc td.amt{text-align:right}
       .enc tr.total td{font-weight:700;border-top:2px solid #333}
       .enc .clause{margin:5px 0} .enc .cn{font-weight:700;margin-right:5px}
       .enc ul{margin:6px 0;padding-left:20px}
       .enc .box{background:#f6f2ea;border:1px solid #e1d8c5;border-radius:6px;padding:8px 10px;margin:8px 0}
+      .enc .signatures{display:flex;gap:24px;margin-top:28px;flex-wrap:wrap}
+      .enc .sig-block{flex:1;min-width:220px}
+      .enc .sig-block .role{font-size:9pt;letter-spacing:.15em;text-transform:uppercase;color:#8a8174}
+      .enc .sig-block .signame{font-weight:700;margin:2px 0 16px}
+      .enc .sig-row{display:flex;align-items:flex-end;gap:8px;margin-top:14px}
+      .enc .sig-row .lbl{font-size:9.5pt;color:#8a8174;white-space:nowrap}
+      .enc .sig-row .line{flex:1;border-bottom:1px solid #1a1814;height:14px}
       </style>
       <div class="enc">
-      <h1>Sublease Agreement</h1>
-      <p class="sub">between <strong>D&amp;T Partners GmbH</strong> (main tenant) and ${fullName} (subtenant)</p>
-      <p>Hi ${fullName}, welcome to D&amp;T Homes! Below you find all details and rules of the tenancy. This sublease agreement is concluded between D&amp;T Partners GmbH as main tenant and you as subtenant. Please read it carefully.</p>
+      <div class="doc-header">
+        <div><div class="doc-label">Contract</div><div class="doc-title">Sublease Agreement</div></div>
+        <div class="brand">D&amp;T Homes</div>
+      </div>
+
+      <div class="person-card">
+        <div class="ph">Subtenant</div>
+        <div class="person-grid">
+          <span class="pl">First name:</span><span class="pv">${b.vorname||"-"}</span>
+          <span class="pl">Last name:</span><span class="pv">${b.nachname||"-"}</span>
+          <span class="pl">Street:</span><span class="pv">${b.adresse||"-"}</span>
+          <span class="pl">Zip / City:</span><span class="pv">${(b.plz||"")+" "+(b.ort||"")||"-"}</span>
+          <span class="pl">Email:</span><span class="pv">${b.email||"-"}</span>
+          <span class="pl">Phone:</span><span class="pv">${b.phone||"-"}</span>
+          <span class="pl">Date of birth:</span><span class="pv">${b.geburt?dateLongEn(b.geburt):"-"}</span>
+          <span class="pl">Nationality:</span><span class="pv">${b.nat||"-"}</span>
+        </div>
+      </div>
+
+      <p class="welcome">Hello ${fullName},</p>
+      <p class="welcome">Welcome to D&amp;T Homes!</p>
+      <p>Below you find all details and rules of the tenancy. This sublease agreement is concluded between <strong>D&amp;T Partners GmbH</strong> as main tenant and you as subtenant. Please take a moment to read it carefully and sign it if you agree with the terms.</p>
 
       <h2>1. Rental object</h2>
       <p>The property is located at <strong>${adr}</strong>.</p>
@@ -807,7 +840,23 @@
       <p class="clause"><span class="cn">15.5</span>In case of payment default, the main tenant may charge reminder fees of CHF 20 per reminder and default interest of 5% p.a.</p>
       <p class="clause"><span class="cn">15.6</span>The main tenant may enter the room after reasonable notice for inspection, maintenance, viewings with interested parties or in case of breaches.</p>
 
-      <p style="margin-top:16px">We wish you a great time in your new home. Your D&amp;T Homes Team</p>
+      <p style="margin-top:16px">Please sign this sublease agreement digitally and send us a copy. Digital signatures are legally binding. By signing, the subtenant confirms having read, understood and accepted all contract provisions.</p>
+      <p class="welcome">We wish you a great time in your new home. Your D&amp;T Homes Team</p>
+
+      <div class="signatures">
+        <div class="sig-block">
+          <div class="role">Subtenant</div>
+          <div class="signame">${fullName}</div>
+          <div class="sig-row"><span class="lbl">Place, date:</span><span class="line"></span></div>
+          <div class="sig-row"><span class="lbl">Signature:</span><span class="line"></span></div>
+        </div>
+        <div class="sig-block">
+          <div class="role">Main tenant</div>
+          <div class="signame">D&amp;T Partners GmbH</div>
+          <div class="sig-row"><span class="lbl">Place, date:</span><span class="line"></span></div>
+          <div class="sig-row"><span class="lbl">Signature:</span><span class="line"></span></div>
+        </div>
+      </div>
       </div>`;
     }
 
@@ -1268,9 +1317,9 @@
             }></div>
           </div>
           
-          <div className="h1">Bitte unterzeichne deinen Vertrag</div>
+          <div className="h1">{lang==="en"?"Your contract — English translation":"Bitte unterzeichne deinen Vertrag"}</div>
           <div style={{ fontSize: 13, color: "#8a8174", marginBottom: 20 }}>
-            {pdfs.length > 1 ? "Lies beide Dokumente sorgfältig durch und unterschreibe unten." : "Lies den Vertrag sorgfältig durch und unterschreibe unten."}
+            {lang==="en" ? "This is a translation for your understanding. To sign, switch to Deutsch." : (pdfs.length > 1 ? "Lies beide Dokumente sorgfältig durch und unterschreibe unten." : "Lies den Vertrag sorgfältig durch und unterschreibe unten.")}
           </div>
           
           <div style={{display:"flex",gap:6,marginBottom:14}}>
@@ -1299,12 +1348,12 @@
               {_v.kautionMonate!=null && <R l="Deposit" v={`${_v.kautionMonate} month${_v.kautionMonate>1?"s":""}${_v.kautionBetrag!=null?" · "+chf(_v.kautionBetrag):""}`} />}
               <div style={{fontSize:9.5,color:"#5a5448",textTransform:"uppercase",letterSpacing:".22em",fontWeight:600,marginTop:16,marginBottom:8,paddingTop:10,borderTop:"1px solid #e1d8c5"}}>Full contract (English translation)</div>
               <div style={{background:"#fff",border:"1px solid #e1d8c5",borderRadius:8,padding:"16px 18px"}} dangerouslySetInnerHTML={{__html: buildContractEn((contract.contract_data&&contract.contract_data.bewerber)||{}, _v)}} />
-              <div style={{fontSize:11,color:"#8a8174",marginTop:12}}>This English version is a translation for your understanding only. Please review the German contract below and sign there.</div>
+              <div style={{fontSize:11,color:"#8a8174",marginTop:12}}>This English version is a translation for your understanding only and cannot be signed. To sign, switch to Deutsch at the top of the page.</div>
             </div>); })()}
-          <ContractDetails contract={contract} />
-          <PdfsViewer pdfs={pdfs} />
+          {lang==="de" && <ContractDetails contract={contract} />}
+          {lang==="de" && <PdfsViewer pdfs={pdfs} />}
           
-          <div className="card">
+          <div className="card" style={{display: lang==="de"?"block":"none"}}>
             <div className="card-title">✍️ Vertrag unterzeichnen</div>
             
             {/* Mode Toggle */}
