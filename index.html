@@ -1182,6 +1182,20 @@
       [" einen "," one "],[" einer "," one "],[" zwei "," two "],[" drei "," three "],[" vier "," four "],[" fünf "," five "],[" sechs "," six "],[" sieben "," seven "],[" acht "," eight "],[" neun "," nine "],[" zehn "," ten "],[" elf "," eleven "],[" zwölf "," twelve "],
       ["4. Kaution und Servicegebühr","4. Deposit and service fee"],
       ["4. Kaution","4. Deposit"],
+      ["Die Möblierung des Zimmers wird dazu gemietet: Ja","Furniture rented in addition: Yes"],
+      ["Die Möblierung des Zimmers wird dazu gemietet: Nein","Furniture rented in addition: No"],
+      ["Zimmer Nr. ","Room no. "],
+      [", Zimmer ",", Room "],
+      [">Schweiz<",">Switzerland<"],[">Deutschland<",">Germany<"],[">Italien<",">Italy<"],[">Österreich<",">Austria<"],
+      [">Frankreich<",">France<"],[">Spanien<",">Spain<"],[">Portugal<",">Portugal<"],[">Niederlande<",">Netherlands<"],
+      [">Belgien<",">Belgium<"],[">Luxemburg<",">Luxembourg<"],[">Grossbritannien<",">United Kingdom<"],[">Vereinigtes Königreich<",">United Kingdom<"],
+      [">Irland<",">Ireland<"],[">Kanada<",">Canada<"],[">Polen<",">Poland<"],[">Tschechien<",">Czechia<"],[">Slowakei<",">Slovakia<"],
+      [">Ungarn<",">Hungary<"],[">Rumänien<",">Romania<"],[">Bulgarien<",">Bulgaria<"],[">Griechenland<",">Greece<"],[">Kroatien<",">Croatia<"],
+      [">Serbien<",">Serbia<"],[">Kosovo<",">Kosovo<"],[">Bosnien und Herzegowina<",">Bosnia and Herzegovina<"],[">Nordmazedonien<",">North Macedonia<"],
+      [">Albanien<",">Albania<"],[">Montenegro<",">Montenegro<"],[">Slowenien<",">Slovenia<"],[">Türkei<",">Türkiye<"],[">Russland<",">Russia<"],
+      [">Ukraine<",">Ukraine<"],[">Schweden<",">Sweden<"],[">Norwegen<",">Norway<"],[">Dänemark<",">Denmark<"],[">Finnland<",">Finland<"],
+      [">Brasilien<",">Brazil<"],[">Indien<",">India<"],[">China<",">China<"],[">Japan<",">Japan<"],[">Australien<",">Australia<"],
+      [">Südafrika<",">South Africa<"],[">Mexiko<",">Mexico<"],[">Argentinien<",">Argentina<"],[">Litauen<",">Lithuania<"],[">Lettland<",">Latvia<"],[">Estland<",">Estonia<"],[">Spanien <",">Spain <"],
       ["Anfangsmietzins - ","Initial Rent - "],
       ["Nein","No"]
     ];
@@ -1194,19 +1208,20 @@
       return out;
     }
 
-    function PdfsViewer({ pdfs }) {
+    function PdfsViewer({ pdfs, lang }) {
       if (!pdfs || pdfs.length === 0) return null;
       
       return (
         <>
           {pdfs.map((pdf, idx) => (
-            <PdfRenderer key={pdf.path || idx} pdf={pdf} index={idx} total={pdfs.length} />
+            <PdfRenderer key={pdf.path || idx} pdf={pdf} index={idx} total={pdfs.length} lang={lang} />
           ))}
         </>
       );
     }
     
-    function PdfRenderer({ pdf, index, total }) {
+    function PdfRenderer({ pdf, index, total, lang }) {
+      const L=(de,en)=>lang==="en"?en:de;
       const containerRef = useRef(null);
       const [loading, setLoading] = useState(true);
       const [error, setError] = useState(null);
@@ -1297,15 +1312,15 @@
           </div>
           {loading && (
             <div style={{ padding: "40px 20px", textAlign: "center", color: "#8a8174", fontSize: 13 }}>
-              <div style={{ marginBottom: 10 }}>📥 Wird geladen…</div>
-              <div style={{ fontSize: 11 }}>Bei langsamer Verbindung kann das etwas dauern.</div>
+              <div style={{ marginBottom: 10 }}>{L("📥 Wird geladen…","📥 Loading…")}</div>
+              <div style={{ fontSize: 11 }}>{L("Bei langsamer Verbindung kann das etwas dauern.","This may take a moment on a slow connection.")}</div>
             </div>
           )}
           {error && (
             <div style={{ padding: "20px", textAlign: "center", color: "#a03333", fontSize: 13, background: "#fdecec", borderRadius: 8 }}>
-              <div style={{ fontWeight: 600, marginBottom: 6 }}>⚠️ PDF konnte nicht geladen werden</div>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>{L("⚠️ PDF konnte nicht geladen werden","⚠️ PDF could not be loaded")}</div>
               <div style={{ fontSize: 11, color: "#5a1a1a", marginBottom: 10 }}>{error}</div>
-              <a href={pdf.url} target="_blank" rel="noopener noreferrer" style={{ color: "#1a1814", textDecoration: "underline", fontSize: 12 }}>PDF direkt öffnen</a>
+              <a href={pdf.url} target="_blank" rel="noopener noreferrer" style={{ color: "#1a1814", textDecoration: "underline", fontSize: 12 }}>{L("PDF direkt öffnen","Open PDF directly")}</a>
             </div>
           )}
           <div 
@@ -1321,9 +1336,9 @@
             }}
           ></div>
           <div className="pdf-hint">
-            Scroll durch das PDF um alle Seiten zu sehen. Du kannst es auch{" "}
+            {L("Scroll durch das PDF um alle Seiten zu sehen. Du kannst es auch","Scroll through the PDF to see all pages. You can also open it")}{" "}
             <a href={pdf.url} target="_blank" rel="noopener noreferrer" style={{ color: "#5a5448" }}>
-              hier in einem neuen Tab öffnen
+              {L("hier in einem neuen Tab öffnen","in a new tab here")}
             </a>.
           </div>
         </div>
@@ -1645,13 +1660,13 @@
                 <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
                   {enPdfs.map((d,i)=>(<a key={i} href={d.url} download={d.name.replace(/[^A-Za-z0-9]+/g,"_")+".pdf"} style={{fontSize:11,padding:"4px 10px",background:"#f0ebe1",color:"#4a4439",border:"1px solid #d8d0c0",borderRadius:4,textDecoration:"none"}}>⬇ {d.name}</a>))}
                 </div>
-                <PdfsViewer pdfs={enPdfs} />
+                <PdfsViewer pdfs={enPdfs} lang="en" />
               </>)}
               {enPdfs && enPdfs.length===0 && <div style={{fontSize:12,color:"#9b4a3e"}}>Die englische PDF-Vorschau konnte nicht erzeugt werden. Bitte nutze die deutsche Fassung oben über den Umschalter.</div>}
               <div style={{fontSize:11,color:"#8a8174",marginTop:8}}>This English version is a translation for your understanding. You can sign directly below; your signature applies to the legally binding German version.</div>
             </div>); })()}
           {lang==="de" && <ContractDetails contract={contract} />}
-          {lang==="de" && <PdfsViewer pdfs={pdfs} />}
+          {lang==="de" && <PdfsViewer pdfs={pdfs} lang="de" />}
           
           <div className="card">
             <div className="card-title">{t("✍️ Vertrag unterzeichnen","✍️ Sign the contract")}</div>
