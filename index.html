@@ -2519,7 +2519,7 @@
               
               <div style={{display:"flex",gap:8,marginTop:20}}>
                 <button className="secondary" onClick={()=>setStep(1)} style={{flex:1}}>← Zurück</button>
-                <button className="primary" onClick={()=>setStep(3)} style={{flex:2}}>Weiter →</button>
+                <button className="primary" onClick={()=>setStep(3)} disabled={uploadingRaum!==null || !!(newMangel && newMangel.uploading)} style={{flex:2}}>{(uploadingRaum!==null || (newMangel && newMangel.uploading)) ? "Foto lädt …" : "Weiter →"}</button>
               </div>
             </div>
           </div>
@@ -2563,7 +2563,7 @@
             
             <div style={{display:"flex",gap:8}}>
               <button className="secondary" onClick={()=>setStep(2)} disabled={submitting} style={{flex:1}}>← Zurück</button>
-              <button className="primary" onClick={submitProtocol} disabled={submitting || !signatureData} style={{flex:2}}>
+              <button className="primary" onClick={submitProtocol} disabled={submitting || !signatureData || uploadingRaum!==null || !!(newMangel && newMangel.uploading)} style={{flex:2}}>
                 {submitting ? "Sende..." : "✓ Protokoll absenden"}
               </button>
             </div>
