@@ -1197,6 +1197,17 @@
       [">Brasilien<",">Brazil<"],[">Indien<",">India<"],[">China<",">China<"],[">Japan<",">Japan<"],[">Australien<",">Australia<"],
       [">Südafrika<",">South Africa<"],[">Mexiko<",">Mexico<"],[">Argentinien<",">Argentina<"],[">Litauen<",">Lithuania<"],[">Lettland<",">Latvia<"],[">Estland<",">Estonia<"],[">Spanien <",">Spain <"],
       ["Anfangsmietzins - ","Initial Rent - "],
+      [" sowie Verzugszinsen von "," as well as default interest of "],
+      [" erheben.</p>",".</p>"],
+      ["</strong> von <strong>CHF","</strong> of <strong>CHF"],
+      [" / Monat</strong>"," / month</strong>"],
+      ["(drei Monatsmieten)","(three months' rent)"],
+      ["(zwei Monatsmieten)","(two months' rent)"],
+      ["Monatsmieten","months' rent"],
+      ["Monatsmiete","month's rent"],
+      [" im Druck-Dialog"," in the print dialog"],
+      ["Vertragsentwurf bereit &middot; W&auml;hle","Contract draft ready &middot; Choose"],
+      ["Anfangsmietzins-Formular bereit &middot; W&auml;hle","Initial rent form ready &middot; Choose"],
       ["Nein","No"]
     ];
     function translateGermanHtml(html){
@@ -1232,7 +1243,7 @@
         async function renderPdf() {
           if (!pdf.url || !containerRef.current) return;
           if (!window.pdfjsLib) {
-            setError("PDF.js noch nicht geladen - bitte Seite neu laden");
+            setError(L("PDF.js noch nicht geladen - bitte Seite neu laden","PDF.js not loaded yet - please reload the page"));
             setLoading(false);
             return;
           }
@@ -1308,7 +1319,7 @@
         <div className="card">
           <div className="card-title">
             📄 {total > 1 ? `${index + 1}/${total}: ` : ""}{pdf.name || "Vertrag"}
-            {numPages > 0 && <span style={{ fontWeight: 400, color: "#8a8174", fontSize: 12, marginLeft: 8 }}>· {numPages} {numPages === 1 ? "Seite" : "Seiten"}</span>}
+            {numPages > 0 && <span style={{ fontWeight: 400, color: "#8a8174", fontSize: 12, marginLeft: 8 }}>· {numPages} {numPages === 1 ? L("Seite","page") : L("Seiten","pages")}</span>}
           </div>
           {loading && (
             <div style={{ padding: "40px 20px", textAlign: "center", color: "#8a8174", fontSize: 13 }}>
