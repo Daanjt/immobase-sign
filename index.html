@@ -670,6 +670,147 @@
     // ════════════════════════════════════════════════════════════════════════
     // CONTRACT DETAILS
     // ════════════════════════════════════════════════════════════════════════
+    // ── English contract translation (view only, not signed/stored) ──
+    function chfEn(n){ return Number(n||0).toLocaleString("de-CH"); }
+    function dateLongEn(s){
+      if(!s) return "____";
+      const str=String(s).trim();
+      let d;
+      if(/^\d{4}-\d{2}-\d{2}/.test(str)) d=new Date(str);
+      else { const m=str.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/); d=m?new Date(+m[3],+m[2]-1,+m[1]):new Date(str); }
+      if(isNaN(d.getTime())) return str;
+      const mo=["January","February","March","April","May","June","July","August","September","October","November","December"];
+      return `${d.getDate()} ${mo[d.getMonth()]} ${d.getFullYear()}`;
+    }
+    function buildContractEn(b, v){
+      b=b||{}; v=v||{};
+      const apt=v.apt||{};
+      const fullName=`${b.vorname||""} ${b.nachname||""}`.trim()||"____";
+      const adr=apt.adresse?`${apt.adresse}, ${apt.plz||""} ${apt.ort||""}`.trim():`${v.adresse||""}, ${v.plz||""} ${v.ort||""}`.trim();
+      const net=+v.nettomiete||0, nk=+v.nebenkosten||0, str=+v.strom||0;
+      const total=net+nk+str;
+      const kMon=v.kautionMonate||3;
+      const kBetrag=v.kautionBetrag||((+v.bruttomiete||0)+(+v.strom||25))*kMon;
+      const kf=v.kuendigungsfrist||3;
+      const kfW={1:"one",2:"two",3:"three",4:"four",5:"five",6:"six"}[kf]||String(kf);
+      // Mietdauer
+      function parseD(s){ if(!s) return null; const t=String(s).trim(); if(!t) return null; if(/^\d{4}-\d{2}-\d{2}/.test(t)){const d=new Date(t);return isNaN(d)?null:d;} const m=t.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/); if(m){const d=new Date(+m[3],+m[2]-1,+m[1]);return isNaN(d)?null:d;} const d=new Date(t); return isNaN(d)?null:d; }
+      const beginn=parseD(v.einzug), endeDate=parseD(v.mietende||apt.mietende);
+      let dauerText;
+      if(beginn&&endeDate&&endeDate>beginn){
+        const months=(endeDate-beginn)/(1000*60*60*24*30.44);
+        const endeStr=dateLongEn(v.mietende||apt.mietende);
+        if(months>0&&months<12){
+          const kSatz=` As the agreed rental term is less than twelve (12) months, ordinary termination by the subtenant is excluded. The subtenant undertakes to rent for the entire term and to pay the full rent (see clause 11.1).`;
+          dauerText=`The tenancy begins on <strong>${dateLongEn(v.einzug)}</strong> and is <strong>fixed-term until ${endeStr}</strong>. The contract ends automatically on the agreed end date unless a written extension is agreed.${kSatz}`;
+        }
+      }
+      if(!dauerText){
+        const mw={1:"one",2:"two",3:"three",4:"four",5:"five",6:"six",7:"seven",8:"eight",9:"nine",10:"ten",11:"eleven",12:"twelve"}[v.minMietdauer||6]||String(v.minMietdauer||6);
+        dauerText=`The tenancy begins on <strong>${dateLongEn(v.einzug)}</strong> and is <strong>open-ended</strong>, but runs for at least ${mw} months.`;
+      }
+      const svc=kMon<3?(kMon===2?"50":"100"):null;
+      return `<style>
+      .enc{font-family:Georgia,'Times New Roman',serif;color:#1a1814;font-size:11.5pt;line-height:1.55}
+      .enc h1{font-size:17pt;margin:0 0 4px} .enc h2{font-size:12.5pt;margin:18px 0 6px;border-bottom:1px solid #d8cfbe;padding-bottom:3px}
+      .enc p{margin:6px 0} .enc .sub{color:#6a6456;font-size:10pt}
+      .enc table{width:100%;border-collapse:collapse;margin:8px 0} .enc td{padding:5px 8px;border-bottom:1px solid #eee} .enc td.amt{text-align:right}
+      .enc tr.total td{font-weight:700;border-top:2px solid #333}
+      .enc .clause{margin:5px 0} .enc .cn{font-weight:700;margin-right:5px}
+      .enc ul{margin:6px 0;padding-left:20px}
+      .enc .box{background:#f6f2ea;border:1px solid #e1d8c5;border-radius:6px;padding:8px 10px;margin:8px 0}
+      </style>
+      <div class="enc">
+      <h1>Sublease Agreement</h1>
+      <p class="sub">between <strong>D&amp;T Partners GmbH</strong> (main tenant) and ${fullName} (subtenant)</p>
+      <p>Hi ${fullName}, welcome to D&amp;T Homes! Below you find all details and rules of the tenancy. This sublease agreement is concluded between D&amp;T Partners GmbH as main tenant and you as subtenant. Please read it carefully.</p>
+
+      <h2>1. Rental object</h2>
+      <p>The property is located at <strong>${adr}</strong>.</p>
+      <p>Sublet is <strong>room no. ${v.zimmerId||"__"}</strong>, including shared use of the common areas.</p>
+
+      <h2>2. Rental term</h2>
+      <p>${dauerText}</p>
+
+      <h2>3. Rent</h2>
+      <p>The monthly rent for room ${v.zimmerId||"__"} is:</p>
+      <table>
+        <tr><td>Net rent in CHF</td><td class="amt">${chfEn(net)}</td></tr>
+        <tr><td>Additional costs in CHF</td><td class="amt">${chfEn(nk)}</td></tr>
+        <tr><td>Electricity in CHF</td><td class="amt">${chfEn(str)}</td></tr>
+        <tr class="total"><td>Total rent in CHF</td><td class="amt">${chfEn(total)}</td></tr>
+      </table>
+      <p>The rent includes administration and coordination services, customer service, personal support and water. Additional costs cover heating, internet, water, building maintenance, common electricity, building insurance and sewage fees. Electricity is charged as a flat rate of CHF ${chfEn(str)} per month. Serafe fees (radio/TV) are not included and are borne by the residents.</p>
+      <p>Rent is due monthly in advance, by the <strong>25th of the previous month</strong>, by bank transfer per QR invoice to: Graubündner Kantonalbank, D&amp;T Partners GmbH, Via Campeun 40, 7403 Rhäzüns, IBAN CH80 0077 4010 5279 2690 0.</p>
+
+      <h2>4. Deposit${svc?" and service fee":""}</h2>
+      <p>Before moving in, the subtenant pays a deposit of ${kMon===3?"three":kMon===2?"two":"one"} month${kMon>1?"s":""}' rent, amounting to <strong>CHF ${chfEn(kBetrag)}</strong>. The deposit is paid via the platform de.evorest.ch into a separate, blocked deposit account in the subtenant's name at Hypothekarbank Lenzburg.</p>
+      ${svc?`<p>The subtenant has chosen a reduced deposit compared to the full security (three months). For this reduction, the main tenant provides a separate service and charges a <strong>service fee of CHF ${svc} per month</strong>. This fee is independent of the rent and is neither rent nor deposit; it is owed in addition to the rent.</p>`:""}
+      <p>The deposit is refunded once all final settlements (rent, additional costs, electricity, any repairs or cleaning) are available and the apartment and inventory have been returned in proper condition.</p>
+
+      <h2>5. Further responsibilities of the subtenant</h2>
+      <p class="clause"><span class="cn">5.1</span>The subtenant handles the apartment and inventory with care, reports damage or defects immediately, and returns them in the condition received (normal wear excepted). Handover at move-in and move-out is documented in a written protocol. Final cleaning is at the subtenant's expense.</p>
+      <p class="clause"><span class="cn">5.2</span>The subtenant is responsible for regular cleaning and proper waste disposal.</p>
+      <p class="clause"><span class="cn">5.3</span>Subletting or passing the apartment to third parties is not permitted without the main tenant's express written consent.</p>
+      <p class="clause"><span class="cn">5.4</span>Structural changes or painting walls require prior written consent.</p>
+      <p class="clause"><span class="cn">5.5</span>During longer absences, the subtenant ensures access for emergencies (e.g. leaving a key with a trusted person).</p>
+      <p class="clause"><span class="cn">5.6</span>The subtenant must register with the residents' office within eight days of moving in.</p>
+      <p class="clause"><span class="cn">5.7</span>The subtenant must not obstruct D&amp;T Partners GmbH in finding flatmates. D&amp;T proposes suitable flatmates and enables a prior meeting; in case of doubt D&amp;T may conclude a sublease with an interested person without the current residents' say.</p>
+      <p class="clause"><span class="cn">5.8</span>Each household is responsible for the Serafe fee itself.</p>
+      <p class="clause"><span class="cn">5.9</span>Unless expressly refused, the subtenant's contact details may be shared with potential flatmates to enable getting to know each other.</p>
+      <p class="clause"><span class="cn">5.10</span>Internal matters between flatmates are not the main tenant's responsibility, but it tries to support harmonious cohabitation.</p>
+
+      <h2>6. Data protection</h2>
+      <p>The subtenant agrees that personal data may be stored, processed and, to the necessary extent, shared for the purpose of executing the contract and coordinating with (potential) flatmates. Sharing with third parties only occurs where necessary for the tenancy.</p>
+
+      <h2>7. Inventory &amp; furnishing</h2>
+      <p>The common areas contain a full inventory of everyday items (table, chairs, cutlery, cookware, plates, pan, kitchen utensils, glasses, knife set, toilet brush, bin, bowls, bath mat, soap dispenser, etc.).</p>
+      <p class="clause"><span class="cn">7.1</span>For ${v.moeblierungModus==="monatlich"?`a monthly additional fee of <strong>CHF ${v.moeblierungPauschale||150}</strong>`:`a one-time additional fee of <strong>CHF ${v.moeblierungPauschale||990}</strong>`}, the room can be rented furnished (bed 1.40 m with frame and mattress, bedding, dresser, nightstand, lamps, wardrobe, table, chair, assembly included). The furniture remains the property of D&amp;T Partners GmbH and is provided for use during the sublease.</p>
+      <div class="box">Furniture rented in addition: ${v.moebliert?"Yes":"No"}</div>
+
+      <h2>8. Key handover</h2>
+      <p>Keys are handed over on the agreed date and time. If handover is delayed by more than three days, the subtenant is entitled to a proportional refund of the first rental period from the fourth day. Handover of keys and apartment is done against a written protocol at move-in and move-out, signed by both parties.</p>
+      <p class="clause"><span class="cn">8.1</span>The subtenant confirms receipt of keys and access codes and keeps them safe.</p>
+      <p class="clause"><span class="cn">8.2</span>At the end of the tenancy, all keys and access codes must be returned.</p>
+      <p class="clause"><span class="cn">8.3</span>Making additional keys without consent is prohibited. In case of loss, the main tenant may replace affected locks at the subtenant's expense.</p>
+
+      <h2>9. Repairs and maintenance</h2>
+      <p>The main tenant is responsible for maintenance, including necessary repairs to plumbing, heating, electrics and structural elements. The subtenant must report defects or repair needs immediately.</p>
+
+      <h2>10. Liability and insurance</h2>
+      <p>The subtenant is liable for damage or loss to the apartment or inventory caused by negligence or improper use (including by visitors) and must provide proof of a valid private liability insurance. For damage in shared areas, residents are jointly liable if no cause can be determined.</p>
+
+      <h2>11. Termination</h2>
+      <p>Both parties may terminate the contract ordinarily before the end of the agreed term. The notice period is ${kfW} ${kf===1?"month":"months"} to the end of a month, except end of December, in writing by registered letter or as an electronically signed PDF.</p>
+      <p class="clause"><span class="cn">11.1</span>For fixed-term subleases under twelve (12) months, ordinary termination by the subtenant is excluded. The subtenant undertakes to rent for the entire agreed term and to pay the full rent until the end, even if leaving early.</p>
+      <p class="clause"><span class="cn">11.2</span>For fixed-term subleases of twelve (12) months or more, termination by the subtenant is excluded in the last six months of the term.</p>
+      <p class="clause"><span class="cn">11.3</span>If an initially open-ended sublease is terminated by the owner or management due to a planned renovation, conversion or other structural measures, an analogous six-month protection period applies from the moment the main tenant is informed; termination by the subtenant is excluded in the last six months before the agreed vacating date.</p>
+      <p class="clause"><span class="cn">11.4</span>In case of repeated non-payment of rent, the main tenant may terminate the contract without notice at the end of a month.</p>
+      <p class="clause"><span class="cn">11.5</span>On early move-out, the subtenant can be released by providing a suitable, solvent and reasonable replacement tenant who enters the contract on the same terms (Art. 264 CO). Otherwise the subtenant remains liable for the rent until the ordinary end.</p>
+      <p class="clause"><span class="cn">11.6</span>In case of serious breach (in particular payment default, unauthorised passing on of the room, disturbance of the peace, unlawful use or false statements), the main tenant may terminate without notice and demand immediate vacating.</p>
+      <p class="clause"><span class="cn">11.7</span>The subtenant must return the object fully vacated and in proper condition by the agreed end date at the latest. For late return, the subtenant owes for each started day (a) a use compensation equal to the pro-rata rent and (b) a lump-sum default compensation of CHF 300 per day; further actual damages remain reserved. The main tenant may offset these amounts against the deposit.</p>
+
+      <h2>12. Contract changes</h2>
+      <p>Changes or additions require both parties' consent and can be agreed in text form, including by email or electronic signature. A handwritten signature is not required.</p>
+
+      <h2>13. Right of withdrawal</h2>
+      <p>The tenant has an extraordinary right of withdrawal from the signed contract up to and including the in-person viewing on site, if the apartment differs materially from the images provided beforehand (photos, floor plans, virtual tour). In such a case no costs or obligations arise for the tenant and payments already made are fully refunded.</p>
+
+      <h2>14. Place of jurisdiction</h2>
+      <p>The place of jurisdiction for all disputes is the location of the property. Mandatory statutory jurisdictions remain reserved.</p>
+
+      <h2>15. Additional provisions</h2>
+      <p class="clause"><span class="cn">15.1</span>Pets are not allowed in the apartment.</p>
+      <p class="clause"><span class="cn">15.2</span>Smoking is not allowed in the apartment.</p>
+      <p class="clause"><span class="cn">15.3</span>The subtenant complies with house rules and statutory provisions.</p>
+      <p class="clause"><span class="cn">15.4</span>The rooms are for residential use by the registered person only; occupation by several people is not permitted.</p>
+      <p class="clause"><span class="cn">15.5</span>In case of payment default, the main tenant may charge reminder fees of CHF 20 per reminder and default interest of 5% p.a.</p>
+      <p class="clause"><span class="cn">15.6</span>The main tenant may enter the room after reasonable notice for inspection, maintenance, viewings with interested parties or in case of breaches.</p>
+
+      <p style="margin-top:16px">We wish you a great time in your new home. Your D&amp;T Homes Team</p>
+      </div>`;
+    }
+
     function ContractDetails({ contract }) {
       const data = contract.contract_data || {};
       const v = data.vertrag || {};
@@ -1156,18 +1297,9 @@
               {_v.strom!=null && <R l="Electricity" v={chf(_v.strom)} />}
               <R l="Total / month" v={chf(_v.total||_v.bruttomiete)} />
               {_v.kautionMonate!=null && <R l="Deposit" v={`${_v.kautionMonate} month${_v.kautionMonate>1?"s":""}${_v.kautionBetrag!=null?" · "+chf(_v.kautionBetrag):""}`} />}
-              <div style={{fontSize:9.5,color:"#5a5448",textTransform:"uppercase",letterSpacing:".22em",fontWeight:600,marginTop:16,marginBottom:6,paddingTop:10,borderTop:"1px solid #e1d8c5"}}>Key terms</div>
-              <ul style={{margin:0,paddingLeft:18,fontSize:12.5,color:"#3a352d",lineHeight:1.65}}>
-                <li>Rent is due monthly in advance, by the 25th of the previous month, by bank transfer (QR invoice).</li>
-                <li>The deposit is paid via evorest to a separate, blocked account in your name and refunded after the apartment and inventory are returned properly and all final settlements are cleared.</li>
-                <li>Notice period: {kf} month{kf>1?"s":""} to the end of a month, except end of December, in writing. For fixed-term contracts under 12 months, ordinary termination by the subtenant is excluded; you can be released by providing a suitable, solvent replacement tenant.</li>
-                <li>House rules: no pets, no smoking, the room is for the registered person only, keep the apartment clean, and register with the residents' office within 8 days of moving in.</li>
-                <li>Keys are handed over against a written handover protocol; return all keys at the end. Making copies requires consent.</li>
-                <li>Liability: you are liable for damage caused by negligence or improper use; a valid private liability insurance is required.</li>
-                <li>Contract changes require both parties' consent and can be agreed in text form (e.g. email or e-signature).</li>
-                <li>Late payment: reminder fee CHF 20 per reminder and 5% p.a. default interest.</li>
-              </ul>
-              <div style={{fontSize:11,color:"#8a8174",marginTop:12}}>Please read the full German contract below and sign there.</div>
+              <div style={{fontSize:9.5,color:"#5a5448",textTransform:"uppercase",letterSpacing:".22em",fontWeight:600,marginTop:16,marginBottom:8,paddingTop:10,borderTop:"1px solid #e1d8c5"}}>Full contract (English translation)</div>
+              <div style={{background:"#fff",border:"1px solid #e1d8c5",borderRadius:8,padding:"16px 18px"}} dangerouslySetInnerHTML={{__html: buildContractEn((contract.contract_data&&contract.contract_data.bewerber)||{}, _v)}} />
+              <div style={{fontSize:11,color:"#8a8174",marginTop:12}}>This English version is a translation for your understanding only. Please review the German contract below and sign there.</div>
             </div>); })()}
           <ContractDetails contract={contract} />
           <PdfsViewer pdfs={pdfs} />
