@@ -882,6 +882,7 @@
       
       // Sign mode: 'digital' (Signature Pad) oder 'upload' (Extern unterschrieben)
       const [signMode, setSignMode] = useState("digital");
+      const [lang, setLang] = useState("de");
       // Bei upload mode: für jeden PDF (per path) das File-Object
       const [uploadedFiles, setUploadedFiles] = useState({});
       const [uploadProgress, setUploadProgress] = useState("");
@@ -1131,6 +1132,43 @@
             {pdfs.length > 1 ? "Lies beide Dokumente sorgfältig durch und unterschreibe unten." : "Lies den Vertrag sorgfältig durch und unterschreibe unten."}
           </div>
           
+          <div style={{display:"flex",gap:6,marginBottom:14}}>
+            <button onClick={()=>setLang("de")} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid #d8d0c0",background:lang==="de"?"#3a352d":"#fff",color:lang==="de"?"#fff":"#6a6456",fontSize:13,cursor:"pointer"}}>Deutsch</button>
+            <button onClick={()=>setLang("en")} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid #d8d0c0",background:lang==="en"?"#3a352d":"#fff",color:lang==="en"?"#fff":"#6a6456",fontSize:13,cursor:"pointer"}}>English</button>
+          </div>
+          {lang==="en" && (()=>{
+            const _v=(contract.contract_data&&contract.contract_data.vertrag)||{};
+            const _apt=_v.apt||(contract.contract_data&&contract.contract_data.apt)||{};
+            const _adr=_apt.adresse?`${_apt.adresse}${_apt.plz||_apt.ort?`, ${_apt.plz||""} ${_apt.ort||""}`.trim():""}`:"-";
+            const kf=_v.kuendigungsfrist||3;
+            const R=({l,v})=> (<div className="info-row"><span className="info-label">{l}</span><span className="info-value" style={{fontWeight:600}}>{v}</span></div>);
+            return (
+            <div className="card" style={{borderColor:"#c9b98a",background:"#fbf7ee"}}>
+              <div style={{background:"#f3e7c8",color:"#6b5a2e",fontSize:12,padding:"9px 11px",borderRadius:8,marginBottom:14,lineHeight:1.5}}>This is an English translation to help you understand the contract. Only the German version below is legally binding, and only that version is signed and stored.</div>
+              <div className="card-title">📋 Contract summary (English)</div>
+              <R l="Property" v={`${_apt.id||"-"} · ${_adr}`} />
+              {_v.zimmerId && <R l="Room" v={_v.zimmerId} />}
+              <R l="Furnished" v={_v.moebliert?`Yes (CHF ${_v.moeblierungPauschale||(_v.moeblierungModus==="monatlich"?150:990)}${_v.moeblierungModus==="monatlich"?" / month":" one-time"})`:"No"} />
+              {_v.einzug && <R l="Move-in" v={formatDate(_v.einzug)} />}
+              {_v.auszug && <R l="Move-out" v={formatDate(_v.auszug)} />}
+              {_v.nettomiete!=null && <R l="Net rent" v={chf(_v.nettomiete)} />}
+              {_v.nebenkosten!=null && <R l="Additional costs" v={chf(_v.nebenkosten)} />}
+              {_v.strom!=null && <R l="Electricity" v={chf(_v.strom)} />}
+              <R l="Total / month" v={chf(_v.total||_v.bruttomiete)} />
+              {_v.kautionMonate!=null && <R l="Deposit" v={`${_v.kautionMonate} month${_v.kautionMonate>1?"s":""}${_v.kautionBetrag!=null?" · "+chf(_v.kautionBetrag):""}`} />}
+              <div style={{fontSize:9.5,color:"#5a5448",textTransform:"uppercase",letterSpacing:".22em",fontWeight:600,marginTop:16,marginBottom:6,paddingTop:10,borderTop:"1px solid #e1d8c5"}}>Key terms</div>
+              <ul style={{margin:0,paddingLeft:18,fontSize:12.5,color:"#3a352d",lineHeight:1.65}}>
+                <li>Rent is due monthly in advance, by the 25th of the previous month, by bank transfer (QR invoice).</li>
+                <li>The deposit is paid via evorest to a separate, blocked account in your name and refunded after the apartment and inventory are returned properly and all final settlements are cleared.</li>
+                <li>Notice period: {kf} month{kf>1?"s":""} to the end of a month, except end of December, in writing. For fixed-term contracts under 12 months, ordinary termination by the subtenant is excluded; you can be released by providing a suitable, solvent replacement tenant.</li>
+                <li>House rules: no pets, no smoking, the room is for the registered person only, keep the apartment clean, and register with the residents' office within 8 days of moving in.</li>
+                <li>Keys are handed over against a written handover protocol; return all keys at the end. Making copies requires consent.</li>
+                <li>Liability: you are liable for damage caused by negligence or improper use; a valid private liability insurance is required.</li>
+                <li>Contract changes require both parties' consent and can be agreed in text form (e.g. email or e-signature).</li>
+                <li>Late payment: reminder fee CHF 20 per reminder and 5% p.a. default interest.</li>
+              </ul>
+              <div style={{fontSize:11,color:"#8a8174",marginTop:12}}>Please read the full German contract below and sign there.</div>
+            </div>); })()}
           <ContractDetails contract={contract} />
           <PdfsViewer pdfs={pdfs} />
           
