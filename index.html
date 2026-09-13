@@ -1319,7 +1319,7 @@
           
           <div className="h1">{lang==="en"?"Your contract — English translation":"Bitte unterzeichne deinen Vertrag"}</div>
           <div style={{ fontSize: 13, color: "#8a8174", marginBottom: 20 }}>
-            {lang==="en" ? "This is a translation for your understanding. To sign, switch to Deutsch." : (pdfs.length > 1 ? "Lies beide Dokumente sorgfältig durch und unterschreibe unten." : "Lies den Vertrag sorgfältig durch und unterschreibe unten.")}
+            {lang==="en" ? "This is a translation for your understanding. You can sign directly below; your signature applies to the German version." : (pdfs.length > 1 ? "Lies beide Dokumente sorgfältig durch und unterschreibe unten." : "Lies den Vertrag sorgfältig durch und unterschreibe unten.")}
           </div>
           
           <div style={{display:"flex",gap:6,marginBottom:14}}>
@@ -1348,13 +1348,14 @@
               {_v.kautionMonate!=null && <R l="Deposit" v={`${_v.kautionMonate} month${_v.kautionMonate>1?"s":""}${_v.kautionBetrag!=null?" · "+chf(_v.kautionBetrag):""}`} />}
               <div style={{fontSize:9.5,color:"#5a5448",textTransform:"uppercase",letterSpacing:".22em",fontWeight:600,marginTop:16,marginBottom:8,paddingTop:10,borderTop:"1px solid #e1d8c5"}}>Full contract (English translation)</div>
               <div style={{background:"#fff",border:"1px solid #e1d8c5",borderRadius:8,padding:"16px 18px"}} dangerouslySetInnerHTML={{__html: buildContractEn((contract.contract_data&&contract.contract_data.bewerber)||{}, _v)}} />
-              <div style={{fontSize:11,color:"#8a8174",marginTop:12}}>This English version is a translation for your understanding only and cannot be signed. To sign, switch to Deutsch at the top of the page.</div>
+              <div style={{fontSize:11,color:"#8a8174",marginTop:12}}>This English version is a translation for your understanding. You can sign directly below; your signature applies to the legally binding German version.</div>
             </div>); })()}
           {lang==="de" && <ContractDetails contract={contract} />}
           {lang==="de" && <PdfsViewer pdfs={pdfs} />}
           
-          <div className="card" style={{display: lang==="de"?"block":"none"}}>
+          <div className="card">
             <div className="card-title">✍️ Vertrag unterzeichnen</div>
+            {lang==="en" && <div style={{background:"#f3e7c8",color:"#6b5a2e",fontSize:12,padding:"9px 11px",borderRadius:8,marginBottom:14,lineHeight:1.5}}>By signing below, you sign the legally binding German version of the contract. The English text above is only a translation for your understanding. You do not need to switch back to German.</div>}
             
             {/* Mode Toggle */}
             <div style={{
