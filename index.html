@@ -496,7 +496,7 @@
     // ════════════════════════════════════════════════════════════════════════
     // SIGNATURE PAD (1:1 wiederverwendet aus ImmoBase)
     // ════════════════════════════════════════════════════════════════════════
-    function SignaturePad({ value, onChange, placeholder }) {
+    function SignaturePad({ value, onChange, placeholder, lang }) {
       const canvasRef = useRef(null);
       const [isDrawing, setIsDrawing] = useState(false);
       const lastPos = useRef({ x: 0, y: 0 });
@@ -586,7 +586,7 @@
           )}
           <div className="signature-meta">
             <span className={hasDrawn ? "signature-status has" : "signature-status empty"}>
-              {hasDrawn ? "✓ Unterschrift erfasst" : "Noch keine Unterschrift"}
+              {hasDrawn ? (lang==="en"?"✓ Signature captured":"✓ Unterschrift erfasst") : (lang==="en"?"No signature yet":"Noch keine Unterschrift")}
             </span>
             {hasDrawn && (
               <button onClick={clear} className="btn-secondary" style={{ color: "#9b4a3e", borderColor: "#e0bcb0" }}>
@@ -1306,6 +1306,7 @@
       // Sign mode: 'digital' (Signature Pad) oder 'upload' (Extern unterschrieben)
       const [signMode, setSignMode] = useState("digital");
       const [lang, setLang] = useState("de");
+      const t = (de,en) => (lang==="en" ? en : de);
       const [enPdfs, setEnPdfs] = useState(null);
       const [enPdfBusy, setEnPdfBusy] = useState(false);
       React.useEffect(() => {
@@ -1481,7 +1482,7 @@
           }
         }
         if (!accepted) {
-          alert("Bitte bestätige, dass du den Vertrag gelesen und verstanden hast.");
+          alert(t("Bitte bestätige, dass du den Vertrag gelesen und verstanden hast.","Please confirm that you have read and understood the contract."));
           return;
         }
         
@@ -1613,7 +1614,7 @@
           {lang==="de" && <PdfsViewer pdfs={pdfs} />}
           
           <div className="card">
-            <div className="card-title">✍️ Vertrag unterzeichnen</div>
+            <div className="card-title">{t("✍️ Vertrag unterzeichnen","✍️ Sign the contract")}</div>
             {lang==="en" && <div style={{background:"#f3e7c8",color:"#6b5a2e",fontSize:12,padding:"9px 11px",borderRadius:8,marginBottom:14,lineHeight:1.5}}>By signing below, you sign the legally binding German version of the contract. The English text above is only a translation for your understanding. You do not need to switch back to German.</div>}
             
             {/* Mode Toggle */}
@@ -1641,7 +1642,7 @@
                   transition: "all .15s",
                 }}
               >
-                ✍️ Digital unterschreiben
+                {t("✍️ Digital unterschreiben","✍️ Sign digitally")}
               </button>
               <button
                 onClick={() => setSignMode("upload")}
@@ -1659,21 +1660,21 @@
                   transition: "all .15s",
                 }}
               >
-                📤 Extern unterschreiben
+                {t("📤 Extern unterschreiben","📤 Sign externally")}
               </button>
             </div>
             
             {signMode === "digital" && (
               <>
                 <div style={{ fontSize: 13, color: "#4a4439", lineHeight: 1.5, marginBottom: 6 }}>
-                  Unterschreibe mit dem Finger (Handy/Tablet) oder mit der Maus (Computer).
-                  Die Unterschrift wird automatisch in {pdfs.length > 1 ? "beide PDFs" : "dein PDF"} eingefügt.
+                  {t("Unterschreibe mit dem Finger (Handy/Tablet) oder mit der Maus (Computer). Die Unterschrift wird automatisch in "+(pdfs.length > 1 ? "beide PDFs" : "dein PDF")+" eingefügt.","Sign with your finger (phone/tablet) or with the mouse (computer). Your signature is automatically inserted into "+(pdfs.length > 1 ? "both PDFs" : "your PDF")+".")}
                 </div>
                 
                 <SignaturePad
                   value={signature}
                   onChange={setSignature}
-                  placeholder="↓ Hier mit Finger oder Maus unterschreiben ↓"
+                  lang={lang}
+                  placeholder={t("↓ Hier mit Finger oder Maus unterschreiben ↓","↓ Sign here with finger or mouse ↓")}
                 />
               </>
             )}
@@ -1681,8 +1682,7 @@
             {signMode === "upload" && (
               <>
                 <div style={{ fontSize: 13, color: "#4a4439", lineHeight: 1.5, marginBottom: 16 }}>
-                  Lade {pdfs.length > 1 ? "beide PDFs" : "das PDF"} herunter, drucke aus, unterschreibe mit der Hand,
-                  scanne wieder ein und lade {pdfs.length > 1 ? "die signierten Dokumente" : "das signierte Dokument"} unten hoch.
+                  {t("Lade "+(pdfs.length > 1 ? "beide PDFs" : "das PDF")+" herunter, drucke aus, unterschreibe mit der Hand, scanne wieder ein und lade "+(pdfs.length > 1 ? "die signierten Dokumente" : "das signierte Dokument")+" unten hoch.","Download "+(pdfs.length > 1 ? "both PDFs" : "the PDF")+", print, sign by hand, scan again and upload "+(pdfs.length > 1 ? "the signed documents" : "the signed document")+" below.")}
                 </div>
                 
                 {pdfs.map((pdf, idx) => {
@@ -1716,7 +1716,7 @@
                           marginBottom: 10,
                         }}
                       >
-                        📥 Herunterladen
+                        {t("📥 Herunterladen","📥 Download")}
                       </a>
                       
                       <div style={{ marginTop: 4 }}>
@@ -1735,11 +1735,11 @@
                             <>
                               <strong>✓ {file.name}</strong>
                               <div style={{ fontSize: 10, color: "#8a8174", marginTop: 2 }}>
-                                {(file.size / 1024).toFixed(0)} KB · klick zum Ändern
+                                {(file.size / 1024).toFixed(0)} KB · {t("klick zum Ändern","click to change")}
                               </div>
                             </>
                           ) : (
-                            <>📤 Signiertes PDF hier hochladen<div style={{ fontSize: 10, color: "#8a8174", marginTop: 2 }}>klicken zum Auswählen</div></>
+                            <>{t("📤 Signiertes PDF hier hochladen","📤 Upload signed PDF here")}<div style={{ fontSize: 10, color: "#8a8174", marginTop: 2 }}>{t("klicken zum Auswählen","click to select")}</div></>
                           )}
                           <input
                             type="file"
@@ -1767,18 +1767,16 @@
                 onChange={(e) => setAccepted(e.target.checked)}
               />
               <span className="accept-label">
-                Ich habe den Vertrag gelesen, verstanden und akzeptiere alle Bedingungen.
-                Mir ist bewusst, dass meine Unterschrift hier rechtlich bindend ist und
-                den Vertragsabschluss bestätigt.
+                {t("Ich habe den Vertrag gelesen, verstanden und akzeptiere alle Bedingungen. Mir ist bewusst, dass meine Unterschrift hier rechtlich bindend ist und den Vertragsabschluss bestätigt.","I have read and understood the contract and accept all terms. I am aware that my signature here is legally binding and confirms the conclusion of the contract.")}
               </span>
             </label>
             
             <div className="audit-box">
-              <strong>🔒 Datenschutz-Hinweis</strong><br />
+              <strong>{t("🔒 Datenschutz-Hinweis","🔒 Data protection notice")}</strong><br />
               {signMode === "digital"
-                ? "Beim Unterzeichnen werden folgende Daten zu deinem Schutz und für rechtliche Nachweisbarkeit gespeichert: IP-Adresse, Browser-Information, Zeitpunkt und deine Unterschrift."
-                : "Beim Einreichen werden die hochgeladenen PDFs sowie IP-Adresse, Browser-Information und Zeitpunkt zu deinem Schutz und für rechtliche Nachweisbarkeit gespeichert."
-              } Diese Daten sind verschlüsselt und werden nur im Falle einer rechtlichen Auseinandersetzung verwendet.
+                ? t("Beim Unterzeichnen werden folgende Daten zu deinem Schutz und für rechtliche Nachweisbarkeit gespeichert: IP-Adresse, Browser-Information, Zeitpunkt und deine Unterschrift.","When signing, the following data is stored for your protection and legal traceability: IP address, browser information, timestamp and your signature.")
+                : t("Beim Einreichen werden die hochgeladenen PDFs sowie IP-Adresse, Browser-Information und Zeitpunkt zu deinem Schutz und für rechtliche Nachweisbarkeit gespeichert.","When submitting, the uploaded PDFs as well as IP address, browser information and timestamp are stored for your protection and legal traceability.")
+              } {t("Diese Daten sind verschlüsselt und werden nur im Falle einer rechtlichen Auseinandersetzung verwendet.","This data is encrypted and used only in the event of a legal dispute.")}
             </div>
             
             <div style={{ marginTop: 20 }}>
@@ -1793,17 +1791,16 @@
                 }
               >
                 {submitting
-                  ? (uploadProgress || "Wird verarbeitet…")
+                  ? (uploadProgress || t("Wird verarbeitet…","Processing…"))
                   : signMode === "digital"
-                    ? "🖋️ Vertrag rechtsgültig unterzeichnen"
-                    : "📤 Unterzeichnete Dokumente einreichen"
+                    ? t("🖋️ Vertrag rechtsgültig unterzeichnen","🖋️ Sign the contract legally")
+                    : t("📤 Unterzeichnete Dokumente einreichen","📤 Submit signed documents")
                 }
               </button>
             </div>
             
             <div style={{ fontSize: 11, color: "#8a8174", textAlign: "center", marginTop: 12, lineHeight: 1.5 }}>
-              Mit dem Klick auf den Button bestätigst du die Unterzeichnung des Vertrags
-              gemäss schweizerischem Obligationenrecht (Art. 11 OR).
+              {t("Mit dem Klick auf den Button bestätigst du die Unterzeichnung des Vertrags gemäss schweizerischem Obligationenrecht (Art. 11 OR).","By clicking the button, you confirm the signing of the contract in accordance with the Swiss Code of Obligations (Art. 11 CO).")}
             </div>
           </div>
           
