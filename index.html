@@ -921,6 +921,65 @@
     // ════════════════════════════════════════════════════════════════════════
     // PDFS VIEWER - Mozilla PDF.js (funktioniert auf allen Geräten incl. iOS Safari)
     // ════════════════════════════════════════════════════════════════════════
+    async function genPdfFromHtml(html) {
+      try {
+        const res = await fetch("/api/pdf-generate", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ html, filename:"dokument.pdf", format:"A4" }) });
+        if (!res.ok) { console.warn("pdf-generate", res.status); return null; }
+        const blob = await res.blob();
+        return URL.createObjectURL(blob);
+      } catch(e) { console.warn("pdf-generate ex", e); return null; }
+    }
+    function buildAnfangsmietzinsEn(b, v){
+      b=b||{}; v=v||{};
+      const apt=v.apt||{};
+      const fullName=`${b.vorname||""} ${b.nachname||""}`.trim()||"____";
+      const adr=apt.adresse?`${apt.adresse}, ${apt.plz||""} ${apt.ort||""}`.trim():`${v.adresse||""} ${v.plz||""} ${v.ort||""}`.trim();
+      const chfx=(n)=>Number(n||0).toLocaleString("de-CH");
+      const net=+v.nettomiete||0, nk=+v.nebenkosten||0, str=+v.strom||0, tot=(+v.total)|| (net+nk+str);
+      const beginn = v.einzug ? (function(s){const t=String(s).trim();const m=t.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return `${+m[3]}.${+m[2]}.${m[1]}`;return t;})(v.einzug) : "____";
+      const prev = (v.fruehererMietzins!=null && v.fruehererMietzins!=="") ? ("Fr. "+chfx(v.fruehererMietzins)) : "—";
+      return `<style>
+      .amz{font-family:Georgia,'Times New Roman',serif;color:#1a1814;font-size:11pt;line-height:1.5;max-width:720px;margin:0 auto}
+      .amz h1{font-size:16pt;margin:0 0 4px;font-weight:400}
+      .amz .lbl2{font-size:8.5pt;letter-spacing:.25em;text-transform:uppercase;color:#8a8174;margin-bottom:4px}
+      .amz .hdr{border-bottom:2px solid #1a1814;padding-bottom:10px;margin-bottom:16px}
+      .amz .party{background:#f6f2ea;border-left:3px solid #1a1814;padding:12px 16px;margin-bottom:12px}
+      .amz .party .pl{color:#6a6456;font-size:9.5pt}
+      .amz table{width:100%;border-collapse:collapse;margin:10px 0}
+      .amz th,.amz td{padding:6px 8px;border-bottom:1px solid #e6e2d8;font-size:10.5pt;text-align:left}
+      .amz th{font-size:8.5pt;letter-spacing:.1em;text-transform:uppercase;color:#8a8174}
+      .amz td.amt{text-align:right}
+      .amz tr.total td{font-weight:700;border-top:2px solid #333}
+      .amz .note{background:#faf8f3;border:1px solid #e6e2d8;border-radius:4px;padding:10px 14px;margin:12px 0;font-size:10pt}
+      .amz .sigs{display:flex;gap:36px;margin-top:26px}
+      .amz .sig{flex:1;border-top:1px solid #1a1814;padding-top:6px}
+      .amz .sig .r{font-size:8.5pt;letter-spacing:.15em;text-transform:uppercase;color:#8a8174}
+      .amz .sig .n{font-weight:600;margin:3px 0}
+      .amz .sig .line{margin-top:14px;border-bottom:1px solid #1a1814;height:14px}
+      </style>
+      <div class="amz">
+      <div class="hdr"><div class="lbl2">Official form · English translation</div><h1>Notification of the Initial Rent</h1></div>
+      <div class="note" style="background:#f3e7c8;border-color:#e8d2a8;color:#6b5a2e">This is a courtesy English translation of the official Zürich form for your understanding. The legally binding document is the German version; only that version is signed and stored.</div>
+      <div class="party"><div class="pl">Landlord / Main tenant</div><div><strong>D&amp;T Partners GmbH</strong>, Via Campeun 40, 7403 Rhäzüns</div></div>
+      <div class="party"><div class="pl">Tenant</div><div><strong>${fullName}</strong></div></div>
+      <div class="party"><div class="pl">Property address</div><div>${adr||"—"}</div></div>
+      <table>
+        <tr><th>Rent</th><th style="text-align:right">Previous rent</th><th style="text-align:right">New initial rent</th></tr>
+        <tr><td>Net rent (excl. additional costs)</td><td class="amt">${prev}</td><td class="amt">Fr. ${chfx(net)}</td></tr>
+        <tr><td>Additional costs</td><td class="amt">—</td><td class="amt">Fr. ${chfx(nk)}</td></tr>
+        <tr><td>Electricity (flat rate)</td><td class="amt">—</td><td class="amt">Fr. ${chfx(str)}</td></tr>
+        <tr class="total"><td>Total rent incl. additional costs</td><td class="amt">${prev}</td><td class="amt">Fr. ${chfx(tot)}</td></tr>
+      </table>
+      <div class="note">No reservations according to the previous rental agreement or the last rent adjustment. Start of tenancy: <strong>${beginn}</strong>.</div>
+      <div class="note"><strong>Right to challenge:</strong> The tenant may challenge the initial rent within 30 days of taking over the premises before the conciliation authority if they consider it abusive (Art. 270 of the Swiss Code of Obligations). The tenant confirms having received a copy of this form.</div>
+      <div class="sigs">
+        <div class="sig"><div class="r">Landlord</div><div class="n">D&amp;T Partners GmbH</div><div style="font-size:9pt;color:#8a8174;margin-top:8px">Place, date</div><div class="line"></div><div style="font-size:9pt;color:#8a8174;margin-top:8px">Signature</div><div class="line"></div></div>
+        <div class="sig"><div class="r">Tenant</div><div class="n">${fullName}</div><div style="font-size:9pt;color:#8a8174;margin-top:8px">Place, date</div><div class="line"></div><div style="font-size:9pt;color:#8a8174;margin-top:8px">Signature</div><div class="line"></div></div>
+      </div>
+      <div class="note" style="margin-top:20px;font-size:9pt;color:#6a6456">The statutory extract from the Swiss Code of Obligations (Art. 269 ff.) is included in the official German version of this form.</div>
+      </div>`;
+    }
+
     function PdfsViewer({ pdfs }) {
       if (!pdfs || pdfs.length === 0) return null;
       
@@ -1073,6 +1132,23 @@
       // Sign mode: 'digital' (Signature Pad) oder 'upload' (Extern unterschrieben)
       const [signMode, setSignMode] = useState("digital");
       const [lang, setLang] = useState("de");
+      const [enPdfs, setEnPdfs] = useState(null);
+      const [enPdfBusy, setEnPdfBusy] = useState(false);
+      React.useEffect(() => {
+        if (lang !== "en" || enPdfs || enPdfBusy) return;
+        const cd = contract && contract.contract_data; if (!cd) return;
+        setEnPdfBusy(true);
+        (async () => {
+          const b = cd.bewerber || {}; const v = cd.vertrag || {}; const docs = [];
+          try {
+            const umv = await genPdfFromHtml(buildContractEn(b, v));
+            if (umv) docs.push({ name: "Sublease Agreement (EN)", url: umv });
+            const amz = await genPdfFromHtml(buildAnfangsmietzinsEn(b, v));
+            if (amz) docs.push({ name: "Initial Rent Notification (EN)", url: amz });
+          } catch (e) { console.warn("EN PDF gen:", e); }
+          setEnPdfs(docs); setEnPdfBusy(false);
+        })();
+      }, [lang]);
       // Bei upload mode: für jeden PDF (per path) das File-Object
       const [uploadedFiles, setUploadedFiles] = useState({});
       const [uploadProgress, setUploadProgress] = useState("");
@@ -1346,9 +1422,19 @@
               {_v.strom!=null && <R l="Electricity" v={chf(_v.strom)} />}
               <R l="Total / month" v={chf(_v.total||_v.bruttomiete)} />
               {_v.kautionMonate!=null && <R l="Deposit" v={`${_v.kautionMonate} month${_v.kautionMonate>1?"s":""}${_v.kautionBetrag!=null?" · "+chf(_v.kautionBetrag):""}`} />}
-              <div style={{fontSize:9.5,color:"#5a5448",textTransform:"uppercase",letterSpacing:".22em",fontWeight:600,marginTop:16,marginBottom:8,paddingTop:10,borderTop:"1px solid #e1d8c5"}}>Full contract (English translation)</div>
-              <div style={{background:"#fff",border:"1px solid #e1d8c5",borderRadius:8,padding:"16px 18px"}} dangerouslySetInnerHTML={{__html: buildContractEn((contract.contract_data&&contract.contract_data.bewerber)||{}, _v)}} />
-              <div style={{fontSize:11,color:"#8a8174",marginTop:12}}>This English version is a translation for your understanding. You can sign directly below; your signature applies to the legally binding German version.</div>
+              <div style={{fontSize:9.5,color:"#5a5448",textTransform:"uppercase",letterSpacing:".22em",fontWeight:600,marginTop:16,marginBottom:8,paddingTop:10,borderTop:"1px solid #e1d8c5"}}>Documents (English translation)</div>
+              {enPdfBusy && !enPdfs && <div style={{fontSize:12,color:"#8a8174",padding:"10px 0"}}>📄 Generating English PDFs …</div>}
+              {enPdfs && enPdfs.map((d,i)=>(
+                <div key={i} style={{marginBottom:16}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6,flexWrap:"wrap",gap:6}}>
+                    <div style={{fontSize:12,fontWeight:600,color:"#4a4439"}}>{d.name}</div>
+                    <a href={d.url} download={d.name.replace(/[^A-Za-z0-9]+/g,"_")+".pdf"} style={{fontSize:11,padding:"4px 10px",background:"#f0ebe1",color:"#4a4439",border:"1px solid #d8d0c0",borderRadius:4,textDecoration:"none"}}>⬇ Download</a>
+                  </div>
+                  <iframe src={d.url} title={d.name} style={{width:"100%",height:"68vh",border:"1px solid #e1d8c5",borderRadius:8,background:"#fff"}}/>
+                </div>
+              ))}
+              {enPdfs && enPdfs.length===0 && <div style={{fontSize:12,color:"#9b4a3e"}}>Die englische PDF-Vorschau konnte nicht erzeugt werden. Bitte nutze die deutsche Fassung oben über den Umschalter.</div>}
+              <div style={{fontSize:11,color:"#8a8174",marginTop:8}}>This English version is a translation for your understanding. You can sign directly below; your signature applies to the legally binding German version.</div>
             </div>); })()}
           {lang==="de" && <ContractDetails contract={contract} />}
           {lang==="de" && <PdfsViewer pdfs={pdfs} />}
