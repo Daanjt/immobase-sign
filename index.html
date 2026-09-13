@@ -1091,6 +1091,37 @@
       ["Unterschrift:","Signature:"],
       ["Mietzins","Rent"],
       ["Nebenkosten","Additional costs"],
+      ["Auszug aus den massgeblichen Bestimmungen des Schweizerischen Obligationenrechts","Extract from the relevant provisions of the Swiss Code of Obligations"],
+      ["Achter Titel: Die Miete · Zweiter Abschnitt: Schutz vor missbräuchlichen Mietzinsen und anderen missbräuchlichen Forderungen des Vermieters bei der Miete von Wohn- und Geschäftsräumen","Title Eight: The lease · Second section: Protection against abusive rents and other abusive claims by the landlord in the lease of residential and commercial premises"],
+      ["Art. 269 (A. Missbräuchliche Mietzinse. I. Regel)","Art. 269 (A. Abusive rents. I. Rule)"],
+      ["Mietzinse sind missbräuchlich, wenn damit ein übersetzter Ertrag aus der Mietsache erzielt wird oder wenn sie auf einem offensichtlich übersetzten Kaufpreis beruhen.","Rents are abusive if they generate an excessive yield from the leased property or if they are based on a manifestly excessive purchase price."],
+      ["Art. 269a (II. Ausnahmen)","Art. 269a (II. Exceptions)"],
+      ["Mietzinse sind in der Regel nicht missbräuchlich, wenn sie insbesondere:","Rents are generally not abusive if, in particular, they:"],
+      ["a. im Rahmen der orts- oder quartierüblichen Mietzinse liegen;","a. are within the range of rents customary in the locality or district;"],
+      ["Art. 269b (B. Indexierte Mietzinse)","Art. 269b (B. Index-linked rents)"],
+      ["Die Vereinbarung, dass der Mietzins einem Index folgt, ist nur gültig, wenn der Mietvertrag für mindestens fünf Jahre abgeschlossen und als Index der Landesindex der Konsumentenpreise vorgesehen wird.","The agreement that the rent follows an index is only valid if the rental agreement is concluded for at least five years and the national consumer price index is provided as the index."],
+      ["Art. 269c (C. Gestaffelte Mietzinse)","Art. 269c (C. Stepped rents)"],
+      ["Die Vereinbarung, dass sich der Mietzins periodisch um einen bestimmten Betrag erhöht, ist nur gültig, wenn:","The agreement that the rent increases periodically by a specific amount is only valid if:"],
+      ["Art. 269d (D. Mietzinserhöhungen)","Art. 269d (D. Rent increases)"],
+      ["Der Vermieter kann den Mietzins jederzeit auf den nächstmöglichen Kündigungstermin erhöhen. Er muss dem Mieter die Mietzinserhöhung mindestens zehn Tage vor Beginn der Kündigungsfrist auf einem vom Kanton genehmigten Formular mitteilen und begründen.","The landlord may increase the rent at any time with effect from the next possible termination date. The landlord must notify and justify the rent increase to the tenant at least ten days before the beginning of the notice period, on a form approved by the canton."],
+      ["Die Mietzinserhöhung ist nichtig, wenn der Vermieter:","The rent increase is void if the landlord:"],
+      ["Art. 270 (E. Anfechtung des Mietzinses I.)","Art. 270 (E. Challenging the rent I.)"],
+      ["Der Mieter kann den Anfangsmietzins innert 30 Tagen nach Übernahme der Sache bei der Schlichtungsbehörde als missbräuchlich im Sinne der Artikel 269 und 269a anfechten und dessen Herabsetzung verlangen, wenn:","The tenant may challenge the initial rent as abusive within the meaning of Articles 269 and 269a before the conciliation authority within 30 days of taking over the property and demand its reduction if:"],
+      ["Art. 270a (2. Während der Mietdauer)","Art. 270a (2. During the tenancy)"],
+      ["Der Mieter kann den Mietzins als missbräuchlich anfechten und die Herabsetzung auf den nächstmöglichen Kündigungstermin verlangen, wenn er Grund zur Annahme hat, dass der Vermieter wegen einer wesentlichen Änderung der Berechnungsgrundlagen einen übersetzten Ertrag aus der Mietsache erzielt.","The tenant may challenge the rent as abusive and demand its reduction with effect from the next possible termination date if they have reason to believe that the landlord is generating an excessive yield from the leased property due to a material change in the basis of calculation."],
+      ["Art. 270b (II. Anfechtung von Mietzinserhöhungen)","Art. 270b (II. Challenging rent increases)"],
+      ["Der Mieter kann eine Mietzinserhöhung innert 30 Tagen, nachdem sie ihm mitgeteilt worden ist, bei der Schlichtungsbehörde als missbräuchlich anfechten.","The tenant may challenge a rent increase as abusive before the conciliation authority within 30 days after it has been notified to them."],
+      ["Die Absätze 1 und 2 gelten auch, wenn der Vermieter beabsichtigt, sonstwie den Mietvertrag einseitig zu Lasten des Mieters zu ändern.","Paragraphs 1 and 2 also apply if the landlord intends to otherwise unilaterally change the rental agreement to the tenant's detriment."],
+      ["Art. 270e (F. Weitergeltung des Mietvertrags)","Art. 270e (F. Continued validity of the rental agreement)"],
+      ["Der bestehende Mietvertrag gilt unverändert weiter:","The existing rental agreement continues to apply unchanged:"],
+      ["Formular bereitgestellt durch die Direktion der Justiz und des Innern des Kantons Zürich","Form provided by the Directorate of Justice and Home Affairs of the Canton of Zürich"],
+      ["gemäss Art. 270 Abs. 2 OR und § 229 b EG ZGB","pursuant to Art. 270 para. 2 CO and § 229b EG ZGB"],
+      ["1. Berechnungsgrundlagen des bisherigen Mietzinses","1. Basis of calculation of the previous rent"],
+      ["2. Vorbehalte für allfällige spätere Mietzinserhöhungen","2. Reservations for any later rent increases"],
+      ["3. Beginn des neuen Mietvertrags","3. Start of the new rental agreement"],
+      ["4. Klare Begründung der (eventuellen) Erhöhung des Anfangsmietzinses","4. Clear justification for the (possible) increase of the initial rent"],
+      ["5. Bei Erhöhung wegen Mehrleistungen: Erhalt von Förderbeiträgen für wertvermehrende Verbesserungen","5. In case of increase due to additional services: receipt of subsidies for value-enhancing improvements"],
+      ["(seit: -)","(since: -)"],
       ["Nein","No"]
     ];
     function translateGermanHtml(html){
@@ -1547,15 +1578,12 @@
               {_v.kautionMonate!=null && <R l="Deposit" v={`${_v.kautionMonate} month${_v.kautionMonate>1?"s":""}${_v.kautionBetrag!=null?" · "+chf(_v.kautionBetrag):""}`} />}
               <div style={{fontSize:9.5,color:"#5a5448",textTransform:"uppercase",letterSpacing:".22em",fontWeight:600,marginTop:16,marginBottom:8,paddingTop:10,borderTop:"1px solid #e1d8c5"}}>Documents (English translation)</div>
               {enPdfBusy && !enPdfs && <div style={{fontSize:12,color:"#8a8174",padding:"10px 0"}}>📄 Generating English PDFs …</div>}
-              {enPdfs && enPdfs.map((d,i)=>(
-                <div key={i} style={{marginBottom:16}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6,flexWrap:"wrap",gap:6}}>
-                    <div style={{fontSize:12,fontWeight:600,color:"#4a4439"}}>{d.name}</div>
-                    <a href={d.url} download={d.name.replace(/[^A-Za-z0-9]+/g,"_")+".pdf"} style={{fontSize:11,padding:"4px 10px",background:"#f0ebe1",color:"#4a4439",border:"1px solid #d8d0c0",borderRadius:4,textDecoration:"none"}}>⬇ Download</a>
-                  </div>
-                  <iframe src={d.url} title={d.name} style={{width:"100%",height:"68vh",border:"1px solid #e1d8c5",borderRadius:8,background:"#fff"}}/>
+              {enPdfs && enPdfs.length>0 && (<>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
+                  {enPdfs.map((d,i)=>(<a key={i} href={d.url} download={d.name.replace(/[^A-Za-z0-9]+/g,"_")+".pdf"} style={{fontSize:11,padding:"4px 10px",background:"#f0ebe1",color:"#4a4439",border:"1px solid #d8d0c0",borderRadius:4,textDecoration:"none"}}>⬇ {d.name}</a>))}
                 </div>
-              ))}
+                <PdfsViewer pdfs={enPdfs} />
+              </>)}
               {enPdfs && enPdfs.length===0 && <div style={{fontSize:12,color:"#9b4a3e"}}>Die englische PDF-Vorschau konnte nicht erzeugt werden. Bitte nutze die deutsche Fassung oben über den Umschalter.</div>}
               <div style={{fontSize:11,color:"#8a8174",marginTop:8}}>This English version is a translation for your understanding. You can sign directly below; your signature applies to the legally binding German version.</div>
             </div>); })()}
