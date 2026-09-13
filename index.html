@@ -1575,6 +1575,7 @@
       const [uploadingRaum, setUploadingRaum] = React.useState(null);
       const [submitting, setSubmitting] = React.useState(false);
       const [signatureName, setSignatureName] = React.useState("");
+      const [signatureData, setSignatureData] = React.useState("");
       const [success, setSuccess] = React.useState(false);
       const [newMangel, setNewMangel] = React.useState(null);
       // newMangel: null | { raum, text, tempPath, tempUrl, uploading }
@@ -1953,8 +1954,8 @@
       }
       
       async function submitProtocol() {
-        if (!signatureName.trim()) {
-          alert("Bitte gib deinen vollständigen Namen als Signatur ein.");
+        if (!signatureData) {
+          alert("Bitte unterschreibe im Unterschriftsfeld.");
           return;
         }
         setSubmitting(true);
@@ -1962,14 +1963,12 @@
           await supabase.from("handover_protocols").update({
             photos: photos,
             mangel_notes: mangelText,
-            tenant_signature: signatureName.trim(),
+            tenant_signature: signatureData,
             status: "submitted",
             submitted_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           }).eq("token", token);
           setSuccess(true);
-          // Trigger PDF generation + email after DOM is rendered
-          setTimeout(() => { generateAndSendPdf(); }, 800);
         } catch (e) {
           alert("Absenden fehlgeschlagen: " + (e.message || e));
         }
@@ -2201,20 +2200,8 @@
             <div className="protocol-actions">
               <span style={{fontSize:22}}>✅</span>
               <div style={{flex:1,fontSize:13,color:"#3a5230"}}>
-                <div style={{fontWeight:700,marginBottom:3,fontSize:14.5}}>Vielen Dank{protocol?.mieter_vorname?`, ${protocol.mieter_vorname}`:""}! Die Übernahme ist abgeschlossen.</div>
-                <div style={{fontSize:12,opacity:.9,lineHeight:1.5}}>
-                  Deine Angaben und Mängel wurden erfolgreich eingereicht. Du erhältst das Protokoll als PDF per E-Mail.
-                  {pdfEmailStatus === "sending" && " (E-Mail wird gerade versendet ...)"}
-                  {pdfEmailStatus === "sent" && " Die E-Mail wurde soeben versendet."}
-                  {pdfEmailStatus === "error" && " Der automatische E-Mail-Versand hat nicht geklappt – bitte lade das PDF hier direkt herunter."}
-                  {" "}Du kannst es auch gleich hier herunterladen.
-                </div>
-              </div>
-              <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                {pdfDownloadUrl
-                  ? <a className="btn" href={pdfDownloadUrl} download="Uebernahmeprotokoll.pdf" style={{textDecoration:"none",textAlign:"center"}}>⬇ PDF herunterladen</a>
-                  : <button className="btn" disabled style={{opacity:.6}}>📄 PDF wird erstellt ...</button>}
-                <button className="btn" onClick={()=>window.print()} style={{background:"transparent",color:"#3a5230",border:"1px solid #c5d5b0"}}>🖨 Drucken</button>
+                <div style={{fontWeight:700,marginBottom:3,fontSize:14.5}}>Vielen Dank{protocol?.mieter_vorname?`, ${protocol.mieter_vorname}`:""}! Dein Protokoll wurde eingereicht.</div>
+                <div style={{fontSize:12,opacity:.9,lineHeight:1.5}}>Deine Angaben, Fotos und deine Unterschrift sind bei uns eingegangen. D&amp;T Homes prüft das Protokoll und du erhältst es anschliessend gegengezeichnet als PDF per E-Mail.</div>
               </div>
             </div>
 
@@ -2320,8 +2307,8 @@
               <div className="signatures">
                 <div className="sig-block">
                   <div className="role">Mietpartei · digital unterzeichnet</div>
-                  <div className="name">{signatureName}</div>
-                  <div className="meta">Digital unterzeichnet am {submittedDate} um {submittedTime}</div>
+                  {signatureData ? <img src={signatureData} alt="" style={{maxHeight:60,maxWidth:220,display:"block",margin:"4px 0"}}/> : <div className="name">{signatureName}</div>}
+                  <div className="meta">Digital unterschrieben am {submittedDate} um {submittedTime}</div>
                 </div>
                 <div className="sig-block">
                   <div className="role">Hauptmieterin</div>
@@ -2565,14 +2552,9 @@
             </div>
             
             <div style={{marginBottom:20}}>
-              <label style={{display:"block",fontSize:13,fontWeight:600,marginBottom:8}}>Deine Unterschrift (Vor- und Nachname)</label>
-              <input
-                type="text"
-                value={signatureName}
-                onChange={e=>setSignatureName(e.target.value)}
-                placeholder={`z.B. ${protocol.mieter_vorname || ""} ${protocol.mieter_nachname || ""}`.trim()}
-                style={{width:"100%",padding:"12px 14px",border:"1px solid #d8d0c0",borderRadius:8,fontSize:15,fontFamily:"inherit",boxSizing:"border-box"}}
-              />
+              <label style={{display:"block",fontSize:13,fontWeight:600,marginBottom:8}}>Deine Unterschrift</label>
+              <div style={{fontSize:12.5,color:"#5a5044",marginBottom:8}}>Unterschreibe mit dem Finger (Handy/Tablet) oder mit der Maus (Computer).</div>
+              <SignaturePad value={signatureData} onChange={setSignatureData} placeholder="↓ Hier mit Finger oder Maus unterschreiben ↓" />
             </div>
             
             <div style={{fontSize:12,color:"#5a5044",lineHeight:1.6,padding:"12px 14px",background:"#fdf2e0",border:"1px solid #e8c89c",borderRadius:8,marginBottom:20}}>
@@ -2581,7 +2563,7 @@
             
             <div style={{display:"flex",gap:8}}>
               <button className="secondary" onClick={()=>setStep(2)} disabled={submitting} style={{flex:1}}>← Zurück</button>
-              <button className="primary" onClick={submitProtocol} disabled={submitting || !signatureName.trim()} style={{flex:2}}>
+              <button className="primary" onClick={submitProtocol} disabled={submitting || !signatureData} style={{flex:2}}>
                 {submitting ? "Sende..." : "✓ Protokoll absenden"}
               </button>
             </div>
