@@ -1350,22 +1350,22 @@
       const [enPdfs, setEnPdfs] = useState(null);
       const [enPdfBusy, setEnPdfBusy] = useState(false);
       React.useEffect(() => {
-        if (lang !== "en" || enPdfs || enPdfBusy) return;
-        const cd = contract && contract.contract_data; if (!cd) return;
+        const cd = contract && contract.contract_data;
+        if (!cd || enPdfs || enPdfBusy) return;
         setEnPdfBusy(true);
         (async () => {
-          const b = cd.bewerber || {}; const v = cd.vertrag || {}; const docs = [];
-          try {
-            const umvHtml = cd.umv_html ? translateGermanHtml(cd.umv_html) : buildContractEn(b, v);
-            const umv = await genPdfFromHtml(umvHtml);
-            if (umv) docs.push({ name: "Sublease Agreement (EN)", url: umv });
-            const amzHtml = cd.amz_html ? translateGermanHtml(cd.amz_html) : buildAnfangsmietzinsEn(b, v);
-            const amz = await genPdfFromHtml(amzHtml);
-            if (amz) docs.push({ name: "Initial Rent Notification (EN)", url: amz });
-          } catch (e) { console.warn("EN PDF gen:", e); }
+          const b = cd.bewerber || {}; const v = cd.vertrag || {};
+          const umvHtml = cd.umv_html ? translateGermanHtml(cd.umv_html) : buildContractEn(b, v);
+          const amzHtml = cd.amz_html ? translateGermanHtml(cd.amz_html) : buildAnfangsmietzinsEn(b, v);
+          let umv = null, amz = null;
+          try { [umv, amz] = await Promise.all([genPdfFromHtml(umvHtml), genPdfFromHtml(amzHtml)]); }
+          catch (e) { console.warn("EN PDF gen:", e); }
+          const docs = [];
+          if (umv) docs.push({ name: "Sublease Agreement (EN)", url: umv });
+          if (amz) docs.push({ name: "Initial Rent Notification (EN)", url: amz });
           setEnPdfs(docs); setEnPdfBusy(false);
         })();
-      }, [lang]);
+      }, [contract]);
       // Bei upload mode: für jeden PDF (per path) das File-Object
       const [uploadedFiles, setUploadedFiles] = useState({});
       const [uploadProgress, setUploadProgress] = useState("");
