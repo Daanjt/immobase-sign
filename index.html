@@ -1902,6 +1902,10 @@
       const [submitting, setSubmitting] = React.useState(false);
       const [signatureName, setSignatureName] = React.useState("");
       const [signatureData, setSignatureData] = React.useState("");
+      const [hoLang, setHoLang] = React.useState("de");
+      const t = (de,en)=>(hoLang==="en"?en:de);
+      const ROOM_EN = {"Mein Zimmer":"My room","Küche":"Kitchen","Bad / WC":"Bathroom / Toilet","Wohnbereich / Flur":"Living area / Hallway"};
+      const LangSwitch = () => (<div style={{display:"flex",gap:6,marginBottom:14}}><button onClick={()=>setHoLang("de")} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid #d8d0c0",background:hoLang==="de"?"#3a352d":"#fff",color:hoLang==="de"?"#fff":"#6a6456",fontSize:13,cursor:"pointer"}}>Deutsch</button><button onClick={()=>setHoLang("en")} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid #d8d0c0",background:hoLang==="en"?"#3a352d":"#fff",color:hoLang==="en"?"#fff":"#6a6456",fontSize:13,cursor:"pointer"}}>English</button></div>);
       const [success, setSuccess] = React.useState(false);
       const [newMangel, setNewMangel] = React.useState(null);
       // newMangel: null | { raum, text, tempPath, tempUrl, uploading }
@@ -2281,7 +2285,7 @@
       
       async function submitProtocol() {
         if (!signatureData) {
-          alert("Bitte unterschreibe im Unterschriftsfeld.");
+          alert(t("Bitte unterschreibe im Unterschriftsfeld.","Please sign in the signature field."));
           return;
         }
         setSubmitting(true);
@@ -2526,8 +2530,8 @@
             <div className="protocol-actions">
               <span style={{fontSize:22}}>✅</span>
               <div style={{flex:1,fontSize:13,color:"#3a5230"}}>
-                <div style={{fontWeight:700,marginBottom:3,fontSize:14.5}}>Vielen Dank{protocol?.mieter_vorname?`, ${protocol.mieter_vorname}`:""}! Dein Protokoll wurde eingereicht.</div>
-                <div style={{fontSize:12,opacity:.9,lineHeight:1.5}}>Deine Angaben, Fotos und deine Unterschrift sind bei uns eingegangen. D&amp;T Homes prüft das Protokoll und du erhältst es anschliessend gegengezeichnet als PDF per E-Mail.</div>
+                <div style={{fontWeight:700,marginBottom:3,fontSize:14.5}}>{t("Vielen Dank","Thank you")}{protocol?.mieter_vorname?`, ${protocol.mieter_vorname}`:""}! {t("Dein Protokoll wurde eingereicht.","Your protocol has been submitted.")}</div>
+                <div style={{fontSize:12,opacity:.9,lineHeight:1.5}}>{t("Deine Angaben, Fotos und deine Unterschrift sind bei uns eingegangen. D&T Homes prüft das Protokoll und du erhältst es anschliessend gegengezeichnet als PDF per E-Mail.","Your details, photos and signature have reached us. D&T Homes reviews the protocol and you will then receive it countersigned as a PDF by email.")}</div>
               </div>
             </div>
 
@@ -2657,44 +2661,45 @@
               <div style={{textAlign:"center",marginBottom:14}}>
                 <img src={DT_LOGO_DATA_URI} alt="D&T Homes" style={{width:"110px",display:"inline-block"}}/>
               </div>
-              <h1>Übernahmeprotokoll</h1>
+              <LangSwitch/>
+              <h1>{t("Übernahmeprotokoll","Handover Protocol")}</h1>
               <p className="lead">
-                Hallo {protocol.mieter_vorname || ""}!
+                {t("Hallo","Hello")} {protocol.mieter_vorname || ""}!
               </p>
               <p style={{marginBottom:16}}>
-                Willkommen in deinem neuen Zuhause. Bitte prüfe die Wohnung sorgfältig und dokumentiere allfällige Mängel mit Fotos. Das schützt dich bei der Rückgabe der Wohnung.
+                {t("Willkommen in deinem neuen Zuhause. Bitte prüfe die Wohnung sorgfältig und dokumentiere allfällige Mängel mit Fotos. Das schützt dich bei der Rückgabe der Wohnung.","Welcome to your new home. Please check the apartment carefully and document any defects with photos. This protects you when you return the apartment.")}
               </p>
               
               {(protocol.apt_adresse || protocol.room_label) && (
                 <div style={{background:"#fafaf7",border:"1px solid #e1d8c5",borderRadius:8,padding:"12px 14px",marginBottom:16,fontSize:13,lineHeight:1.5}}>
                   {protocol.apt_adresse && <div>📍 {protocol.apt_adresse}{protocol.apt_plz || protocol.apt_ort ? ", " : ""}{protocol.apt_plz||""} {protocol.apt_ort||""}</div>}
-                  {protocol.room_label && <div style={{marginTop:4}}>🚪 Zimmer {protocol.room_label}</div>}
-                  {protocol.einzug_datum && <div style={{marginTop:4,color:"#5a5044",fontSize:12}}>Einzug: {formatDate(protocol.einzug_datum)}</div>}
+                  {protocol.room_label && <div style={{marginTop:4}}>🚪 {t("Zimmer","Room")} {protocol.room_label}</div>}
+                  {protocol.einzug_datum && <div style={{marginTop:4,color:"#5a5044",fontSize:12}}>{t("Einzug","Move-in")}: {formatDate(protocol.einzug_datum)}</div>}
                 </div>
               )}
               
               {protocol.schluessel_info && (
                 <div style={{background:"#fefcf7",border:"1px solid #d8d0c0",borderRadius:8,padding:"14px 16px",marginBottom:20}}>
-                  <div style={{fontSize:11,color:"#8a8174",textTransform:"uppercase",letterSpacing:".25em",marginBottom:8,fontWeight:600}}>🔑 Erhaltene Schlüssel</div>
+                  <div style={{fontSize:11,color:"#8a8174",textTransform:"uppercase",letterSpacing:".25em",marginBottom:8,fontWeight:600}}>{t("🔑 Erhaltene Schlüssel","🔑 Keys received")}</div>
                   <div style={{fontSize:13.5,lineHeight:1.6,color:"#3a352d",whiteSpace:"pre-wrap"}}>{protocol.schluessel_info}</div>
                 </div>
               )}
               
               <div style={{background:"#fdf2e0",border:"1px solid #e8c89c",borderRadius:8,padding:"14px 16px",marginBottom:20,fontSize:14,lineHeight:1.5}}>
-                <div style={{fontWeight:600,marginBottom:6}}>⏱ Frist bis {deadline.toLocaleDateString("de-CH",{day:"2-digit",month:"long",year:"numeric"})}</div>
-                <div style={{color:"#5a5044"}}>Du hast noch <strong>{daysLeft} Tage</strong> Zeit, das Protokoll einzureichen. Danach gilt die Wohnung automatisch als in einwandfreiem Zustand übernommen.</div>
+                <div style={{fontWeight:600,marginBottom:6}}>⏱ {t("Frist bis","Deadline")} {deadline.toLocaleDateString(hoLang==="en"?"en-GB":"de-CH",{day:"2-digit",month:"long",year:"numeric"})}</div>
+                <div style={{color:"#5a5044"}}>{t("Du hast noch","You still have")} <strong>{daysLeft} {t("Tage","days")}</strong> {t("Zeit, das Protokoll einzureichen. Danach gilt die Wohnung automatisch als in einwandfreiem Zustand übernommen.","to submit the protocol. After that, the apartment is automatically deemed to have been taken over in perfect condition.")}</div>
               </div>
               <div style={{marginBottom:24}}>
-                <div style={{fontWeight:600,marginBottom:10,fontSize:14}}>Was du tun musst:</div>
+                <div style={{fontWeight:600,marginBottom:10,fontSize:14}}>{t("Was du tun musst:","What you need to do:")}</div>
                 <ol style={{paddingLeft:20,lineHeight:1.7,fontSize:14,color:"#3a352d"}}>
-                  <li>Mängel pro Raum dokumentieren (Foto + kurze Beschreibung)</li>
-                  <li>Unterschreiben und absenden</li>
+                  <li>{t("Mängel pro Raum dokumentieren (Foto + kurze Beschreibung)","Document defects per room (photo + short description)")}</li>
+                  <li>{t("Unterschreiben und absenden","Sign and submit")}</li>
                 </ol>
                 <div style={{marginTop:10,fontSize:12.5,color:"#5a5044",lineHeight:1.5}}>
-                  Falls du keine Mängel entdeckst, kannst du direkt weiter zur Unterschrift.
+                  {t("Falls du keine Mängel entdeckst, kannst du direkt weiter zur Unterschrift.","If you don't find any defects, you can go straight to the signature.")}
                 </div>
               </div>
-              <button className="primary" onClick={()=>setStep(2)}>Los geht's →</button>
+              <button className="primary" onClick={()=>setStep(2)}>{t("Los geht's →","Let's go →")}</button>
             </div>
           </div>
         );
@@ -2760,11 +2765,12 @@
         return (
           <div className="wrap">
             <div className="card">
-              <div style={{fontSize:11,color:"#8a8174",marginBottom:8}}>Schritt 2 von 3</div>
-              <h1>Mängel dokumentieren</h1>
-              <p style={{marginBottom:8}}>Wenn du in einem Raum einen Mangel entdeckst, mach ein Foto und beschreibe ihn kurz.</p>
+              <LangSwitch/>
+              <div style={{fontSize:11,color:"#8a8174",marginBottom:8}}>{t("Schritt 2 von 3","Step 2 of 3")}</div>
+              <h1>{t("Mängel dokumentieren","Document defects")}</h1>
+              <p style={{marginBottom:8}}>{t("Wenn du in einem Raum einen Mangel entdeckst, mach ein Foto und beschreibe ihn kurz.","If you find a defect in a room, take a photo and describe it briefly.")}</p>
               <div style={{background:"#fdf2e0",border:"1px solid #e8c89c",borderRadius:8,padding:"10px 14px",marginBottom:20,fontSize:12,lineHeight:1.5,color:"#5a5044"}}>
-                <strong>Wichtig:</strong> Alle Mängel die du hier nicht meldest, könnten bei der Rückgabe der Wohnung zu deinen Lasten gehen.
+                <strong>{t("Wichtig:","Important:")}</strong> {t("Alle Mängel die du hier nicht meldest, könnten bei der Rückgabe der Wohnung zu deinen Lasten gehen.","Any defects you do not report here could be charged to you when you return the apartment.")}
               </div>
               
               {alleRaeume.map(r => {
@@ -2775,13 +2781,13 @@
                   <div key={r.key} style={{background:"#fafaf7",border:"1px solid #e1d8c5",borderRadius:8,padding:"14px 16px",marginBottom:14}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:maengel.length > 0 || isAddingHere ? 12 : 0,gap:8}}>
                       <div style={{fontSize:14,fontWeight:600,display:"flex",alignItems:"center",gap:8}}>
-                        <span>{r.icon} {r.label}</span>
+                        <span>{r.icon} {t(r.label, ROOM_EN[r.label]||r.label)}</span>
                         {isCustom && (
-                          <button onClick={()=>removeCustomRaum(r.key)} style={{background:"none",border:"none",color:"#9b4a3e",fontSize:14,cursor:"pointer",padding:"0 4px",lineHeight:1}} title="Raum entfernen">×</button>
+                          <button onClick={()=>removeCustomRaum(r.key)} style={{background:"none",border:"none",color:"#9b4a3e",fontSize:14,cursor:"pointer",padding:"0 4px",lineHeight:1}} title={t("Raum entfernen","Remove room")}>×</button>
                         )}
                       </div>
                       <div style={{fontSize:11,color:maengel.length > 0 ? "#8a3a2e" : "#8a8174",fontWeight:maengel.length > 0 ? 600 : 400}}>
-                        {maengel.length === 0 ? "keine Mängel" : `${maengel.length} Mangel${maengel.length !== 1 ? "s" : ""}`}
+                        {maengel.length === 0 ? t("keine Mängel","no defects") : `${maengel.length} ${maengel.length !== 1 ? t("Mängel","defects") : t("Mangel","defect")}`}
                       </div>
                     </div>
                     
@@ -2793,7 +2799,7 @@
                           </div>
                         )}
                         <div style={{flex:1,minWidth:0,fontSize:12.5,color:"#3a352d",lineHeight:1.4,paddingTop:m.url ? 0 : 4}}>
-                          {m.beschreibung || (m.url ? <span style={{color:"#8a8174",fontStyle:"italic"}}>Nur Foto, keine Beschreibung</span> : <span style={{color:"#8a8174",fontStyle:"italic"}}>Ohne Foto</span>)}
+                          {m.beschreibung || (m.url ? <span style={{color:"#8a8174",fontStyle:"italic"}}>{t("Nur Foto, keine Beschreibung","Photo only, no description")}</span> : <span style={{color:"#8a8174",fontStyle:"italic"}}>{t("Ohne Foto","No photo")}</span>)}
                         </div>
                         <button onClick={()=>removePhoto(m._idx)} style={{flexShrink:0,background:"none",color:"#9b4a3e",border:"none",fontSize:16,cursor:"pointer",padding:"0 4px",lineHeight:1}}>×</button>
                       </div>
@@ -2801,11 +2807,11 @@
                     
                     {isAddingHere ? (
                       <div style={{background:"#fefcf7",border:"1px solid #a8c0d5",borderRadius:6,padding:"12px 14px"}}>
-                        <div style={{fontSize:11.5,color:"#3a5570",marginBottom:8,fontWeight:600}}>Neuer Mangel</div>
+                        <div style={{fontSize:11.5,color:"#3a5570",marginBottom:8,fontWeight:600}}>{t("Neuer Mangel","New defect")}</div>
                         <textarea
                           value={newMangel.text}
                           onChange={e=>setNewMangel(p=>({...p,text:e.target.value}))}
-                          placeholder="z.B. 'Kratzer auf Parkett', 'Türgriff locker'..."
+                          placeholder={t("z.B. 'Kratzer auf Parkett', 'Türgriff locker'...","e.g. 'Scratch on parquet', 'Door handle loose'...")}
                           style={{width:"100%",minHeight:56,padding:"8px 10px",border:"1px solid #d8d0c0",borderRadius:5,fontSize:13,fontFamily:"inherit",lineHeight:1.5,boxSizing:"border-box",resize:"vertical",marginBottom:8}}
                         />
                         {newMangel.tempUrl ? (
@@ -2815,7 +2821,7 @@
                           </div>
                         ) : (
                           <label style={{display:"inline-block",cursor:"pointer",background:newMangel.uploading ? "#f0ebe1" : "#e8efde",color:newMangel.uploading ? "#8a8174" : "#3a5230",border:"1px solid " + (newMangel.uploading ? "#d8d0c0" : "#c5d5b0"),borderRadius:5,padding:"7px 12px",fontSize:12,fontWeight:600,marginBottom:8}}>
-                            {newMangel.uploading ? "Lade hoch..." : "📸 Foto aufnehmen"}
+                            {newMangel.uploading ? t("Lade hoch...","Uploading...") : t("📸 Foto aufnehmen","📸 Take photo")}
                             <input type="file" accept="image/*" capture="environment" disabled={newMangel.uploading} onChange={e=>{
                               const file = e.target.files[0];
                               if (file) uploadMangelPhoto(file);
@@ -2824,15 +2830,15 @@
                           </label>
                         )}
                         <div style={{display:"flex",gap:6,marginTop:6}}>
-                          <button onClick={cancelNewMangel} style={{fontSize:12,padding:"6px 12px",background:"#f0ebe1",color:"#4a4439",border:"1px solid #d8d0c0",borderRadius:5,cursor:"pointer"}}>Abbrechen</button>
+                          <button onClick={cancelNewMangel} style={{fontSize:12,padding:"6px 12px",background:"#f0ebe1",color:"#4a4439",border:"1px solid #d8d0c0",borderRadius:5,cursor:"pointer"}}>{t("Abbrechen","Cancel")}</button>
                           <button onClick={saveNewMangel} disabled={!newMangel.text.trim() && !newMangel.tempPath} style={{fontSize:12,padding:"6px 12px",background: (!newMangel.text.trim() && !newMangel.tempPath) ? "#f0ebe1" : "#3a5230",color: (!newMangel.text.trim() && !newMangel.tempPath) ? "#8a8174" : "#fff",border: "1px solid " + ((!newMangel.text.trim() && !newMangel.tempPath) ? "#d8d0c0" : "#3a5230"),borderRadius:5,cursor: (!newMangel.text.trim() && !newMangel.tempPath) ? "not-allowed" : "pointer",fontWeight:600}}>
-                            ✓ Mangel speichern
+                            {t("✓ Mangel speichern","✓ Save defect")}
                           </button>
                         </div>
                       </div>
                     ) : (
                       <button onClick={()=>startNewMangel(r.key)} style={{width:"100%",padding:"9px 12px",background:"#fefcf7",color:"#4a4439",border:"1px dashed #d8d0c0",borderRadius:5,cursor:"pointer",fontSize:12.5,fontWeight:500}}>
-                        + Mangel hinzufügen
+                        {t("+ Mangel hinzufügen","+ Add defect")}
                       </button>
                     )}
                   </div>
@@ -2840,12 +2846,12 @@
               })}
               
               <button onClick={addCustomRaum} style={{width:"100%",padding:"11px 14px",background:"#fefcf7",color:"#4a4439",border:"1px dashed #b8b0a0",borderRadius:6,cursor:"pointer",fontSize:12.5,fontWeight:500,marginBottom:6}}>
-                + Weiteren Raum hinzufügen (z.B. Balkon, Keller)
+                {t("+ Weiteren Raum hinzufügen (z.B. Balkon, Keller)","+ Add another room (e.g. balcony, cellar)")}
               </button>
               
               <div style={{display:"flex",gap:8,marginTop:20}}>
-                <button className="secondary" onClick={()=>setStep(1)} style={{flex:1}}>← Zurück</button>
-                <button className="primary" onClick={()=>setStep(3)} disabled={uploadingRaum!==null || !!(newMangel && newMangel.uploading)} style={{flex:2}}>{(uploadingRaum!==null || (newMangel && newMangel.uploading)) ? "Foto lädt …" : "Weiter →"}</button>
+                <button className="secondary" onClick={()=>setStep(1)} style={{flex:1}}>{t("← Zurück","← Back")}</button>
+                <button className="primary" onClick={()=>setStep(3)} disabled={uploadingRaum!==null || !!(newMangel && newMangel.uploading)} style={{flex:2}}>{(uploadingRaum!==null || (newMangel && newMangel.uploading)) ? t("Foto lädt …","Photo uploading …") : t("Weiter →","Continue →")}</button>
               </div>
             </div>
           </div>
@@ -2857,40 +2863,41 @@
       return (
         <div className="wrap">
           <div className="card">
-            <div style={{fontSize:11,color:"#8a8174",marginBottom:8}}>Schritt 3 von 3</div>
-            <h1>Bestätigen und absenden</h1>
-            <p style={{marginBottom:20}}>Bitte überprüfe deine Angaben und unterschreibe unten.</p>
+            <LangSwitch/>
+            <div style={{fontSize:11,color:"#8a8174",marginBottom:8}}>{t("Schritt 3 von 3","Step 3 of 3")}</div>
+            <h1>{t("Bestätigen und absenden","Confirm and submit")}</h1>
+            <p style={{marginBottom:20}}>{t("Bitte überprüfe deine Angaben und unterschreibe unten.","Please review your details and sign below.")}</p>
             
             <div style={{background:"#fafaf7",border:"1px solid #e1d8c5",borderRadius:8,padding:"14px 16px",marginBottom:20,fontSize:13,lineHeight:1.7}}>
-              <div style={{fontWeight:600,marginBottom:8}}>Zusammenfassung</div>
-              <div>📋 <strong>{totalMaengel}</strong> Mangel{totalMaengel !== 1 ? "s" : ""} erfasst</div>
-              <div>{totalMaengel === 0 ? "Du hast keine Mängel gemeldet. Die Wohnung gilt somit als in einwandfreiem Zustand übernommen." : "Bitte prüfe im vorigen Schritt ob du alle Mängel erfasst hast."}</div>
+              <div style={{fontWeight:600,marginBottom:8}}>{t("Zusammenfassung","Summary")}</div>
+              <div>📋 <strong>{totalMaengel}</strong> {totalMaengel !== 1 ? t("Mängel erfasst","defects recorded") : t("Mangel erfasst","defect recorded")}</div>
+              <div>{totalMaengel === 0 ? t("Du hast keine Mängel gemeldet. Die Wohnung gilt somit als in einwandfreiem Zustand übernommen.","You have not reported any defects. The apartment is therefore deemed to have been taken over in perfect condition.") : t("Bitte prüfe im vorigen Schritt ob du alle Mängel erfasst hast.","Please check in the previous step that you have recorded all defects.")}</div>
             </div>
             
             <div style={{marginBottom:20}}>
-              <label style={{display:"block",fontSize:13,fontWeight:600,marginBottom:8}}>Weitere Bemerkungen (optional)</label>
+              <label style={{display:"block",fontSize:13,fontWeight:600,marginBottom:8}}>{t("Weitere Bemerkungen (optional)","Additional remarks (optional)")}</label>
               <textarea
                 value={mangelText}
                 onChange={e=>setMangelText(e.target.value)}
-                placeholder="Sonstige Anmerkungen die nicht raum-spezifisch sind..."
+                placeholder={t("Sonstige Anmerkungen die nicht raum-spezifisch sind...","Other remarks that are not room-specific...")}
                 style={{width:"100%",minHeight:80,padding:"10px 12px",border:"1px solid #d8d0c0",borderRadius:8,fontSize:13,fontFamily:"inherit",lineHeight:1.6,boxSizing:"border-box",resize:"vertical"}}
               />
             </div>
             
             <div style={{marginBottom:20}}>
-              <label style={{display:"block",fontSize:13,fontWeight:600,marginBottom:8}}>Deine Unterschrift</label>
-              <div style={{fontSize:12.5,color:"#5a5044",marginBottom:8}}>Unterschreibe mit dem Finger (Handy/Tablet) oder mit der Maus (Computer).</div>
-              <SignaturePad value={signatureData} onChange={setSignatureData} placeholder="↓ Hier mit Finger oder Maus unterschreiben ↓" />
+              <label style={{display:"block",fontSize:13,fontWeight:600,marginBottom:8}}>{t("Deine Unterschrift","Your signature")}</label>
+              <div style={{fontSize:12.5,color:"#5a5044",marginBottom:8}}>{t("Unterschreibe mit dem Finger (Handy/Tablet) oder mit der Maus (Computer).","Sign with your finger (phone/tablet) or with the mouse (computer).")}</div>
+              <SignaturePad value={signatureData} onChange={setSignatureData} lang={hoLang} placeholder={t("↓ Hier mit Finger oder Maus unterschreiben ↓","↓ Sign here with finger or mouse ↓")} />
             </div>
             
             <div style={{fontSize:12,color:"#5a5044",lineHeight:1.6,padding:"12px 14px",background:"#fdf2e0",border:"1px solid #e8c89c",borderRadius:8,marginBottom:20}}>
-              Mit dem Absenden bestätige ich, dass ich die Wohnung dokumentiert habe und dass die oben angegebenen Mängel den Zustand bei Übernahme wiedergeben. Später gemeldete Mängel, die nicht aufgeführt sind, können mir bei der Rückgabe angerechnet werden. Versteckte Mängel bleiben vorbehalten (Art. 256 OR).
+              {t("Mit dem Absenden bestätige ich, dass ich die Wohnung dokumentiert habe und dass die oben angegebenen Mängel den Zustand bei Übernahme wiedergeben. Später gemeldete Mängel, die nicht aufgeführt sind, können mir bei der Rückgabe angerechnet werden. Versteckte Mängel bleiben vorbehalten (Art. 256 OR).","By submitting, I confirm that I have documented the apartment and that the defects listed above reflect its condition at handover. Defects reported later that are not listed may be charged to me upon return. Hidden defects remain reserved (Art. 256 CO).")}
             </div>
             
             <div style={{display:"flex",gap:8}}>
-              <button className="secondary" onClick={()=>setStep(2)} disabled={submitting} style={{flex:1}}>← Zurück</button>
+              <button className="secondary" onClick={()=>setStep(2)} disabled={submitting} style={{flex:1}}>{t("← Zurück","← Back")}</button>
               <button className="primary" onClick={submitProtocol} disabled={submitting || !signatureData || uploadingRaum!==null || !!(newMangel && newMangel.uploading)} style={{flex:2}}>
-                {submitting ? "Sende..." : "✓ Protokoll absenden"}
+                {submitting ? t("Sende...","Sending...") : t("✓ Protokoll absenden","✓ Submit protocol")}
               </button>
             </div>
           </div>
