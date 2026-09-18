@@ -2820,7 +2820,8 @@
                             <button onClick={()=>removeMangelTempPhoto()} style={{position:"absolute",top:3,right:3,background:"rgba(0,0,0,.7)",color:"#fff",border:"none",borderRadius:"50%",width:22,height:22,fontSize:12,cursor:"pointer",lineHeight:"22px",padding:0}}>×</button>
                           </div>
                         ) : (
-                          <label style={{display:"inline-block",cursor:"pointer",background:newMangel.uploading ? "#f0ebe1" : "#e8efde",color:newMangel.uploading ? "#8a8174" : "#3a5230",border:"1px solid " + (newMangel.uploading ? "#d8d0c0" : "#c5d5b0"),borderRadius:5,padding:"7px 12px",fontSize:12,fontWeight:600,marginBottom:8}}>
+                          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
+                          <label style={{display:"inline-block",cursor:"pointer",background:newMangel.uploading ? "#f0ebe1" : "#e8efde",color:newMangel.uploading ? "#8a8174" : "#3a5230",border:"1px solid " + (newMangel.uploading ? "#d8d0c0" : "#c5d5b0"),borderRadius:5,padding:"7px 12px",fontSize:12,fontWeight:600}}>
                             {newMangel.uploading ? t("Lade hoch...","Uploading...") : t("📸 Foto aufnehmen","📸 Take photo")}
                             <input type="file" accept="image/*" capture="environment" disabled={newMangel.uploading} onChange={e=>{
                               const file = e.target.files[0];
@@ -2828,6 +2829,15 @@
                               e.target.value = "";
                             }} style={{display:"none"}}/>
                           </label>
+                          <label style={{display:"inline-block",cursor:"pointer",background:newMangel.uploading ? "#f0ebe1" : "#eef2f7",color:newMangel.uploading ? "#8a8174" : "#33506e",border:"1px solid " + (newMangel.uploading ? "#d8d0c0" : "#c3d3e4"),borderRadius:5,padding:"7px 12px",fontSize:12,fontWeight:600}}>
+                            {t("🖼 Bild hochladen","🖼 Upload photo")}
+                            <input type="file" accept="image/*" disabled={newMangel.uploading} onChange={e=>{
+                              const file = e.target.files[0];
+                              if (file) uploadMangelPhoto(file);
+                              e.target.value = "";
+                            }} style={{display:"none"}}/>
+                          </label>
+                          </div>
                         )}
                         <div style={{display:"flex",gap:6,marginTop:6}}>
                           <button onClick={cancelNewMangel} style={{fontSize:12,padding:"6px 12px",background:"#f0ebe1",color:"#4a4439",border:"1px solid #d8d0c0",borderRadius:5,cursor:"pointer"}}>{t("Abbrechen","Cancel")}</button>
