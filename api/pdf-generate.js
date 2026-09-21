@@ -55,6 +55,13 @@ async function generatePdf(req, res) {
     return res.end(JSON.stringify({ error: 'HTML too large (max 5MB)' }));
   }
 
+  // Downscale large public storage images through a resizing proxy so protocols
+  // with many photos render well within the timeout (e.g. 468KB -> ~70KB each).
+  const htmlR = html.replace(
+    /(<img\b[^>]*\bsrc=")((?:https?:)?\/\/[^"]*\/storage\/v1\/object\/public\/[^"]+)(")/gi,
+    (_m, pre, url, post) => `${pre}https://wsrv.nl/?url=${encodeURIComponent(url)}&w=1000&q=72&output=jpg${post}`
+  );
+
   // Lazy-load Chromium ONLY for POST
   const chromiumMod = await import('@sparticuz/chromium');
   const puppeteerMod = await import('puppeteer-core');
@@ -79,7 +86,7 @@ async function generatePdf(req, res) {
     });
 
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 30000 });
+    await page.setContent(htmlR, { waitUntil: 'networkidle0', timeout: 50000 });
 
     const pdfBuffer = await page.pdf({
       format,
