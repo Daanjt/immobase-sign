@@ -1385,7 +1385,11 @@
         setEnPdfBusy(true);
         (async () => {
           const b = cd.bewerber || {}; const v = cd.vertrag || {};
-          const umvHtml = cd.umv_html ? translateGermanHtml(cd.umv_html) : buildContractEn(b, v);
+          let umvHtml = cd.umv_html ? translateGermanHtml(cd.umv_html) : buildContractEn(b, v);
+          if (cd.umv_html && v && v.sonderklausel && v.sonderklausel_en) {
+            const escC = (x) => String(x||"").replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').split(String.fromCharCode(10)).join('<br>');
+            umvHtml = umvHtml.split(escC(v.sonderklausel)).join(escC(v.sonderklausel_en));
+          }
           const amzHtml = cd.amz_html ? translateGermanHtml(cd.amz_html) : buildAnfangsmietzinsEn(b, v);
           let umv = null, amz = null;
           try { [umv, amz] = await Promise.all([genPdfFromHtml(umvHtml), genPdfFromHtml(amzHtml)]); }
