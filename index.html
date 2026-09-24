@@ -1386,9 +1386,15 @@
         (async () => {
           const b = cd.bewerber || {}; const v = cd.vertrag || {};
           let umvHtml = cd.umv_html ? translateGermanHtml(cd.umv_html) : buildContractEn(b, v);
-          if (cd.umv_html && v && v.sonderklausel && v.sonderklausel_en) {
-            const escC = (x) => String(x||"").replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').split(String.fromCharCode(10)).join('<br>');
-            umvHtml = umvHtml.split(escC(v.sonderklausel)).join(escC(v.sonderklausel_en));
+          if (cd.umv_html && v && v.sonderklausel) {
+            let enClause = (v.sonderklausel_en || "").trim();
+            if (!enClause) {
+              try { const { data } = await supabase.functions.invoke("translate-clause", { body: { text: v.sonderklausel } }); if (data && data.en) enClause = String(data.en).trim(); } catch (e) {}
+            }
+            if (enClause) {
+              const escC = (x) => String(x||"").replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').split(String.fromCharCode(10)).join('<br>');
+              umvHtml = umvHtml.split(escC(v.sonderklausel)).join(escC(enClause));
+            }
           }
           const amzHtml = cd.amz_html ? translateGermanHtml(cd.amz_html) : buildAnfangsmietzinsEn(b, v);
           let umv = null, amz = null;
