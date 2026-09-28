@@ -1907,6 +1907,11 @@
       const [submitting, setSubmitting] = React.useState(false);
       const [signatureName, setSignatureName] = React.useState("");
       const [signatureData, setSignatureData] = React.useState("");
+      const [keyNrs, setKeyNrs] = React.useState([]);
+      React.useEffect(()=>{
+        const norm = (protocol && protocol.schluessel_data && Array.isArray(protocol.schluessel_data.normal)) ? protocol.schluessel_data.normal : null;
+        if(norm && keyNrs.length !== norm.length){ setKeyNrs(norm.map(k=>k.nr||"")); }
+      },[protocol]);
       const [hoLang, setHoLang] = React.useState("de");
       const t = (de,en)=>(hoLang==="en"?en:de);
       const ROOM_EN = {"Mein Zimmer":"My room","Küche":"Kitchen","Bad / WC":"Bathroom / Toilet","Wohnbereich / Flur":"Living area / Hallway"};
@@ -2293,16 +2298,29 @@
           alert(t("Bitte unterschreibe im Unterschriftsfeld.","Please sign in the signature field."));
           return;
         }
+        const _norm = (protocol.schluessel_data && Array.isArray(protocol.schluessel_data.normal)) ? protocol.schluessel_data.normal : [];
+        if(_norm.length>0 && _norm.some((k,i)=>!((keyNrs[i]||"").trim()))){
+          alert(t("Bitte trage die Nummer jedes Schlüssels ein.","Please enter the number of each key."));
+          return;
+        }
+        const _newSchluesselData = protocol.schluessel_data ? {...protocol.schluessel_data, normal: _norm.map((k,i)=>({...k, nr:(keyNrs[i]||"").trim()}))} : null;
         setSubmitting(true);
         try {
           await supabase.from("handover_protocols").update({
             photos: photos,
             mangel_notes: mangelText,
             tenant_signature: signatureData,
+            schluessel_data: _newSchluesselData,
             status: "submitted",
             submitted_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           }).eq("token", token);
+          try {
+            if(_newSchluesselData && protocol.apt_id){
+              const _rows = (_newSchluesselData.normal||[]).filter(k=>(k.nr||"").trim()).map((k,i)=>({ id:"SCH-"+Date.now()+"-"+i+"-"+Math.random().toString(36).slice(2,5), apt_id:protocol.apt_id, nummer:k.nr.trim(), typ:"Wohnungstür", tenant_id:protocol.tenant_id||null, status:protocol.tenant_id?"ausgegeben":"im_buero", bemerkung:"aus Übergabeprotokoll" }));
+              if(_rows.length) await supabase.from("schluessel").insert(_rows);
+            }
+          } catch(e){ console.warn("schluessel register:", e); }
           setSuccess(true);
         } catch (e) {
           alert("Absenden fehlgeschlagen: " + (e.message || e));
@@ -2899,6 +2917,26 @@
               />
             </div>
             
+            {protocol && protocol.schluessel_data && (((protocol.schluessel_data.normal||[]).length>0) || protocol.schluessel_data.extraText) && (
+              <div style={{marginBottom:20}}>
+                <label style={{display:"block",fontSize:13,fontWeight:600,marginBottom:8}}>{t("Schlüssel","Keys")}</label>
+                {(protocol.schluessel_data.normal||[]).length>0 && (
+                  <div style={{marginBottom:10}}>
+                    <div style={{fontSize:12.5,color:"#5a5044",marginBottom:8}}>{t("Bitte trage die Nummer jedes erhaltenen Schlüssels ein.","Please enter the number of each key you received.")}</div>
+                    {(protocol.schluessel_data.normal||[]).map((k,i)=>(
+                      <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+                        <span style={{fontSize:13,minWidth:90,color:"#3a352d"}}>{t("Schlüssel","Key")} {i+1}</span>
+                        <input value={keyNrs[i]||""} onChange={e=>setKeyNrs(keyNrs.map((x,j)=>j===i?e.target.value:x))} placeholder={t("Nummer","Number")}
+                          style={{flex:1,padding:"10px 12px",border:"1px solid #d8d0c0",borderRadius:8,fontSize:13,fontFamily:"inherit"}}/>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {protocol.schluessel_data.extraText && (
+                  <div style={{fontSize:12.5,color:"#5a5044",padding:"8px 10px",background:"#f5f2ec",borderRadius:6}}>{t("Zusätzlich erhalten","Additionally received")}: {protocol.schluessel_data.extraText}</div>
+                )}
+              </div>
+            )}
             <div style={{marginBottom:20}}>
               <label style={{display:"block",fontSize:13,fontWeight:600,marginBottom:8}}>{t("Deine Unterschrift","Your signature")}</label>
               <div style={{fontSize:12.5,color:"#5a5044",marginBottom:8}}>{t("Unterschreibe mit dem Finger (Handy/Tablet) oder mit der Maus (Computer).","Sign with your finger (phone/tablet) or with the mouse (computer).")}</div>
