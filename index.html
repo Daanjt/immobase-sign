@@ -901,7 +901,7 @@
           {v.nettomiete != null && <Row label="Nettomiete" value={chf(v.nettomiete)} bold />}
           {v.nebenkosten != null && <Row label="Nebenkosten" value={chf(v.nebenkosten)} bold />}
           {v.strom != null && <Row label="Stromkosten" value={chf(v.strom)} bold />}
-          {v.aufschlag ? <Row label="Aufschlag" value={chf(v.aufschlag)} bold /> : null}
+          {v.aufschlag ? <Row label="Servicegebühr" value={chf(v.aufschlag)} bold /> : null}
           <Row label="Total / Mt." value={chf(v.total || v.bruttomiete)} bold />
           
           <Sec title="Kaution" />
