@@ -2925,7 +2925,7 @@
                     <div style={{fontSize:12.5,color:"#5a5044",marginBottom:8}}>{t("Wichtig: Schreibe die ganze Nummer ab, die auf dem Schlüssel steht (eingraviert oder auf dem Anhänger) – vollständig und genau, mit allen Zeichen.","Important: copy the full number shown on the key (engraved or on the tag) – completely and exactly, with all characters.")}</div>
                     {(protocol.schluessel_data.normal||[]).map((k,i)=>(
                       <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
-                        <span style={{fontSize:13,minWidth:90,color:"#3a352d"}}>{t("Schlüssel","Key")} {i+1}</span>
+                        <span style={{fontSize:13,minWidth:90,color:"#3a352d"}}>{t("Wohnungsschlüssel","Apartment key")} {i+1}</span>
                         <input value={keyNrs[i]||""} onChange={e=>setKeyNrs(keyNrs.map((x,j)=>j===i?e.target.value:x))} placeholder={t("Ganze Schlüsselnummer, z.B. 1-LA008031-31.2","Full key number, e.g. 1-LA008031-31.2")}
                           style={{flex:1,padding:"10px 12px",border:"1px solid #d8d0c0",borderRadius:8,fontSize:13,fontFamily:"inherit"}}/>
                       </div>
