@@ -644,23 +644,24 @@
     // ════════════════════════════════════════════════════════════════════════
     // SUCCESS SCREEN
     // ════════════════════════════════════════════════════════════════════════
-    function SuccessScreen({ contract }) {
+    function SuccessScreen({ contract, lang }) {
       const isVerlaengerung = contract?.contract_type === "verlaengerung" || contract?.contract_type === "nachtrag";
+      const t = (de,en) => (lang==="en" ? en : de);
       return (
         <div className="container">
           <Header />
           <div className="status-screen">
             <div className="success-checkmark"></div>
-            <div className="status-title">{isVerlaengerung ? "Verlängerung unterzeichnet" : "Vertrag unterzeichnet"}</div>
+            <div className="status-title">{isVerlaengerung ? t("Verlängerung unterzeichnet","Extension signed") : t("Vertrag unterzeichnet","Contract signed")}</div>
             <div className="status-message">
-              Vielen Dank, {contract?.mieter_vorname}. {isVerlaengerung ? "Die Verlängerung deines Mietvertrags wurde erfolgreich unterzeichnet." : "Dein Vertrag wurde erfolgreich unterzeichnet."}
+              {t("Vielen Dank","Thank you")}, {contract?.mieter_vorname}. {isVerlaengerung ? t("Die Verlängerung deines Mietvertrags wurde erfolgreich unterzeichnet.","The extension of your rental contract has been signed successfully.") : t("Dein Vertrag wurde erfolgreich unterzeichnet.","Your contract has been signed successfully.")}
               {isVerlaengerung
-                ? <><br /><br />Dein Mietverhältnis läuft zu den bisherigen Bedingungen unverändert weiter bis zum vereinbarten Enddatum.</>
+                ? <><br /><br />{t("Dein Mietverhältnis läuft zu den bisherigen Bedingungen unverändert weiter bis zum vereinbarten Enddatum.","Your tenancy continues unchanged on the existing terms until the agreed end date.")}</>
                 : null}
             </div>
             <div className="audit-box" style={{ maxWidth: 380, textAlign: "left" }}>
-              <strong>Unterzeichnet:</strong> {formatDateTime(new Date())}<br />
-              <strong>Vertragsnr.:</strong> {contract?.id?.substring(0, 8)}…
+              <strong>{t("Unterzeichnet:","Signed:")}</strong> {formatDateTime(new Date())}<br />
+              <strong>{t("Vertragsnr.:","Contract no.:")}</strong> {contract?.id?.substring(0, 8)}…
             </div>
           </div>
         </div>
@@ -984,6 +985,12 @@
     // uebersetzen. Layout/CSS/Positionen bleiben identisch. Gesetzesauszug (OR)
     // bleibt bewusst Deutsch (amtlicher Text).
     const DE_EN_MAP = [
+      ["<div class=\"role\">Hauptmieter</div>", "<div class=\"role\">Main tenant</div>"],
+      ["<div class=\"role\">Hauptmieterin</div>", "<div class=\"role\">Main tenant</div>"],
+      ["<div class=\"role\">Untermieter</div>", "<div class=\"role\">Subtenant</div>"],
+      ["<strong>\"Als PDF speichern\"</strong> im Druck-Dialog", "<strong>\"Save as PDF\"</strong> in the print dialog"],
+      ["📄 Drucken / PDF speichern", "📄 Print / Save as PDF"],
+      [">Schliessen</button>", ">Close</button>"],
       ["Kautions-Aufschlag in CHF","Deposit surcharge in CHF"],
       // Aeltere Vertragsfassungen (in noch offenen Vertraegen gespeichert)
       ["<p class=\"welcome\">Guten Tag ", "<p class=\"welcome\">Hello "],
@@ -1072,7 +1079,7 @@
       ["Der Untermieter bestätigt den Erhalt der Schlüssel und Zugangscodes und verpflichtet sich, diese sorgfältig aufzubewahren und vor unbefugtem Zugriff zu schützen.","The subtenant confirms receipt of the keys and access codes and undertakes to keep them safe and protect them from unauthorised access."],
       ["Bei Beendigung des Mietverhältnisses sind sämtliche Schlüssel und Zugangscodes zurückzugeben.","Upon termination of the tenancy, all keys and access codes must be returned."],
       ["Das Anfertigen zusätzlicher Schlüssel ist ohne Zustimmung des Hauptmieters untersagt. Bei Verlust eines oder mehrerer Schlüssel (unabhängig vom Grund) ist der Hauptmieter berechtigt, die betroffenen Schlösser inklusive Schlüssel auf Kosten des Untermieters auszuwechseln.","Making copies of keys is prohibited without the main tenant's consent. In the event of the loss of one or more keys (regardless of the cause), the main tenant is entitled to replace the affected locks, including the keys, at the subtenant's expense."],
-      ["Überschreitet der Stromverbrauch den Durchschnitt einer vergleichbaren Wohnung um mehr als 10 %, kann der Vermieter eine Überprüfung verlangen und eine Nachzahlung geltend machen. Der Betrieb von Geräten mit überdurchschnittlich hohem Energieverbrauch (z. B. Mining-Rigs, Klimaanlagen) ist nur mit schriftlicher Zustimmung des Vermieters gestattet.","If electricity consumption exceeds the average of a comparable apartment by more than 10%, the landlord may request a review and claim an additional payment. The operation of devices with above-average energy consumption (e.g. mining rigs, air conditioners) is only permitted with the landlord's written consent."],
+      ["Überschreitet der Stromverbrauch den Durchschnitt einer vergleichbaren Wohnung um mehr als 10 %, kann der Vermieter eine Überprüfung verlangen und eine Nachzahlung geltend machen. Der Betrieb von Geräten mit überdurchschnittlich hohem Energieverbrauch (z. B. Mining-Rigs, Klimaanlagen) ist nur mit schriftlicher Zustimmung des Vermieters gestattet.","If electricity consumption exceeds the average of a comparable apartment by more than 10%, the main tenant may request a review and claim an additional payment. The operation of devices with above-average energy consumption (e.g. mining rigs, air conditioners) is only permitted with the main tenant's written consent."],
       ["Der Untermieter stimmt zu, dass die im Zusammenhang mit dem Mietverhältnis stehenden Akten und Dokumente digitalisiert und gespeichert werden dürfen und dass die digitalisierten Dokumente als Originaldokumente gelten.","The subtenant agrees that the files and documents relating to the tenancy may be digitised and stored, and that the digitised documents shall be deemed original documents."],
       ["9. Reparaturen und Instandhaltung","9. Repairs and maintenance"],
       ["Der Hauptmieter ist für die Instandhaltung der Wohnung verantwortlich, einschliesslich notwendiger Reparaturen an sanitären Anlagen, Heizung, Elektrik und baulichen Elementen. Der Untermieter hat Mängel oder Reparaturbedarf unverzüglich zu melden.","The main tenant is responsible for the maintenance of the apartment, including necessary repairs to plumbing, heating, electrics and structural elements. The subtenant must report defects or repair needs immediately."],
@@ -1081,7 +1088,7 @@
       ["Für Schäden in gemeinsam genutzten Bereichen haften die Bewohner anteilig (Solidarhaftung), sofern kein Verursacher festgestellt werden kann.","For damage in shared areas, the residents are jointly and severally liable on a pro-rata basis, provided no responsible party can be determined."],
       ["11. Kündigung","11. Termination"],
       ["Bei befristeten Untermietverhältnissen mit einer vereinbarten Mietdauer von weniger als zwölf (12) Monaten ist eine ordentliche Kündigung durch den Untermieter ausgeschlossen. Der Untermieter verpflichtet sich, das Zimmer bzw. die Wohnung für die gesamte vereinbarte Mietdauer zu mieten und die entsprechenden Mietzinsen bis zum Vertragsende vollständig zu entrichten. Dies gilt auch dann, wenn der Untermieter das Zimmer vorzeitig verlässt.","For fixed-term subleases with an agreed term of less than twelve (12) months, ordinary termination by the subtenant is excluded. The subtenant undertakes to rent the room or apartment for the entire agreed term and to pay the corresponding rent in full until the end of the contract. This also applies if the subtenant leaves the room early."],
-      ["Bei befristeten Untermietverhältnissen mit einer vereinbarten Mietdauer von zwölf (12) Monaten oder mehr ist eine Kündigung durch den Untermieter in den letzten sechs Monaten der Vertragslaufzeit ausgeschlossen. Dies stellt sicher, dass das Zimmer oder die Wohnung nicht ungenutzt bleibt und der Mieter die gesamte vereinbarte Mietdauer nutzt. Demzufolge ist die Kündigung nur bis spätestens sechs Monate vor dem festgelegten Enddatum des Vertrages möglich. Beispielsweise, wenn der Mietvertrag am 31. März endet, muss eine etwaige Kündigung spätestens bis zum 30. September des Vorjahres eingereicht werden, so dass der letztmögliche Zeitpunkt das Zimmer oder die Wohnung vor regulärem Ende des Untermietvertrages zu verlassen, der 31. Dezember des Vorjahres ist.","For fixed-term subleases with an agreed term of twelve (12) months or more, termination by the subtenant is excluded during the last six months of the contract term. This ensures that the room or apartment does not remain unused and that the tenant uses the entire agreed term. Accordingly, termination is only possible up to six months before the fixed end date of the contract at the latest. For example, if the contract ends on 31 March, any termination must be submitted by 30 September of the previous year at the latest, so that the last possible time to leave the room or apartment before the regular end of the sublease is 31 December of the previous year."],
+      ["Bei befristeten Untermietverhältnissen mit einer vereinbarten Mietdauer von zwölf (12) Monaten oder mehr ist eine Kündigung durch den Untermieter in den letzten sechs Monaten der Vertragslaufzeit ausgeschlossen. Dies stellt sicher, dass das Zimmer oder die Wohnung nicht ungenutzt bleibt und der Mieter die gesamte vereinbarte Mietdauer nutzt. Demzufolge ist die Kündigung nur bis spätestens sechs Monate vor dem festgelegten Enddatum des Vertrages möglich. Beispielsweise, wenn der Mietvertrag am 31. März endet, muss eine etwaige Kündigung spätestens bis zum 30. September des Vorjahres eingereicht werden, so dass der letztmögliche Zeitpunkt das Zimmer oder die Wohnung vor regulärem Ende des Untermietvertrages zu verlassen, der 31. Dezember des Vorjahres ist.","For fixed-term subleases with an agreed term of twelve (12) months or more, termination by the subtenant is excluded during the last six months of the contract term. This ensures that the room or apartment does not remain unused and that the subtenant uses the entire agreed term. Accordingly, termination is only possible up to six months before the fixed end date of the contract at the latest. For example, if the contract ends on 31 March, any termination must be submitted by 30 September of the previous year at the latest, so that the last possible time to leave the room or apartment before the regular end of the sublease is 31 December of the previous year."],
       ["Gleiches gilt sinngemäss bei jeder anderen Form der Kündigung des Hauptmietverhältnisses durch den Eigentümer oder die Verwaltung: Auch in diesem Fall ist eine Kündigung durch den Untermieter in den letzten sechs Monaten bis zum Ende des Mietverhältnisses ausgeschlossen.","The same applies analogously to any other form of termination of the main tenancy by the owner or the management: in this case too, termination by the subtenant is excluded during the last six months up to the end of the tenancy."],
       ["Bei wiederholter Nichtzahlung der Miete ist der Hauptmieter berechtigt, das Mietverhältnis per Monatsende fristlos zu kündigen.","In case of repeated non-payment of rent, the main tenant is entitled to terminate the tenancy without notice at the end of the month."],
       ["Bei vorzeitigem Auszug kann sich der Untermieter durch Stellung eines geeigneten, zahlungsfähigen und zumutbaren Nachmieters, der zu gleichen Konditionen in den Vertrag eintritt, von seinen Pflichten befreien (Art. 264 OR). Andernfalls bleibt er bis zum ordentlichen Vertragsende zur Zahlung des Mietzinses verpflichtet.","In case of early move-out, the subtenant can be released from their obligations by providing a suitable, solvent and reasonable replacement tenant who enters the contract on the same terms (Art. 264 CO). Otherwise, the subtenant remains obliged to pay the rent until the ordinary end of the contract."],
@@ -1089,7 +1096,7 @@
       ["Der Untermieter ist verpflichtet, das Mietobjekt spätestens am vereinbarten Endtermin vollständig geräumt und ordnungsgemäss zurückzugeben. Ihm ist bekannt, dass die Liegenschaft nach Vertragsende dem Eigentümer bzw. der Verwaltung zur weiteren Nutzung, insbesondere zu Umbau- oder Sanierungszwecken, zu übergeben ist und dass eine verspätete Rückgabe dem Hauptmieter erheblichen Schaden verursachen kann, der über den Wert des einzelnen Mietobjekts hinausgeht. Gibt der Untermieter das Mietobjekt nicht rechtzeitig zurück, schuldet er für jeden angefangenen Tag der verspäteten Rückgabe (a) eine Nutzungsentschädigung in Höhe des anteiligen Mietzinses sowie (b) eine pauschalierte Verzugsentschädigung von CHF 300 pro Tag, zur Abgeltung des typischerweise entstehenden Aufwands und Schadens (Koordination, Ersatzunterbringung, Administration). Dem Untermieter bleibt der Nachweis offen, dass kein oder ein geringerer Schaden entstanden ist; bis zu diesem Nachweis gilt der pauschalierte Schaden als ausgewiesen. Die Geltendmachung eines weitergehenden, tatsächlichen Schadens bleibt ausdrücklich vorbehalten, insbesondere für Ansprüche des Eigentümers oder der Verwaltung sowie für Verzugs- und Projektkosten, soweit der Untermieter die verspätete Rückgabe zu vertreten hat. Der Hauptmieter ist berechtigt, diese Beträge mit der Kaution und weiteren Sicherheiten zu verrechnen, und kann bei nicht rechtzeitiger Rückgabe die Ausweisung im Verfahren des Rechtsschutzes in klaren Fällen (Art. 257 ZPO) verlangen.","The subtenant is obliged to return the rental object completely vacated and in proper condition by the agreed end date at the latest. The subtenant is aware that after the end of the contract the property must be handed over to the owner or the management for further use, in particular for conversion or renovation purposes, and that a late return can cause the main tenant considerable damage exceeding the value of the individual rental object. If the subtenant does not return the rental object on time, they owe for each commenced day of late return (a) a use compensation equal to the pro-rata rent as well as (b) a lump-sum default compensation of CHF 300 per day, to cover the typically arising effort and damage (coordination, replacement accommodation, administration). The subtenant remains free to prove that no or lower damage occurred; until such proof the lump-sum damage is deemed established. The assertion of further, actual damage remains expressly reserved, in particular for claims of the owner or the management as well as for default and project costs, insofar as the subtenant is responsible for the late return. The main tenant is entitled to offset these amounts against the deposit and further securities, and in case of late return may demand eviction in the summary proceedings for clear cases (Art. 257 CPC)."],
       ["12. Vertragsänderungen","12. Contract changes"],
       ["13. Rücktrittsrecht","13. Right of withdrawal"],
-      ["Der Mieter erhält ein ausserordentliches Rücktrittsrecht vom unterzeichneten Mietvertrag bis und mit der persönlichen Besichtigung vor Ort. Dieses gilt, wenn die Wohnung wesentlich vom vorgängig zur Verfügung gestellten Bildmaterial (Fotos, Grundrisse und virtuelle Tour) abweicht. Im Falle eines solchen Rücktritts entstehen dem Mieter keinerlei Kosten oder Verpflichtungen; bereits geleistete Zahlungen werden vollständig zurückerstattet.","The tenant is granted an extraordinary right of withdrawal from the signed rental contract up to and including the in-person viewing on site. This applies if the apartment differs materially from the image material provided beforehand (photos, floor plans and virtual tour). In the event of such a withdrawal, no costs or obligations arise for the tenant; payments already made are refunded in full."],
+      ["Der Mieter erhält ein ausserordentliches Rücktrittsrecht vom unterzeichneten Mietvertrag bis und mit der persönlichen Besichtigung vor Ort. Dieses gilt, wenn die Wohnung wesentlich vom vorgängig zur Verfügung gestellten Bildmaterial (Fotos, Grundrisse und virtuelle Tour) abweicht. Im Falle eines solchen Rücktritts entstehen dem Mieter keinerlei Kosten oder Verpflichtungen; bereits geleistete Zahlungen werden vollständig zurückerstattet.","The subtenant is granted an extraordinary right of withdrawal from the signed rental contract up to and including the in-person viewing on site. This applies if the apartment differs materially from the image material provided beforehand (photos, floor plans and virtual tour). In the event of such a withdrawal, no costs or obligations arise for the subtenant; payments already made are refunded in full."],
       ["14. Gerichtsstand","14. Place of jurisdiction"],
       ["Gerichtsstand für alle Streitigkeiten aus diesem Vertrag ist der Ort der gelegenen Sache. Zwingende gesetzliche Gerichtsstände, insbesondere gemäss Art. 33 ZPO, bleiben vorbehalten.","The place of jurisdiction for all disputes arising from this contract is the location of the property. Mandatory statutory places of jurisdiction, in particular under Art. 33 CPC, remain reserved."],
       ["15. Zusätzliche Bestimmungen","15. Additional provisions"],
@@ -1624,16 +1631,16 @@
             };
           } else {
             // Upload mode: Upload jedes PDF zu Storage
-            setUploadProgress("Lade Dokumente hoch…");
+            setUploadProgress(t("Lade Dokumente hoch…","Uploading documents…"));
             const uploadedPdfs = [];
             for (let i = 0; i < pdfs.length; i++) {
               const pdf = pdfs[i];
               const file = uploadedFiles[pdf.path];
-              if (!file) throw new Error(`Bitte lade die signierte Version von "${pdf.name}" hoch.`);
-              if (file.type !== "application/pdf") throw new Error(`"${pdf.name}": Bitte nur PDF-Dateien hochladen.`);
-              if (file.size > 20 * 1024 * 1024) throw new Error(`"${pdf.name}": Datei zu gross (max. 20 MB).`);
+              if (!file) throw new Error(t(`Bitte lade die signierte Version von "${pdf.name}" hoch.`,`Please upload the signed version of "${pdf.name}".`));
+              if (file.type !== "application/pdf") throw new Error(t(`"${pdf.name}": Bitte nur PDF-Dateien hochladen.`,`"${pdf.name}": Please upload PDF files only.`));
+              if (file.size > 20 * 1024 * 1024) throw new Error(t(`"${pdf.name}": Datei zu gross (max. 20 MB).`,`"${pdf.name}": File too large (max. 20 MB).`));
               
-              setUploadProgress(`Lade Dokument ${i + 1}/${pdfs.length} hoch…`);
+              setUploadProgress(t(`Lade Dokument ${i + 1}/${pdfs.length} hoch…`,`Uploading document ${i + 1}/${pdfs.length}…`));
               const uploadPath = pdf.path.replace(/\.pdf$/, "-uploaded-signed.pdf");
               const { error: upErr } = await supabase.storage
                 .from("contracts")
@@ -1642,7 +1649,7 @@
               
               uploadedPdfs.push({ path: uploadPath, name: pdf.name, type: pdf.type });
             }
-            setUploadProgress("Vertrag wird abgeschlossen…");
+            setUploadProgress(t("Vertrag wird abgeschlossen…","Finalising contract…"));
             body = {
               token,
               mode: "upload",
@@ -1678,7 +1685,7 @@
       // ───── RENDER ─────────────────────────────────────────────
       if (loading) return <LoadingScreen />;
       if (error) return <StatusScreen {...error} />;
-      if (success) return <SuccessScreen contract={contract} />;
+      if (success) return <SuccessScreen contract={contract} lang={lang} />;
       
       return (
         <div className="container">
@@ -1711,7 +1718,7 @@
             const R=({l,v})=> (<div className="info-row"><span className="info-label">{l}</span><span className="info-value" style={{fontWeight:600}}>{v}</span></div>);
             return (
             <div className="card" style={{borderColor:"#c9b98a",background:"#fbf7ee"}}>
-              <div style={{background:"#f3e7c8",color:"#6b5a2e",fontSize:12,padding:"9px 11px",borderRadius:8,marginBottom:14,lineHeight:1.5}}>This is an English translation to help you understand the contract. Only the German version below is legally binding, and only that version is signed and stored.</div>
+              <div style={{background:"#f3e7c8",color:"#6b5a2e",fontSize:12,padding:"9px 11px",borderRadius:8,marginBottom:14,lineHeight:1.5}}>This is an English translation to help you understand the contract. Only the German version is legally binding, and only that version is signed and stored.</div>
               <div className="card-title">📋 Contract summary (English)</div>
               <R l="Property" v={`${_apt.id||"-"} · ${_adr}`} />
               {_v.zimmerId && <R l="Room" v={_v.zimmerId} />}
@@ -1731,7 +1738,7 @@
                 </div>
                 <PdfsViewer pdfs={enPdfs} lang="en" />
               </>)}
-              {enPdfs && enPdfs.length===0 && <div style={{fontSize:12,color:"#9b4a3e"}}>Die englische PDF-Vorschau konnte nicht erzeugt werden. Bitte nutze die deutsche Fassung oben über den Umschalter.</div>}
+              {enPdfs && enPdfs.length===0 && <div style={{fontSize:12,color:"#9b4a3e"}}>The English PDF preview could not be generated. Please use the German version via the switch above.</div>}
               <div style={{fontSize:11,color:"#8a8174",marginTop:8}}>This English version is a translation for your understanding. You can sign directly below; your signature applies to the legally binding German version.</div>
             </div>); })()}
           {lang==="de" && <ContractDetails contract={contract} />}
@@ -1930,12 +1937,12 @@
           
           <div className="footer">
             <div style={{ fontWeight: 500, marginBottom: 4 }}>D&amp;T Partners GmbH</div>
-            <div>D&amp;T Homes · Zürich · Schweiz</div>
+            <div>D&amp;T Homes · Zürich · {t("Schweiz","Switzerland")}</div>
             <div style={{ marginTop: 10 }}>
-              Fragen? <a href="mailto:info@dthomes.ch">info@dthomes.ch</a> oder per WhatsApp <a href="https://wa.me/41766887091">+41 76 688 70 91</a>
+              {t("Fragen?","Questions?")} <a href="mailto:info@dthomes.ch">info@dthomes.ch</a> {t("oder per WhatsApp","or via WhatsApp")} <a href="https://wa.me/41766887091">+41 76 688 70 91</a>
             </div>
             <div style={{ marginTop: 14, fontSize: 10, color: "#bab2a0" }}>
-              Diese Seite ist verschlüsselt (HTTPS) und nur über deinen persönlichen Link erreichbar.
+              {t("Diese Seite ist verschlüsselt (HTTPS) und nur über deinen persönlichen Link erreichbar.","This page is encrypted (HTTPS) and only accessible via your personal link.")}
             </div>
           </div>
         </div>
