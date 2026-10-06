@@ -828,7 +828,7 @@
       <p>Changes or additions require both parties' consent and can be agreed in text form, including by email or electronic signature. A handwritten signature is not required.</p>
 
       <h2>13. Right of withdrawal</h2>
-      <p>The tenant has an extraordinary right of withdrawal from the signed contract up to and including the in-person viewing on site, if the apartment differs materially from the images provided beforehand (photos, floor plans, virtual tour). In such a case no costs or obligations arise for the tenant and payments already made are fully refunded.</p>
+      <p>The subtenant has an extraordinary right of withdrawal from the signed contract up to and including the in-person viewing on site, if the apartment differs materially from the images provided beforehand (photos, floor plans, virtual tour). In such a case no costs or obligations arise for the tenant and payments already made are fully refunded.</p>
 
       <h2>14. Place of jurisdiction</h2>
       <p>The place of jurisdiction for all disputes is the location of the property. Mandatory statutory jurisdictions remain reserved.</p>
@@ -962,7 +962,7 @@
       <div class="hdr"><div class="lbl2">Official form · English translation</div><h1>Notification of the Initial Rent</h1></div>
       <div class="note" style="background:#f3e7c8;border-color:#e8d2a8;color:#6b5a2e">This is a courtesy English translation of the official Zürich form for your understanding. The legally binding document is the German version; only that version is signed and stored.</div>
       <div class="party"><div class="pl">Landlord / Main tenant</div><div><strong>D&amp;T Partners GmbH</strong>, Via Campeun 40, 7403 Rhäzüns</div></div>
-      <div class="party"><div class="pl">Tenant</div><div><strong>${fullName}</strong></div></div>
+      <div class="party"><div class="pl">Subtenant</div><div><strong>${fullName}</strong></div></div>
       <div class="party"><div class="pl">Property address</div><div>${adr||"—"}</div></div>
       <table>
         <tr><th>Rent</th><th style="text-align:right">Previous rent</th><th style="text-align:right">New initial rent</th></tr>
@@ -972,10 +972,10 @@
         <tr class="total"><td>Total rent incl. additional costs</td><td class="amt">${prev}</td><td class="amt">Fr. ${chfx(tot)}</td></tr>
       </table>
       <div class="note">No reservations according to the previous rental agreement or the last rent adjustment. Start of tenancy: <strong>${beginn}</strong>.</div>
-      <div class="note"><strong>Right to challenge:</strong> The tenant may challenge the initial rent within 30 days of taking over the premises before the conciliation authority if they consider it abusive (Art. 270 of the Swiss Code of Obligations). The tenant confirms having received a copy of this form.</div>
+      <div class="note"><strong>Right to challenge:</strong> The subtenant may challenge the initial rent within 30 days of taking over the premises before the conciliation authority if they consider it abusive (Art. 270 of the Swiss Code of Obligations). The tenant confirms having received a copy of this form.</div>
       <div class="sigs">
-        <div class="sig"><div class="r">Landlord</div><div class="n">D&amp;T Partners GmbH</div><div style="font-size:9pt;color:#8a8174;margin-top:8px">Place, date</div><div class="line"></div><div style="font-size:9pt;color:#8a8174;margin-top:8px">Signature</div><div class="line"></div></div>
-        <div class="sig"><div class="r">Tenant</div><div class="n">${fullName}</div><div style="font-size:9pt;color:#8a8174;margin-top:8px">Place, date</div><div class="line"></div><div style="font-size:9pt;color:#8a8174;margin-top:8px">Signature</div><div class="line"></div></div>
+        <div class="sig"><div class="r">Main tenant</div><div class="n">D&amp;T Partners GmbH</div><div style="font-size:9pt;color:#8a8174;margin-top:8px">Place, date</div><div class="line"></div><div style="font-size:9pt;color:#8a8174;margin-top:8px">Signature</div><div class="line"></div></div>
+        <div class="sig"><div class="r">Subtenant</div><div class="n">${fullName}</div><div style="font-size:9pt;color:#8a8174;margin-top:8px">Place, date</div><div class="line"></div><div style="font-size:9pt;color:#8a8174;margin-top:8px">Signature</div><div class="line"></div></div>
       </div>
       <div class="note" style="margin-top:20px;font-size:9pt;color:#6a6456">The statutory extract from the Swiss Code of Obligations (Art. 269 ff.) is included in the official German version of this form.</div>
       </div>`;
@@ -1024,8 +1024,8 @@
       ["Sofern zur Wohnung ein Garten gehört, darf der Untermieter diesen nutzen. Er verpflichtet sich, den Garten selbständig und ordentlich zu pflegen und in gepflegtem Zustand zu halten (insbesondere Rasen- und Grünpflege) sowie im Winter den Schnee auf den zum Mietobjekt gehörenden Wegen und Flächen zu räumen.", "If a garden belongs to the apartment, the subtenant may use it. The subtenant undertakes to maintain the garden independently and properly and to keep it in a well-kept condition (in particular lawn and greenery care) and, in winter, to clear snow from the paths and areas belonging to the rental property."],
       ["Untermietvertrag","Sublease Agreement"],
       ["Untermieter*in","Subtenant"],
-      ["Vermieter*in","Landlord"],
-      ["Mieter*in","Tenant"],
+      ["Vermieter*in","Main tenant"],
+      ["Mieter*in","Subtenant"],
       ["Vorname:","First name:"],["Nachname:","Last name:"],["Strasse:","Street:"],
       ["PLZ / Ort:","Zip / City:"],["E-Mail:","Email:"],["Telefon:","Phone:"],
       ["Geburtsdatum:","Date of birth:"],["Nationalität:","Nationality:"],
@@ -1114,7 +1114,7 @@
       ["Kaution:","Deposit:"],
       ["<div class=\"label\">Vertrag</div>","<div class=\"label\">Contract</div>"],
       ["Mitteilung des Anfangsmietzinses","Notification of the Initial Rent"],
-      ["Vermieterin","Landlord"],
+      ["Vermieterin","Main tenant"],
       ["Adresse Liegenschaft/en:","Property address(es):"],
       ["Früherer Mietzins","Previous rent"],
       ["Anfangsmietzins (neu)","New initial rent"],
@@ -1126,7 +1126,7 @@
       ["Keine Vorbehalte gemäss vorherigem Mietvertrag oder letzter Mietzinsanpassung.","No reservations according to the previous rental agreement or the last rent adjustment."],
       ["Mietbeginn:","Start of tenancy:"],
       ["Hinweis zur Anfechtung:","Right to challenge:"],
-      ["Der/die Mieter*in bestätigt, ein Doppel dieses Formulars erhalten zu haben.","The tenant confirms having received a copy of this form."],
+      ["Der/die Mieter*in bestätigt, ein Doppel dieses Formulars erhalten zu haben.","The subtenant confirms having received a copy of this form."],
       ["Datum:","Date:"],
       ["Unterschrift:","Signature:"],
       [">Mietzins</th>",">Rent</th>"],
@@ -1174,7 +1174,7 @@
       [" Die Anpassung gegenüber dem früheren Mietzins ist orts- und quartierüblich begründet."," The adjustment compared to the previous rent is justified as customary for the locality and district."],
       [" Gegenüber dem früheren Mietzins erfolgt keine Erhöhung."," There is no increase compared to the previous rent."],
       [" Eine Erhöhung gegenüber dem früheren Mietzins liegt nicht vor, da das Objekt erstmalig untervermietet wird bzw. ein Mieterwechsel ohne Mietzinserhöhung erfolgt."," There is no increase compared to the previous rent, as the property is being sublet for the first time or a change of tenant takes place without a rent increase."],
-      ["Der/die Mieter*in kann den Anfangsmietzins gemäss Art. 270 Abs. 1 OR innert 30 Tagen nach der Übernahme des Mietobjekts bei der Paritätischen Schlichtungsbehörde des Bezirks, in dem sich das Mietobjekt befindet (zuständiges Bezirksgericht), als missbräuchlich anfechten und dessen Herabsetzung verlangen. Wenn keine Anfechtung erfolgt, gilt der Anfangsmietzins als angenommen.","The tenant may, pursuant to Art. 270 para. 1 CO, challenge the initial rent as abusive within 30 days of taking over the rental object before the joint conciliation authority of the district in which the rental object is located (competent district court) and demand its reduction. If no challenge is made, the initial rent is deemed accepted."],
+      ["Der/die Mieter*in kann den Anfangsmietzins gemäss Art. 270 Abs. 1 OR innert 30 Tagen nach der Übernahme des Mietobjekts bei der Paritätischen Schlichtungsbehörde des Bezirks, in dem sich das Mietobjekt befindet (zuständiges Bezirksgericht), als missbräuchlich anfechten und dessen Herabsetzung verlangen. Wenn keine Anfechtung erfolgt, gilt der Anfangsmietzins als angenommen.","The subtenant may, pursuant to Art. 270 para. 1 CO, challenge the initial rent as abusive within 30 days of taking over the rental object before the joint conciliation authority of the district in which the rental object is located (competent district court) and demand its reduction. If no challenge is made, the initial rent is deemed accepted."],
       [">Ja</span>",">Yes</span>"],
       ["a. sie nicht mit dem vorgeschriebenen Formular mitteilt;","a. does not notify it using the prescribed form;"],
       ["c. mit der Mitteilung die Kündigung androht oder ausspricht.","c. threatens or gives notice of termination together with the notification."],
