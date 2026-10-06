@@ -984,6 +984,36 @@
     // uebersetzen. Layout/CSS/Positionen bleiben identisch. Gesetzesauszug (OR)
     // bleibt bewusst Deutsch (amtlicher Text).
     const DE_EN_MAP = [
+      ["Kautions-Aufschlag in CHF","Deposit surcharge in CHF"],
+      // Aeltere Vertragsfassungen (in noch offenen Vertraegen gespeichert)
+      ["<p class=\"welcome\">Guten Tag ", "<p class=\"welcome\">Hello "],
+      ["Das Anfertigen zusätzlicher Schlüssel ist ohne Zustimmung des Hauptmieters untersagt. Bei Verlust ist der Hauptmieter berechtigt, betroffene Schlösser auf Kosten des Untermieters zu ersetzen.", "Making additional keys without the main tenant's consent is prohibited. In the event of loss, the main tenant is entitled to replace the affected locks at the subtenant's expense."],
+      ["Die Schlüsselübergabe erfolgt zum vereinbarten Datum und zur vereinbarten Uhrzeit (± 3 Arbeitstage). Der Hauptmieter verpflichtet sich, dem Untermieter sämtliche für den Zugang zur Wohnung erforderlichen Schlüssel und Zugangscodes zu übergeben. Erfolgt die Übergabe mit mehr als drei Tagen Verspätung, hat der Untermieter ab dem vierten Tag Anspruch auf eine anteilsmässige Rückerstattung der ersten Mietperiode. Die Schlüssel- und Wohnungsübergabe erfolgt gegen ein schriftliches Übergabeprotokoll bei Ein- und Auszug, welches von beiden Parteien unterzeichnet wird.", "The key handover takes place on the agreed date and at the agreed time (± 3 working days). The main tenant undertakes to hand over to the subtenant all keys and access codes required to access the apartment. If the handover is delayed by more than three days, the subtenant is entitled, from the fourth day, to a pro-rata refund for the first rental period. The handover of keys and apartment takes place against a written handover protocol at move-in and move-out, signed by both parties."],
+      ["Bei Kündigung innerhalb der Kündigungsfrist ist der Untermieter verpflichtet, einen geeigneten Nachmieter zu stellen, der zu gleichen Konditionen eintritt und von den Mitbewohnern akzeptiert wird. Erfolgt nachweislich keine aktive Suche, kann der Hauptmieter eine Monatsmiete von der Kaution einbehalten.", "In the event of termination within the notice period, the subtenant is obliged to provide a suitable replacement tenant who takes over on the same terms and is accepted by the flatmates. If there is demonstrably no active search, the main tenant may retain one month's rent from the deposit."],
+      ["Der Untermieter ist verpflichtet, das Mietobjekt spätestens am vereinbarten Endtermin vollständig geräumt und ordnungsgemäss zurückzugeben. Ihm ist bekannt, dass die Liegenschaft nach Vertragsende dem Eigentümer bzw. der Verwaltung zur weiteren Nutzung, insbesondere zu Umbau- oder Sanierungszwecken, zu übergeben ist und dass eine verspätete Rückgabe dem Hauptmieter erheblichen Schaden verursachen kann, der über den Wert des einzelnen Mietobjekts hinausgeht. Gibt der Untermieter das Mietobjekt nicht rechtzeitig zurück, schuldet er für jeden angefangenen Tag der verspäteten Rückgabe (a) eine Nutzungsentschädigung in Höhe des anteiligen Mietzinses sowie (b) eine pauschalierte Verzugsentschädigung von CHF 50 pro Tag für die ersten drei Tage und von CHF 150 pro Tag ab dem vierten Tag, zur Abgeltung des typischerweise entstehenden Aufwands und Schadens (Koordination, Ersatzunterbringung, Administration). Dem Untermieter bleibt der Nachweis offen, dass kein oder ein geringerer Schaden entstanden ist; bis zu diesem Nachweis gilt der pauschalierte Schaden als ausgewiesen. Die Geltendmachung eines weitergehenden, tatsächlichen Schadens bleibt ausdrücklich vorbehalten, insbesondere für Ansprüche des Eigentümers oder der Verwaltung sowie für Verzugs- und Projektkosten, soweit der Untermieter die verspätete Rückgabe zu vertreten hat. Der Hauptmieter ist berechtigt, diese Beträge mit der Kaution und weiteren Sicherheiten zu verrechnen, und kann bei nicht rechtzeitiger Rückgabe die Ausweisung im Verfahren des Rechtsschutzes in klaren Fällen (Art. 257 ZPO) verlangen.", "The subtenant is obliged to return the rental object completely vacated and in proper condition by the agreed end date at the latest. The subtenant is aware that after the end of the contract the property must be handed over to the owner or the management for further use, in particular for conversion or renovation purposes, and that a late return can cause the main tenant considerable damage exceeding the value of the individual rental object. If the subtenant does not return the rental object on time, they owe for each commenced day of late return (a) a use compensation equal to the pro-rata rent as well as (b) a lump-sum default compensation of CHF 50 per day for the first three days and CHF 150 per day from the fourth day, to cover the typically arising effort and damage (coordination, replacement accommodation, administration). The subtenant remains free to prove that no or lower damage occurred; until such proof the lump-sum damage is deemed established. The assertion of further, actual damage remains expressly reserved, in particular for claims of the owner or the management as well as for default and project costs, insofar as the subtenant is responsible for the late return. The main tenant is entitled to offset these amounts against the deposit and further securities, and in case of late return may demand eviction in the summary proceedings for clear cases (Art. 257 CPC)."],
+      ["Wünscht der Untermieter, eine reduzierte oder keine Kaution zu leisten, kann dies wie folgt geregelt werden:", "If the subtenant wishes to pay a reduced deposit or no deposit, this can be arranged as follows:"],
+      [" 3 Monatsmieten Kaution = keine Anpassung des monatlichen Mietzinses (Standard)", " 3 months' rent deposit = no adjustment of the monthly rent (standard)"],
+      [" Monatsmieten Kaution = monatlicher Mietzins erhöht sich um ", " months' rent deposit = monthly rent increases by "],
+      [" Monatsmiete Kaution = monatlicher Mietzins erhöht sich um ", " month's rent deposit = monthly rent increases by "],
+      ["Keine Kaution = monatlicher Mietzins erhöht sich um ", "No deposit = monthly rent increases by "],
+      [">Gewählte Variante</div>", ">Selected option</div>"],
+      ["Monatsmieten Kaution</strong>", "months' rent deposit</strong>"],
+      ["Monatsmiete Kaution</strong>", "month's rent deposit</strong>"],
+      [">Keine Kaution</strong>", ">No deposit</strong>"],
+      [" &middot; kein Aufschlag", " &middot; no surcharge"],
+      [" &middot; Aufschlag CHF ", " &middot; surcharge CHF "],
+      ["/Mt.", "/mo."],
+      ["Der Untermieter hat sich für die Variante <strong>ohne Kaution</strong> entschieden. Anstelle der Kaution wird der monatliche Mietzins um ", "The subtenant has chosen the option <strong>without deposit</strong>. Instead of a deposit, the monthly rent is increased by "],
+      ["</strong> erhöht. Dieser Aufschlag ist bereits im totalen Mietzins (siehe §3) enthalten.", "</strong>. This surcharge is already included in the total rent (see §3)."],
+      ["Der Untermieter verpflichtet sich, vor dem Einzug eine Kaution in Höhe von ", "Before moving in, the subtenant undertakes to pay a deposit of "],
+      ["</strong> - über die Plattform <strong>", "</strong> - via the platform <strong>"],
+      ["</strong> zu leisten. Die Kaution wird dort auf ein separates, auf den Namen des Untermieters lautendes Kautionskonto bei der Hypothekarbank Lenzburg einbezahlt.", "</strong>. The deposit is paid there into a separate deposit account in the subtenant's name at Hypothekarbank Lenzburg."],
+      ["Die Rückerstattung erfolgt gemäss den Vertragsbedingungen, sobald sämtliche Schlussabrechnungen (z. B. für offene Mieten, Nebenkosten, Strom, allfällige Reparaturen oder Reinigungen) vorliegen und die Wohnung sowie das Inventar ordnungsgemäss und ohne Beanstandung zurückgegeben wurden.", "The refund is made in accordance with the contract terms as soon as all final statements (e.g. for outstanding rent, ancillary costs, electricity, any repairs or cleaning) are available and the apartment and the inventory have been returned properly and without complaint."],
+      ["Änderungen oder Ergänzungen dieses Vertrags bedürfen der Schriftform und der Zustimmung beider Parteien.", "Amendments or additions to this contract require written form and the consent of both parties."],
+      ["Im Mietpreis sind die Kosten für administrative und koordinative Leistungen, Kundenservice, persönliche Betreuung sowie Wasser und weitere Nebenkosten bereits inbegriffen.", "The rent already includes the costs of administration and coordination services, customer service, personal support as well as water and other ancillary costs."],
+      ["In der Schweiz wohnhafte Personen, die Radio- oder Fernsehprogramme empfangen, sind gesetzlich verpflichtet, entsprechende Empfangsgebühren zu entrichten. Diese Verpflichtung liegt beim jeweiligen Haushalt und damit bei den Untermietern. Die D&amp;T Partners GmbH organisiert keine Kostenaufteilung innerhalb der Untermieterschaft.", "Persons resident in Switzerland who receive radio or television programmes are legally obliged to pay the corresponding reception fees. This obligation lies with the respective household and thus with the subtenants. D&amp;T Partners GmbH does not organise any cost sharing among the subtenants."],
+      ["Der Mieter erhält ein ausserordentliches Rücktrittsrecht vom unterzeichneten Mietvertrag bis und mit der persönlichen Besichtigung vor Ort. Dieses Rücktrittsrecht gilt ausschliesslich für den Fall, dass die Wohnung wesentlich von der vorgängig zur Verfügung gestellten virtuellen Tour (VR Tour) abweicht. Im Falle eines solchen Rücktritts entstehen dem Mieter keinerlei Kosten oder Verpflichtungen aus dem Mietvertrag. Bereits geleistete Zahlungen werden vollständig zurückerstattet.", "The tenant has an extraordinary right to withdraw from the signed rental contract up to and including the personal on-site viewing. This right of withdrawal applies exclusively if the apartment deviates materially from the virtual tour (VR tour) provided in advance. In the event of such a withdrawal, the tenant incurs no costs or obligations whatsoever under the rental contract. Payments already made will be refunded in full."],
+      ["Gerichtsstand für alle Streitigkeiten aus diesem Vertrag ist <strong>", "The place of jurisdiction for all disputes arising from this contract is <strong>"],
       ["Sofern zur Wohnung ein Garten gehört, darf der Untermieter diesen nutzen. Er verpflichtet sich, den Garten selbständig und ordentlich zu pflegen und in gepflegtem Zustand zu halten (insbesondere Rasen- und Grünpflege) sowie im Winter den Schnee auf den zum Mietobjekt gehörenden Wegen und Flächen zu räumen.", "If a garden belongs to the apartment, the subtenant may use it. The subtenant undertakes to maintain the garden independently and properly and to keep it in a well-kept condition (in particular lawn and greenery care) and, in winter, to clear snow from the paths and areas belonging to the rental property."],
       ["Untermietvertrag","Sublease Agreement"],
       ["Untermieter*in","Subtenant"],
@@ -1075,7 +1105,7 @@
       ["Dein D&amp;T Homes Team","Your D&amp;T Homes Team"],
       ["Ort, Datum:","Place, date:"],
       ["Kaution:","Deposit:"],
-      ["Vertrag","Contract"],
+      ["<div class=\"label\">Vertrag</div>","<div class=\"label\">Contract</div>"],
       ["Mitteilung des Anfangsmietzinses","Notification of the Initial Rent"],
       ["Vermieterin","Landlord"],
       ["Adresse Liegenschaft/en:","Property address(es):"],
@@ -1217,11 +1247,21 @@
       [" Pkte"," pts"],
       ["Nein","No"]
     ];
+    const NAT_DE_EN = {"schweiz":"Switzerland","schweizer":"Swiss","schweizerin":"Swiss","deutschland":"Germany","deutsch":"German","deutsche":"German","deutscher":"German","österreich":"Austria","österreichisch":"Austrian","italien":"Italy","italienisch":"Italian","frankreich":"France","französisch":"French","spanien":"Spain","spanisch":"Spanish","portugal":"Portugal","portugiesisch":"Portuguese","niederlande":"Netherlands","holland":"Netherlands","niederländisch":"Dutch","belgien":"Belgium","belgisch":"Belgian","luxemburg":"Luxembourg","liechtenstein":"Liechtenstein","grossbritannien":"United Kingdom","großbritannien":"United Kingdom","vereinigtes königreich":"United Kingdom","england":"England","britisch":"British","irland":"Ireland","irisch":"Irish","usa":"USA","vereinigte staaten":"United States","amerikanisch":"American","kanada":"Canada","kanadisch":"Canadian","polen":"Poland","polnisch":"Polish","tschechien":"Czechia","slowakei":"Slovakia","ungarn":"Hungary","ungarisch":"Hungarian","rumänien":"Romania","rumänisch":"Romanian","bulgarien":"Bulgaria","griechenland":"Greece","griechisch":"Greek","kroatien":"Croatia","kroatisch":"Croatian","serbien":"Serbia","serbisch":"Serbian","kosovo":"Kosovo","bosnien und herzegowina":"Bosnia and Herzegovina","bosnien":"Bosnia","nordmazedonien":"North Macedonia","mazedonien":"North Macedonia","albanien":"Albania","albanisch":"Albanian","montenegro":"Montenegro","slowenien":"Slovenia","türkei":"Türkiye","türkisch":"Turkish","russland":"Russia","russisch":"Russian","ukraine":"Ukraine","ukrainisch":"Ukrainian","weissrussland":"Belarus","belarus":"Belarus","schweden":"Sweden","schwedisch":"Swedish","norwegen":"Norway","dänemark":"Denmark","finnland":"Finland","island":"Iceland","estland":"Estonia","lettland":"Latvia","litauen":"Lithuania","ägypten":"Egypt","ägyptisch":"Egyptian","marokko":"Morocco","tunesien":"Tunisia","algerien":"Algeria","nigeria":"Nigeria","südafrika":"South Africa","äthiopien":"Ethiopia","eritrea":"Eritrea","kenia":"Kenya","ghana":"Ghana","kamerun":"Cameroon","brasilien":"Brazil","argentinien":"Argentina","mexiko":"Mexico","kolumbien":"Colombia","chile":"Chile","peru":"Peru","venezuela":"Venezuela","ecuador":"Ecuador","indien":"India","indisch":"Indian","pakistan":"Pakistan","bangladesch":"Bangladesh","sri lanka":"Sri Lanka","nepal":"Nepal","china":"China","chinesisch":"Chinese","japan":"Japan","japanisch":"Japanese","südkorea":"South Korea","korea":"Korea","taiwan":"Taiwan","hongkong":"Hong Kong","thailand":"Thailand","vietnam":"Vietnam","philippinen":"Philippines","indonesien":"Indonesia","malaysia":"Malaysia","singapur":"Singapore","australien":"Australia","neuseeland":"New Zealand","iran":"Iran","irak":"Iraq","syrien":"Syria","libanon":"Lebanon","israel":"Israel","jordanien":"Jordan","saudi-arabien":"Saudi Arabia","vereinigte arabische emirate":"United Arab Emirates","afghanistan":"Afghanistan","georgien":"Georgia","armenien":"Armenia","aserbaidschan":"Azerbaijan","kasachstan":"Kazakhstan","usbekistan":"Uzbekistan","moldau":"Moldova","moldawien":"Moldova","zypern":"Cyprus","malta":"Malta"};
+    function translateNationality(val){
+      return String(val||"").split(/(\s*[,\/;&]\s*|\s+und\s+)/).map(part => {
+        if (/^\s+und\s+$/.test(part)) return " and ";
+        const k = part.trim().toLowerCase();
+        return Object.prototype.hasOwnProperty.call(NAT_DE_EN, k) ? part.replace(part.trim(), NAT_DE_EN[k]) : part;
+      }).join("");
+    }
+
     function translateGermanHtml(html){
       if(!html) return html;
       let out = html;
       const _pairs = [...DE_EN_MAP].sort((a,b)=>b[0].length-a[0].length);
       for (const [de,en] of _pairs) { if(de && out.indexOf(de)!==-1) out = out.split(de).join(en); }
+      out = out.replace(/(Nationality:<\/span>\s*<span class="pv">)([^<]*)(<\/span>)/g, (m,a,val,c) => a + translateNationality(val) + c);
       out = out.replace(/lang="de"/g,'lang="en"');
       return out;
     }
@@ -1388,10 +1428,17 @@
         setEnPdfBusy(true);
         (async () => {
           const b = cd.bewerber || {}; const v = cd.vertrag || {};
-          let umvHtml = cd.umv_html ? translateGermanHtml(cd.umv_html) : buildContractEn(b, v);
-          if (cd.umv_html && v && v.sonderklausel && v.sonderklausel_en && String(v.sonderklausel_en).trim()) {
+          let umvHtml;
+          if (cd.umv_html) {
             const escC = (x) => String(x||"").replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').split(String.fromCharCode(10)).join('<br>');
-            umvHtml = umvHtml.split(escC(v.sonderklausel)).join(escC(String(v.sonderklausel_en).trim()));
+            const hasEnClause = v && v.sonderklausel && v.sonderklausel_en && String(v.sonderklausel_en).trim();
+            const PH = "@@SONDERKLAUSEL_EN@@";
+            let src = cd.umv_html;
+            if (hasEnClause) src = src.split(escC(v.sonderklausel)).join(PH);
+            umvHtml = translateGermanHtml(src);
+            if (hasEnClause) umvHtml = umvHtml.split(PH).join(escC(String(v.sonderklausel_en).trim()));
+          } else {
+            umvHtml = buildContractEn(b, v);
           }
           const amzHtml = cd.amz_html ? translateGermanHtml(cd.amz_html) : buildAnfangsmietzinsEn(b, v);
           let umv = null, amz = null;
