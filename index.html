@@ -894,6 +894,7 @@
         : t("Unmöbliert","Unfurnished");
       
       const moebMonat = (v.moebliert && v.moeblierungModus==="monatlich") ? (+moebBetrag||0) : 0;
+      const moebEinmalig = (v.moebliert && v.moeblierungModus!=="monatlich") ? (+moebBetrag||0) : 0;
       const totalMonat = (v.nettomiete!=null||v.nebenkosten!=null||v.strom!=null)
         ? (+v.nettomiete||0)+(+v.nebenkosten||0)+(+v.strom||0)+(+v.aufschlag||0)+moebMonat
         : (v.total || v.bruttomiete);
@@ -912,13 +913,20 @@
           {v.nettomiete != null && <Row label={t("Nettomiete","Net rent")} value={chf(v.nettomiete)} bold />}
           {v.nebenkosten != null && <Row label={t("Nebenkosten","Additional costs")} value={chf(v.nebenkosten)} bold />}
           {v.strom != null && <Row label={t("Stromkosten","Electricity")} value={chf(v.strom)} bold />}
-          {moebMonat ? <Row label={t("Möblierung","Furniture")} value={chf(moebMonat)} bold /> : null}
+          {moebMonat ? <Row label={t("Möblierung (monatlich)","Furniture (monthly)")} value={chf(moebMonat)} bold /> : null}
           {v.aufschlag ? <Row label={t("Servicegebühr","Service fee")} value={chf(v.aufschlag)} bold /> : null}
           <Row label={t("Total / Mt.","Total / month")} value={chf(totalMonat)} bold />
           
           <Sec title={t("Kaution","Deposit")} />
           {v.kautionMonate != null && <Row label={t("Anzahl Monatsmieten","Number of monthly rents")} value={String(v.kautionMonate)} bold />}
           {v.kautionBetrag != null && <Row label={t("Kautionsbetrag","Deposit amount")} value={chf(v.kautionBetrag)} bold />}
+          
+          {moebEinmalig ? (
+            <>
+              <Sec title={t("Einmalige Kosten","One-time costs")} />
+              <Row label={t("Möblierung (einmalig)","Furniture (one-time)")} value={chf(moebEinmalig)} bold />
+            </>
+          ) : null}
           
           {contract.expires_at && (
             <>
