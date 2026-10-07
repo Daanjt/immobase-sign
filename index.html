@@ -958,7 +958,7 @@
       const chfx=(n)=>Number(n||0).toLocaleString("de-CH");
       const net=+v.nettomiete||0, nk=+v.nebenkosten||0, str=+v.strom||0, tot=(+v.total)|| (net+nk+str);
       const beginn = v.einzug ? (function(s){const t=String(s).trim();const m=t.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return `${+m[3]}.${+m[2]}.${m[1]}`;return t;})(v.einzug) : "____";
-      const prev = (v.fruehererMietzins!=null && v.fruehererMietzins!=="") ? ("Fr. "+chfx(v.fruehererMietzins)) : "—";
+      const prev = (v.fruehererMietzins!=null && v.fruehererMietzins!=="") ? ("Fr. "+chfx(v.fruehererMietzins)) : "-";
       return `<style>
       .amz{font-family:Georgia,'Times New Roman',serif;color:#1a1814;font-size:11pt;line-height:1.5;max-width:720px;margin:0 auto}
       .amz h1{font-size:16pt;margin:0 0 4px;font-weight:400}
@@ -983,12 +983,12 @@
       <div class="note" style="background:#f3e7c8;border-color:#e8d2a8;color:#6b5a2e">This is a courtesy English translation of the official Zürich form for your understanding. The legally binding document is the German version; only that version is signed and stored.</div>
       <div class="party"><div class="pl">Main tenant</div><div><strong>D&amp;T Partners GmbH</strong>, Via Campeun 40, 7403 Rhäzüns</div></div>
       <div class="party"><div class="pl">Subtenant</div><div><strong>${fullName}</strong></div></div>
-      <div class="party"><div class="pl">Property address</div><div>${adr||"—"}</div></div>
+      <div class="party"><div class="pl">Property address</div><div>${adr||"-"}</div></div>
       <table>
         <tr><th>Rent</th><th style="text-align:right">Previous rent</th><th style="text-align:right">New initial rent</th></tr>
         <tr><td>Net rent (excl. additional costs)</td><td class="amt">${prev}</td><td class="amt">Fr. ${chfx(net)}</td></tr>
-        <tr><td>Additional costs</td><td class="amt">—</td><td class="amt">Fr. ${chfx(nk)}</td></tr>
-        <tr><td>Electricity (flat rate)</td><td class="amt">—</td><td class="amt">Fr. ${chfx(str)}</td></tr>
+        <tr><td>Additional costs</td><td class="amt">-</td><td class="amt">Fr. ${chfx(nk)}</td></tr>
+        <tr><td>Electricity (flat rate)</td><td class="amt">-</td><td class="amt">Fr. ${chfx(str)}</td></tr>
         <tr class="total"><td>Total rent incl. additional costs</td><td class="amt">${prev}</td><td class="amt">Fr. ${chfx(tot)}</td></tr>
       </table>
       <div class="note">No reservations according to the previous rental agreement or the last rent adjustment. Start of tenancy: <strong>${beginn}</strong>.</div>
@@ -1741,7 +1741,7 @@
             }></div>
           </div>
           
-          <div className="h1">{lang==="en"?"Your contract — English translation":"Bitte unterzeichne deinen Vertrag"}</div>
+          <div className="h1">{lang==="en"?"Your contract: English translation":"Bitte unterzeichne deinen Vertrag"}</div>
           <div style={{ fontSize: 13, color: "#8a8174", marginBottom: 20 }}>
             {lang==="en" ? "This is a translation for your understanding. You can sign directly below; your signature applies to the German version." : (pdfs.length > 1 ? "Lies beide Dokumente sorgfältig durch und unterschreibe unten." : "Lies den Vertrag sorgfältig durch und unterschreibe unten.")}
           </div>
@@ -3008,7 +3008,7 @@
                 <label style={{display:"block",fontSize:13,fontWeight:600,marginBottom:8}}>{t("Schlüssel","Keys")}</label>
                 {(protocol.schluessel_data.normal||[]).length>0 && (
                   <div style={{marginBottom:10}}>
-                    <div style={{fontSize:12.5,color:"#5a5044",marginBottom:8}}>{t("Wichtig: Schreibe die ganze Nummer ab, die auf dem Schlüssel steht (eingraviert oder auf dem Anhänger) – vollständig und genau, mit allen Zeichen.","Important: copy the full number shown on the key (engraved or on the tag) – completely and exactly, with all characters.")}</div>
+                    <div style={{fontSize:12.5,color:"#5a5044",marginBottom:8}}>{t("Wichtig: Schreibe die ganze Nummer ab, die auf dem Schlüssel steht (eingraviert oder auf dem Anhänger), vollständig und genau, mit allen Zeichen.","Important: copy the full number shown on the key (engraved or on the tag), completely and exactly, with all characters.")}</div>
                     {(protocol.schluessel_data.normal||[]).map((k,i)=>(
                       <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
                         <span style={{fontSize:13,minWidth:90,color:"#3a352d"}}>{t("Wohnungsschlüssel","Apartment key")} {i+1}</span>
