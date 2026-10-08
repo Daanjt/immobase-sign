@@ -2088,7 +2088,33 @@
         const norm = (protocol && protocol.schluessel_data && Array.isArray(protocol.schluessel_data.normal)) ? protocol.schluessel_data.normal : null;
         if(norm && keyNrs.length !== norm.length){ setKeyNrs(norm.map(k=>k.nr||"")); }
       },[protocol]);
-      const [hoLang, setHoLang] = React.useState("de");
+      const [hoLang, setHoLangRaw] = React.useState(() => {
+        try { const q = new URLSearchParams(location.search).get("lang"); if (q === "en" || q === "de") return q; } catch(e){}
+        try { const ls = localStorage.getItem("ho_lang"); if (ls === "en" || ls === "de") return ls; } catch(e){}
+        try { return /^de/i.test(navigator.language || "") ? "de" : "en"; } catch(e){ return "de"; }
+      });
+      const setHoLang = (l) => { setHoLangRaw(l); try { localStorage.setItem("ho_lang", l); } catch(e){} };
+      // Schluessel-Texte aus dem Admin (Deutsch) fuer EN uebersetzen
+      const keyEN = (str) => {
+        let x = String(str || "");
+        if (hoLang !== "en") return x;
+        const R = [
+          [/Schlüsselnummer:/g, "Key number:"], [/Extra-Schlüssel:/g, "Extra keys:"],
+          [/(\d+)\s*x?\s*Wohnungsschlüssel/g, (m, n) => `${n}x apartment key${+n === 1 ? "" : "s"}`],
+          [/(\d+)\s*normale Schlüssel/g, (m, n) => `${n}x regular key${+n === 1 ? "" : "s"}`],
+          [/Wohnungsschlüssel/g, "apartment key"], [/Wohnungstür/g, "apartment door"],
+          [/Briefkastenschlüssel/g, "mailbox key"], [/Briefkasten/g, "mailbox"],
+          [/Wäscheschlüssel|Waschschlüssel|Waschküchenschlüssel/g, "laundry key"], [/Waschküche|Wäsche/g, "laundry"],
+          [/Kellerschlüssel/g, "cellar key"], [/Kellerschloss/g, "cellar lock"], [/Keller/g, "cellar"],
+          [/Haustürschlüssel|Hausschlüssel/g, "front door key"], [/Haustür/g, "front door"],
+          [/Zimmerschlüssel/g, "room key"], [/Velo(raum|keller)?/g, "bike room"], [/Garage/g, "garage"],
+          [/Estrich/g, "attic"], [/Badge/g, "fob"], [/Schlüssel/g, "key"],
+          [/ohne Zusatznummer/gi, "without suffix number"], [/\bInkl\./g, "Incl."], [/\binkl\./g, "incl."],
+          [/\bgemeinsam\b/g, "shared"], [/\bund\b/g, "and"], [/\bzusätzlich\b/g, "additionally"], [/\bNr\./g, "No."],
+        ];
+        for (const [a, b] of R) x = x.replace(a, b);
+        return x;
+      };
       const t = (de,en)=>(hoLang==="en"?en:de);
       const ROOM_EN = {"Mein Zimmer":"My room","Küche":"Kitchen","Bad / WC":"Bathroom / Toilet","Wohnbereich / Flur":"Living area / Hallway"};
       const LangSwitch = () => (<div style={{display:"flex",gap:6,marginBottom:14}}><button onClick={()=>setHoLang("de")} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid #d8d0c0",background:hoLang==="de"?"#3a352d":"#fff",color:hoLang==="de"?"#fff":"#6a6456",fontSize:13,cursor:"pointer"}}>Deutsch</button><button onClick={()=>setHoLang("en")} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid #d8d0c0",background:hoLang==="en"?"#3a352d":"#fff",color:hoLang==="en"?"#fff":"#6a6456",fontSize:13,cursor:"pointer"}}>English</button></div>);
@@ -2105,13 +2131,13 @@
         // TT.MM.JJJJ - direkt zurueckgeben mit langem Monat
         const m = str.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
         if (m) {
-          const monate = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
-          return `${parseInt(m[1])}. ${monate[parseInt(m[2])-1]} ${m[3]}`;
+          const monate = hoLang==="en" ? ["January","February","March","April","May","June","July","August","September","October","November","December"] : ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+          return hoLang==="en" ? `${parseInt(m[1])} ${monate[parseInt(m[2])-1]} ${m[3]}` : `${parseInt(m[1])}. ${monate[parseInt(m[2])-1]} ${m[3]}`;
         }
         // ISO
         try {
           const d = new Date(str);
-          if (!isNaN(d.getTime())) return d.toLocaleDateString("de-CH", {day:"2-digit",month:"long",year:"numeric"});
+          if (!isNaN(d.getTime())) return d.toLocaleDateString(hoLang==="en"?"en-GB":"de-CH", {day:"2-digit",month:"long",year:"numeric"});
         } catch(e){}
         return str;
       }
@@ -2137,8 +2163,8 @@
             if (err || !data) {
               setError({
                 icon: "❌",
-                title: "Protokoll nicht gefunden",
-                message: "Dieser Link ist ungültig oder abgelaufen. Bitte kontaktiere D&T Homes.",
+                title: ["Protokoll nicht gefunden","Protocol not found"],
+                message: ["Dieser Link ist ungültig oder abgelaufen. Bitte kontaktiere D&T Homes.","This link is invalid or has expired. Please contact D&T Homes."],
                 code: "NOT_FOUND"
               });
               setLoading(false);
@@ -2149,8 +2175,8 @@
             if (data.status === "cancelled") {
               setError({
                 icon: "🚫",
-                title: "Protokoll abgebrochen",
-                message: "Dieses Protokoll wurde von D&T Homes abgebrochen und ist nicht mehr aktiv.",
+                title: ["Protokoll abgebrochen","Protocol cancelled"],
+                message: ["Dieses Protokoll wurde von D&T Homes abgebrochen und ist nicht mehr aktiv.","This protocol was cancelled by D&T Homes and is no longer active."],
                 code: "CANCELLED"
               });
               setProtocol(data);
@@ -2161,8 +2187,8 @@
             if (["submitted", "auto_accepted", "accepted"].includes(data.status)) {
               setError({
                 icon: "✅",
-                title: "Protokoll bereits abgeschlossen",
-                message: "Du hast dieses Protokoll bereits eingereicht. Es sind keine weiteren Aktionen erforderlich.",
+                title: ["Protokoll bereits abgeschlossen","Protocol already completed"],
+                message: ["Du hast dieses Protokoll bereits eingereicht. Es sind keine weiteren Aktionen erforderlich.","You have already submitted this protocol. No further action is required."],
                 code: "ALREADY_SUBMITTED"
               });
               setProtocol(data);
@@ -2174,8 +2200,8 @@
             if (new Date(data.deadline) < new Date()) {
               setError({
                 icon: "⌛",
-                title: "Frist abgelaufen",
-                message: "Die Frist für dieses Übernahmeprotokoll ist am " + new Date(data.deadline).toLocaleDateString("de-CH") + " abgelaufen. Bitte kontaktiere D&T Homes.",
+                title: ["Frist abgelaufen","Deadline expired"],
+                message: ["Die Frist für dieses Übernahmeprotokoll ist am " + new Date(data.deadline).toLocaleDateString("de-CH") + " abgelaufen. Bitte kontaktiere D&T Homes.","The deadline for this handover protocol expired on " + new Date(data.deadline).toLocaleDateString("en-GB",{day:"2-digit",month:"long",year:"numeric"}) + ". Please contact D&T Homes."],
                 code: "EXPIRED"
               });
               setProtocol(data);
@@ -2199,7 +2225,7 @@
             setLoading(false);
           } catch (e) {
             console.error(e);
-            setError({ icon: "⚠️", title: "Fehler", message: "Etwas ist schiefgegangen: " + (e.message || e), code: "ERROR" });
+            setError({ icon: "⚠️", title: ["Fehler","Error"], message: ["Etwas ist schiefgegangen: " + (e.message || e), "Something went wrong: " + (e.message || e)], code: "ERROR" });
             setLoading(false);
           }
         })();
@@ -2241,7 +2267,7 @@
           setNewMangel(p => ({...p, tempPath: filename, tempUrl: urlData.publicUrl, uploading: false}));
         } catch (e) {
           setNewMangel(p => ({...p, uploading: false}));
-          alert("Foto-Upload fehlgeschlagen: " + (e.message || e));
+          alert(t("Foto-Upload fehlgeschlagen: ","Photo upload failed: ") + (e.message || e));
         }
       }
       
@@ -2265,7 +2291,7 @@
             updated_at: new Date().toISOString()
           }).eq("token", token);
         } catch (e) {
-          alert("Speichern fehlgeschlagen: " + (e.message || e));
+          alert(t("Speichern fehlgeschlagen: ","Saving failed: ") + (e.message || e));
         }
       }
       
@@ -2355,13 +2381,13 @@
             updated_at: new Date().toISOString()
           }).eq("token", token);
         } catch (e) {
-          alert("Foto-Upload fehlgeschlagen: " + (e.message || e));
+          alert(t("Foto-Upload fehlgeschlagen: ","Photo upload failed: ") + (e.message || e));
         }
         setUploadingRaum(null);
       }
       
       async function removePhoto(idx) {
-        if (!confirm("Foto entfernen?")) return;
+        if (!confirm(t("Foto entfernen?","Remove photo?"))) return;
         const photo = photos[idx];
         try {
           if (photo.path) {
@@ -2374,7 +2400,7 @@
             updated_at: new Date().toISOString()
           }).eq("token", token);
         } catch (e) {
-          alert("Foto konnte nicht entfernt werden: " + (e.message || e));
+          alert(t("Foto konnte nicht entfernt werden: ","Photo could not be removed: ") + (e.message || e));
         }
       }
       
@@ -2504,11 +2530,11 @@
         setSubmitting(false);
       }
       
-      if (loading) return <StatusScreen icon="⏳" title="Lade..." message="Dein Übernahmeprotokoll wird geladen." />;
-      if (error) return <StatusScreen {...error} />;
+      if (loading) return <StatusScreen icon="⏳" title={t("Lade...","Loading...")} message={t("Dein Übernahmeprotokoll wird geladen.","Your handover protocol is loading.")} />;
+      if (error) return <StatusScreen icon={error.icon} code={error.code} title={Array.isArray(error.title) ? t(error.title[0], error.title[1]) : error.title} message={Array.isArray(error.message) ? t(error.message[0], error.message[1]) : error.message} />;
       if (success) {
-        const submittedDate = new Date().toLocaleDateString("de-CH", {day:"2-digit",month:"long",year:"numeric"});
-        const submittedTime = new Date().toLocaleTimeString("de-CH", {hour:"2-digit",minute:"2-digit"});
+        const submittedDate = new Date().toLocaleDateString(hoLang==="en"?"en-GB":"de-CH", {day:"2-digit",month:"long",year:"numeric"});
+        const submittedTime = new Date().toLocaleTimeString(hoLang==="en"?"en-GB":"de-CH", {hour:"2-digit",minute:"2-digit"});
         const alleRaeume = [...RAEUME, ...customRaeume];
         const maengelByRaum = {};
         alleRaeume.forEach(r => { maengelByRaum[r.key] = []; });
@@ -2737,8 +2763,8 @@
             <div className="protocol-page">
               <div className="doc-header">
                 <div>
-                  <div className="label">Einzug</div>
-                  <h1>Übernahmeprotokoll</h1>
+                  <div className="label">{t("Einzug","Move-in")}</div>
+                  <h1>{t("Übernahmeprotokoll","Handover protocol")}</h1>
                 </div>
                 <div className="brand-logo">
                   <img src={DT_LOGO_DATA_URI} alt="D&T Homes"/>
@@ -2746,44 +2772,44 @@
               </div>
 
               <div className="person-card">
-                <div className="card-eyebrow">Mieter*in</div>
+                <div className="card-eyebrow">{t("Mieter*in","Tenant")}</div>
                 <div className="person-grid">
-                  <span className="pl">Vorname:</span><span>{protocol.mieter_vorname || "-"}</span>
-                  <span className="pl">Nachname:</span><span>{protocol.mieter_nachname || "-"}</span>
-                  {protocol.mieter_geburtsdatum && <><span className="pl">Geburtsdatum:</span><span>{formatDate(protocol.mieter_geburtsdatum)}</span></>}
-                  {protocol.mieter_nationalitaet && <><span className="pl">Nationalität:</span><span>{protocol.mieter_nationalitaet}</span></>}
+                  <span className="pl">{t("Vorname:","First name:")}</span><span>{protocol.mieter_vorname || "-"}</span>
+                  <span className="pl">{t("Nachname:","Last name:")}</span><span>{protocol.mieter_nachname || "-"}</span>
+                  {protocol.mieter_geburtsdatum && <><span className="pl">{t("Geburtsdatum:","Date of birth:")}</span><span>{formatDate(protocol.mieter_geburtsdatum)}</span></>}
+                  {protocol.mieter_nationalitaet && <><span className="pl">{t("Nationalität:","Nationality:")}</span><span>{protocol.mieter_nationalitaet}</span></>}
                   <span className="pl">E-Mail:</span><span>{protocol.mieter_email || "-"}</span>
-                  {protocol.mieter_telefon && <><span className="pl">Telefon:</span><span>{protocol.mieter_telefon}</span></>}
+                  {protocol.mieter_telefon && <><span className="pl">{t("Telefon:","Phone:")}</span><span>{protocol.mieter_telefon}</span></>}
                 </div>
               </div>
 
               {(protocol.apt_adresse || protocol.room_label || protocol.einzug_datum) && (
                 <div className="info-section">
-                  <div className="card-eyebrow">Mietobjekt</div>
+                  <div className="card-eyebrow">{t("Mietobjekt","Rental object")}</div>
                   <div className="info-grid">
-                    {protocol.apt_adresse && <><span className="lbl">Wohnung:</span><span>{protocol.apt_adresse}{protocol.apt_plz || protocol.apt_ort ? ", " : ""}{protocol.apt_plz||""} {protocol.apt_ort||""}</span></>}
-                    {protocol.room_label && <><span className="lbl">Zimmer:</span><span>{protocol.room_label}</span></>}
-                    {protocol.einzug_datum && <><span className="lbl">Einzug am:</span><span>{formatDate(protocol.einzug_datum)}</span></>}
-                    <span className="lbl">Eingereicht am:</span><span>{submittedDate}, {submittedTime}</span>
+                    {protocol.apt_adresse && <><span className="lbl">{t("Wohnung:","Apartment:")}</span><span>{protocol.apt_adresse}{protocol.apt_plz || protocol.apt_ort ? ", " : ""}{protocol.apt_plz||""} {protocol.apt_ort||""}</span></>}
+                    {protocol.room_label && <><span className="lbl">{t("Zimmer:","Room:")}</span><span>{protocol.room_label}</span></>}
+                    {protocol.einzug_datum && <><span className="lbl">{t("Einzug am:","Move-in date:")}</span><span>{formatDate(protocol.einzug_datum)}</span></>}
+                    <span className="lbl">{t("Eingereicht am:","Submitted on:")}</span><span>{submittedDate}, {submittedTime}</span>
                   </div>
                 </div>
               )}
 
               {(schluesselNr || extraSchluessel) && (
                 <div className="info-section">
-                  <div className="card-eyebrow">Schlüsselübergabe</div>
+                  <div className="card-eyebrow">{t("Schlüsselübergabe","Key handover")}</div>
                   <div className="info-grid">
-                    {schluesselNr && <><span className="lbl">Schlüsselnummer:</span><span>{schluesselNr}</span></>}
-                    {extraSchluessel && <><span className="lbl">Extra-Schlüssel:</span><span style={{whiteSpace:"pre-wrap"}}>{extraSchluessel}</span></>}
+                    {schluesselNr && <><span className="lbl">{t("Schlüsselnummer:","Key number:")}</span><span>{schluesselNr}</span></>}
+                    {extraSchluessel && <><span className="lbl">{t("Extra-Schlüssel:","Extra keys:")}</span><span style={{whiteSpace:"pre-wrap"}}>{keyEN(extraSchluessel)}</span></>}
                   </div>
                 </div>
               )}
 
-              <div className="maengel-title">Erfasste Mängel ({photos.length})</div>
+              <div className="maengel-title">{t("Erfasste Mängel","Recorded defects")} ({photos.length})</div>
 
               {photos.length === 0 ? (
                 <div className="no-maengel">
-                  Keine Mängel gemeldet. Die Wohnung wurde in einwandfreiem Zustand übernommen.
+                  {t("Keine Mängel gemeldet. Die Wohnung wurde in einwandfreiem Zustand übernommen.","No defects reported. The apartment was taken over in perfect condition.")}
                 </div>
               ) : (
                 alleRaeume.map(r => {
@@ -2793,10 +2819,10 @@
                   const withPhoto = maengel.filter(m => m.url);
                   return (
                     <div key={r.key} className="raum-block">
-                      <h3>{r.label}</h3>
+                      <h3>{t(r.label, ROOM_EN[r.label]||r.label)}</h3>
                       {textOnly.map((m, i) => (
                         <div key={"t"+i} className="text-mangel">
-                          <span className="lbl">Bemerkung:</span>{m.beschreibung || "Ohne Beschreibung"}
+                          <span className="lbl">{t("Bemerkung:","Note:")}</span>{m.beschreibung || t("Ohne Beschreibung","No description")}
                         </div>
                       ))}
                       {withPhoto.length > 0 && (
@@ -2804,7 +2830,7 @@
                           {withPhoto.map((m, i) => (
                             <div key={"p"+i} className="photo-item">
                               <img src={m.url} alt=""/>
-                              <div className="photo-cap">{m.beschreibung || "Ohne Beschreibung"}</div>
+                              <div className="photo-cap">{m.beschreibung || t("Ohne Beschreibung","No description")}</div>
                             </div>
                           ))}
                         </div>
@@ -2816,31 +2842,33 @@
 
               {mangelText.trim() && (
                 <div className="info-section">
-                  <div className="card-eyebrow">Weitere Bemerkungen</div>
+                  <div className="card-eyebrow">{t("Weitere Bemerkungen","Further remarks")}</div>
                   <div style={{fontSize:12,lineHeight:1.5,whiteSpace:"pre-wrap"}}>{mangelText}</div>
                 </div>
               )}
 
               <div className="clauses">
-                <div className="ct">Erklärung der Vertragsparteien</div>
+                <div className="ct">{t("Erklärung der Vertragsparteien","Declaration of the contracting parties")}</div>
                 <ol>
-                  <li>Die Mietpartei bestätigt den Erhalt der aufgeführten Schlüssel{schluesselNr ? ` (Nr. ${schluesselNr}${extraSchluessel ? `; zusätzlich: ${extraSchluessel.replace(/\n/g, ", ")}` : ""})` : ""} und verpflichtet sich, diese sorgfältig zu verwahren und am Ende des Mietverhältnisses vollzählig zurückzugeben.</li>
-                  <li>Die Mietpartei bestätigt, dass die Wohnung im obenstehend dokumentierten Zustand übernommen wurde. Sichtbare Mängel, die innerhalb der 14-tägigen Frist nach Einzug nicht aufgeführt wurden, gelten als nicht vorhanden.</li>
-                  <li>Verdeckte Mängel, die bei der Übernahme trotz sorgfältiger Prüfung nicht erkennbar waren (z.B. Schimmel hinter Möbeln), sind der Hauptmieterin innert 10 Tagen ab Entdeckung schriftlich zu melden (Art. 256 OR).</li>
-                  <li>Die Mietpartei verpflichtet sich, das Mietobjekt sorgfältig zu nutzen und in vergleichbarem Zustand zurückzugeben (vorbehaltlich normaler Abnutzung gemäss Schweizer Mietrecht).</li>
-                  <li>Die Mietpartei bestätigt mit der digitalen Unterschrift die Richtigkeit der Angaben und den Erhalt einer Kopie dieses Protokolls.</li>
-                  <li>Bei Streitigkeiten gilt schweizerisches Recht; Gerichtsstand ist der Ort der gelegenen Sache, zwingende gesetzliche Gerichtsstände (insbesondere Art. 33 ZPO) bleiben vorbehalten.</li>
+                  <li>{hoLang==="en"
+                    ? <>The tenant confirms receipt of the listed keys{schluesselNr ? ` (No. ${schluesselNr}${extraSchluessel ? `; additionally: ${keyEN(extraSchluessel).replace(/\n/g, ", ")}` : ""})` : ""} and undertakes to keep them safe and to return all of them at the end of the tenancy.</>
+                    : <>Die Mietpartei bestätigt den Erhalt der aufgeführten Schlüssel{schluesselNr ? ` (Nr. ${schluesselNr}${extraSchluessel ? `; zusätzlich: ${extraSchluessel.replace(/\n/g, ", ")}` : ""})` : ""} und verpflichtet sich, diese sorgfältig zu verwahren und am Ende des Mietverhältnisses vollzählig zurückzugeben.</>}</li>
+                  <li>{t("Die Mietpartei bestätigt, dass die Wohnung im obenstehend dokumentierten Zustand übernommen wurde. Sichtbare Mängel, die innerhalb der 14-tägigen Frist nach Einzug nicht aufgeführt wurden, gelten als nicht vorhanden.","The tenant confirms that the apartment was taken over in the condition documented above. Visible defects not listed within the 14-day period after move-in are deemed not to exist.")}</li>
+                  <li>{t("Verdeckte Mängel, die bei der Übernahme trotz sorgfältiger Prüfung nicht erkennbar waren (z.B. Schimmel hinter Möbeln), sind der Hauptmieterin innert 10 Tagen ab Entdeckung schriftlich zu melden (Art. 256 OR).","Hidden defects that could not be detected at handover despite careful inspection (e.g. mould behind furniture) must be reported to the main tenant in writing within 10 days of discovery (Art. 256 CO).")}</li>
+                  <li>{t("Die Mietpartei verpflichtet sich, das Mietobjekt sorgfältig zu nutzen und in vergleichbarem Zustand zurückzugeben (vorbehaltlich normaler Abnutzung gemäss Schweizer Mietrecht).","The tenant undertakes to use the rental object with care and to return it in comparable condition (subject to normal wear and tear under Swiss tenancy law).")}</li>
+                  <li>{t("Die Mietpartei bestätigt mit der digitalen Unterschrift die Richtigkeit der Angaben und den Erhalt einer Kopie dieses Protokolls.","With the digital signature, the tenant confirms the accuracy of the information and receipt of a copy of this protocol.")}</li>
+                  <li>{t("Bei Streitigkeiten gilt schweizerisches Recht; Gerichtsstand ist der Ort der gelegenen Sache, zwingende gesetzliche Gerichtsstände (insbesondere Art. 33 ZPO) bleiben vorbehalten.","Disputes are governed by Swiss law; the place of jurisdiction is the location of the property, mandatory statutory places of jurisdiction (in particular Art. 33 CPC) remain reserved.")}</li>
                 </ol>
               </div>
 
               <div className="signatures">
                 <div className="sig-block">
-                  <div className="role">Mietpartei · digital unterzeichnet</div>
+                  <div className="role">{t("Mietpartei · digital unterzeichnet","Tenant · digitally signed")}</div>
                   {signatureData ? <img src={signatureData} alt="" style={{maxHeight:60,maxWidth:220,display:"block",margin:"4px 0"}}/> : <div className="name">{signatureName}</div>}
-                  <div className="meta">Digital unterschrieben am {submittedDate} um {submittedTime}</div>
+                  <div className="meta">{t("Digital unterschrieben am","Digitally signed on")} {submittedDate} {t("um","at")} {submittedTime}</div>
                 </div>
                 <div className="sig-block">
-                  <div className="role">Hauptmieterin</div>
+                  <div className="role">{t("Hauptmieterin","Main tenant")}</div>
                   <div className="name">D&amp;T Partners GmbH</div>
                 </div>
               </div>
@@ -2880,7 +2908,7 @@
               {protocol.schluessel_info && (
                 <div style={{background:"#fefcf7",border:"1px solid #d8d0c0",borderRadius:8,padding:"14px 16px",marginBottom:20}}>
                   <div style={{fontSize:11,color:"#8a8174",textTransform:"uppercase",letterSpacing:".25em",marginBottom:8,fontWeight:600}}>{t("🔑 Erhaltene Schlüssel","🔑 Keys received")}</div>
-                  <div style={{fontSize:13.5,lineHeight:1.6,color:"#3a352d",whiteSpace:"pre-wrap"}}>{hoLang==="en" ? String(protocol.schluessel_info).replace(/Schlüsselnummer:/g,"Key number:").replace(/Extra-Schlüssel:/g,"Extra keys:") : protocol.schluessel_info}</div>
+                  <div style={{fontSize:13.5,lineHeight:1.6,color:"#3a352d",whiteSpace:"pre-wrap"}}>{hoLang==="en" ? keyEN(protocol.schluessel_info) : protocol.schluessel_info}</div>
                 </div>
               )}
               
@@ -2906,7 +2934,7 @@
       
       // Helper: add custom raum
       async function addCustomRaum() {
-        const label = prompt("Name des Raums (z.B. Balkon, Keller, Waschkueche):");
+        const label = prompt(t("Name des Raums (z.B. Balkon, Keller, Waschküche):","Name of the room (e.g. balcony, cellar, laundry room):"));
         if (!label || !label.trim()) return;
         const key = "custom_" + Date.now();
         const newRaum = { key, label: label.trim(), icon: "🚪" };
@@ -2918,14 +2946,14 @@
             updated_at: new Date().toISOString()
           }).eq("token", token);
         } catch (e) {
-          alert("Speichern fehlgeschlagen: " + (e.message || e));
+          alert(t("Speichern fehlgeschlagen: ","Saving failed: ") + (e.message || e));
         }
       }
       
       async function removeCustomRaum(key) {
         const raumPhotos = photos.filter(p => p.raum === key);
         if (raumPhotos.length > 0) {
-          if (!confirm(`Dieser Raum enthält ${raumPhotos.length} Mangel${raumPhotos.length>1?"s":""}. Trotzdem entfernen?`)) return;
+          if (!confirm(t(`Dieser Raum enthält ${raumPhotos.length} ${raumPhotos.length>1?"Mängel":"Mangel"}. Trotzdem entfernen?`,`This room contains ${raumPhotos.length} defect${raumPhotos.length>1?"s":""}. Remove anyway?`))) return;
         }
         const updatedCustom = customRaeume.filter(r => r.key !== key);
         const updatedPhotos = photos.filter(p => p.raum !== key);
@@ -2944,7 +2972,7 @@
             updated_at: new Date().toISOString()
           }).eq("token", token);
         } catch(e) {
-          alert("Speichern fehlgeschlagen: " + (e.message || e));
+          alert(t("Speichern fehlgeschlagen: ","Saving failed: ") + (e.message || e));
         }
       }
       
@@ -3109,7 +3137,7 @@
                   </div>
                 )}
                 {protocol.schluessel_data.extraText && (
-                  <div style={{fontSize:12.5,color:"#5a5044",padding:"8px 10px",background:"#f5f2ec",borderRadius:6}}>{t("Zusätzlich erhalten","Additionally received")}: {protocol.schluessel_data.extraText}</div>
+                  <div style={{fontSize:12.5,color:"#5a5044",padding:"8px 10px",background:"#f5f2ec",borderRadius:6}}>{t("Zusätzlich erhalten","Additionally received")}: {keyEN(protocol.schluessel_data.extraText)}</div>
                 )}
               </div>
             )}
@@ -3148,8 +3176,8 @@
           return (
             <StatusScreen
               icon="🔗"
-              title="Ungültiger Link"
-              message="Diese Seite kann nur über einen persönlichen Übernahmelink besucht werden. Bitte überprüfe den Link aus deiner E-Mail von D&T Homes."
+              title="Ungültiger Link · Invalid link"
+              message="Diese Seite kann nur über einen persönlichen Übernahmelink besucht werden. Bitte überprüfe den Link aus deiner E-Mail von D&T Homes. · This page can only be opened via a personal handover link. Please check the link in your email from D&T Homes."
               code="INVALID_URL"
             />
           );
@@ -3162,8 +3190,8 @@
         return (
           <StatusScreen
             icon="🔗"
-            title="Ungültiger Link"
-            message="Diese Seite kann nur über einen persönlichen Vertragslink besucht werden. Bitte überprüfe den Link aus deiner E-Mail von D&T Homes."
+            title="Ungültiger Link · Invalid link"
+            message="Diese Seite kann nur über einen persönlichen Vertragslink besucht werden. Bitte überprüfe den Link aus deiner E-Mail von D&T Homes. · This page can only be opened via a personal contract link. Please check the link in your email from D&T Homes."
             code="INVALID_URL"
           />
         );
