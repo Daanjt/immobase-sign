@@ -700,8 +700,9 @@
       if(beginn&&endeDate&&endeDate>beginn){
         const months=(endeDate-beginn)/(1000*60*60*24*30.44);
         const endeStr=dateLongEn(v.mietende||apt.mietende);
-        if(months>0&&months<12){
-          const kSatz=` As the agreed rental term is less than twelve (12) months, ordinary termination by the subtenant is excluded. The subtenant undertakes to rent for the entire term and to pay the full rent (see clause 11.1).`;
+        const immerBefr=v.vertragsart==="wohnung"||apt.vermietungsart==="wohnung"||!!apt.immer_befristet;
+        if(months>0&&(months<12||immerBefr)){
+          const kSatz=months<12?` As the agreed rental term is less than twelve (12) months, ordinary termination by the subtenant is excluded. The subtenant undertakes to rent for the entire term and to pay the full rent (see clause 11.1).`:` Ordinary termination by the subtenant is governed by clauses 11 and 11.2; termination is excluded during the last six months of the contract term.`;
           dauerText=`The tenancy begins on <strong>${dateLongEn(v.einzug)}</strong> and is <strong>fixed-term until ${endeStr}</strong>. The contract ends automatically on the agreed end date unless a written extension is agreed.${kSatz}`;
         }
       }
