@@ -1747,24 +1747,34 @@
               user_agent: navigator.userAgent
             };
           } else {
-            // Upload mode: Upload jedes PDF zu Storage
+            // Upload mode: signierte Upload-URLs vom Server holen, dann jedes PDF hochladen
             setUploadProgress(t("Lade Dokumente hoch…","Uploading documents…"));
-            const uploadedPdfs = [];
             for (let i = 0; i < pdfs.length; i++) {
               const pdf = pdfs[i];
               const file = uploadedFiles[pdf.path];
               if (!file) throw new Error(t(`Bitte lade die signierte Version von "${pdf.name}" hoch.`,`Please upload the signed version of "${pdf.name}".`));
-              if (file.type !== "application/pdf") throw new Error(t(`"${pdf.name}": Bitte nur PDF-Dateien hochladen.`,`"${pdf.name}": Please upload PDF files only.`));
+              if (file.type !== "application/pdf" && !/\.pdf$/i.test(file.name || "")) throw new Error(t(`"${pdf.name}": Bitte nur PDF-Dateien hochladen.`,`"${pdf.name}": Please upload PDF files only.`));
               if (file.size > 20 * 1024 * 1024) throw new Error(t(`"${pdf.name}": Datei zu gross (max. 20 MB).`,`"${pdf.name}": File too large (max. 20 MB).`));
-              
+            }
+            const prepRes = await fetch(`${SUPABASE_URL}/functions/v1/finalize-contract`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "apikey": SUPABASE_ANON_KEY, "Authorization": `Bearer ${SUPABASE_ANON_KEY}` },
+              body: JSON.stringify({ token, mode: "prepare_upload" })
+            });
+            const prep = await prepRes.json().catch(() => ({}));
+            if (!prepRes.ok || !prep.targets) throw new Error(prep.error || t("Upload konnte nicht vorbereitet werden.","Upload could not be prepared."));
+            const uploadedPdfs = [];
+            for (let i = 0; i < pdfs.length; i++) {
+              const pdf = pdfs[i];
+              const file = uploadedFiles[pdf.path];
+              const target = prep.targets.find(x => x.src === pdf.path);
+              if (!target) throw new Error(t(`Kein Upload-Ziel für "${pdf.name}".`,`No upload target for "${pdf.name}".`));
               setUploadProgress(t(`Lade Dokument ${i + 1}/${pdfs.length} hoch…`,`Uploading document ${i + 1}/${pdfs.length}…`));
-              const uploadPath = pdf.path.replace(/\.pdf$/, "-uploaded-signed.pdf");
               const { error: upErr } = await supabase.storage
                 .from("contracts")
-                .upload(uploadPath, file, { contentType: "application/pdf", upsert: true });
-              if (upErr) throw new Error(`Upload fehlgeschlagen: ${upErr.message}`);
-              
-              uploadedPdfs.push({ path: uploadPath, name: pdf.name, type: pdf.type });
+                .uploadToSignedUrl(target.path, target.token, file, { contentType: "application/pdf", upsert: true });
+              if (upErr) throw new Error(t("Upload fehlgeschlagen: ","Upload failed: ") + upErr.message);
+              uploadedPdfs.push({ path: target.path, name: pdf.name, type: pdf.type });
             }
             setUploadProgress(t("Vertrag wird abgeschlossen…","Finalising contract…"));
             body = {
