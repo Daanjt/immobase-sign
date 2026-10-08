@@ -911,6 +911,7 @@
             ? <Row label={t("Mietobjekt","Rental object")} value={t("Ganze Wohnung","Entire apartment") + (apt.zimmer ? ` · ${apt.zimmer} ${t("Zimmer","rooms")}` : "") + (apt.flaeche ? ` · ${apt.flaeche} m²` : "")} bold />
             : (v.zimmerId && <Row label={t("Zimmer","Room")} value={v.zimmerId} bold />)}
           {istWohnung && <Row label={t("Anzahl Personen","Number of persons")} value={String(pers)} bold />}
+          {istWohnung && v.mitmieter && v.mitmieter.vorname && <Row label={t("Mitmieter*in (solidarisch)","Co-tenant (jointly liable)")} value={`${v.mitmieter.vorname||""} ${v.mitmieter.nachname||""}`.trim()} bold />}
           <Row label={t("Möbliert","Furnished")} value={moebText} bold />
           {v.einzug && <Row label={t("Einzug","Move-in")} value={formatDate(v.einzug)} bold />}
           {v.auszug && <Row label={t("Auszug","Move-out")} value={formatDate(v.auszug)} bold />}
@@ -1120,6 +1121,13 @@
       ["Gerichtsstand für alle Streitigkeiten aus diesem Vertrag ist <strong>", "The place of jurisdiction for all disputes arising from this contract is <strong>"],
       ["Sofern zur Wohnung ein Garten gehört, darf der Untermieter diesen nutzen. Er verpflichtet sich, den Garten selbständig und ordentlich zu pflegen und in gepflegtem Zustand zu halten (insbesondere Rasen- und Grünpflege) sowie im Winter den Schnee auf den zum Mietobjekt gehörenden Wegen und Flächen zu räumen.", "If a garden belongs to the apartment, the subtenant may use it. The subtenant undertakes to maintain the garden independently and properly and to keep it in a well-kept condition (in particular lawn and greenery care) and, in winter, to clear snow from the paths and areas belonging to the rental property."],
       ["Untermietvertrag","Sublease Agreement"],
+      ["Mitmieter*in (solidarisch haftend)","Co-tenant (jointly and severally liable)"],
+      ["<span class=\"mm-und\"> und </span>","<span class=\"mm-und\"> and </span>"],
+      ["<p><strong>Mitmieter*in:</strong> ","<p><strong>Co-tenant:</strong> "],
+      [" ist neben "," is, alongside "],
+      [" ebenfalls Vertragspartei. Beide haften solidarisch für sämtliche Verpflichtungen aus diesem Vertrag, insbesondere für den Mietzins, die Nebenkosten und allfällige Schäden. Eine Kündigung durch die Untermieterseite ist nur gültig, wenn sie von beiden unterzeichnet ist. Mitteilungen der Hauptmieterin an eine der beiden Personen gelten für beide.",", also a party to this contract. Both are jointly and severally liable for all obligations under this contract, in particular for the rent, the additional costs and any damage. A termination by the subtenant side is only valid if signed by both. Notices from the main tenant to either person apply to both."],
+      ["<div class=\"role\">Mitmieter*in</div>","<div class=\"role\">Co-tenant</div>"],
+      ["Mitmieter*in","Co-tenant"],
       ["Untermieter*in","Subtenant"],
       ["Vermieter*in","Main tenant"],
       ["Mieter*in","Subtenant"],
@@ -1518,6 +1526,7 @@
       const [pdfs, setPdfs] = useState([]); // Array von {name, url, type, path}
       const [error, setError] = useState(null);
       const [signature, setSignature] = useState("");
+      const [signature2, setSignature2] = useState("");
       const [accepted, setAccepted] = useState(false);
       const [submitting, setSubmitting] = useState(false);
       const [success, setSuccess] = useState(false);
@@ -1697,10 +1706,18 @@
         load();
       }, [token]);
       
+      const _mmRaw = (contract && contract.contract_data && contract.contract_data.vertrag && contract.contract_data.vertrag.mitmieter) || null;
+      const mitmieter = (_mmRaw && _mmRaw.vorname && (pdfs||[]).some(p => p.type === "umv" || p.type === "untermietvertrag")) ? _mmRaw : null;
+      const mitmieterName = mitmieter ? `${mitmieter.vorname||""} ${mitmieter.nachname||""}`.trim() : "";
+      const hauptName = contract ? `${contract.mieter_vorname||""} ${contract.mieter_nachname||""}`.trim() : "";
       async function handleSubmit() {
         if (signMode === "digital") {
           if (!signature) {
-            alert("Bitte unterschreibe zuerst im Unterschriftenfeld.");
+            alert(t("Bitte unterschreibe zuerst im Unterschriftenfeld.","Please sign in the signature field first."));
+            return;
+          }
+          if (mitmieter && !signature2) {
+            alert(t(`Bitte lass auch ${mitmieterName} (Mitmieter*in) unterschreiben.`,`Please also have ${mitmieterName} (co-tenant) sign.`));
             return;
           }
         } else {
@@ -1726,6 +1743,7 @@
               token,
               mode: "digital",
               signature_png: signature,
+              ...(mitmieter ? { mitmieter_signature_png: signature2 } : {}),
               user_agent: navigator.userAgent
             };
           } else {
@@ -1890,12 +1908,25 @@
                   {t("Unterschreibe mit dem Finger (Handy/Tablet) oder mit der Maus (Computer). Die Unterschrift wird automatisch in "+(pdfs.length > 1 ? "beide PDFs" : "dein PDF")+" eingefügt.","Sign with your finger (phone/tablet) or with the mouse (computer). Your signature is automatically inserted into "+(pdfs.length > 1 ? "both PDFs" : "your PDF")+".")}
                 </div>
                 
+                {mitmieter && <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1814", margin: "10px 0 6px" }}>{t("Untermieter*in","Subtenant")}: {hauptName}</div>}
                 <SignaturePad
                   value={signature}
                   onChange={setSignature}
                   lang={lang}
                   placeholder={t("↓ Hier mit Finger oder Maus unterschreiben ↓","↓ Sign here with finger or mouse ↓")}
                 />
+                {mitmieter && (
+                  <>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1814", margin: "16px 0 6px" }}>{t("Mitmieter*in","Co-tenant")}: {mitmieterName}</div>
+                    <div style={{ fontSize: 12, color: "#8a8174", lineHeight: 1.5, marginBottom: 6 }}>{t("Als Mitmieter*in haftest du solidarisch für alle Pflichten aus dem Vertrag.","As co-tenant you are jointly and severally liable for all obligations under the contract.")}</div>
+                    <SignaturePad
+                      value={signature2}
+                      onChange={setSignature2}
+                      lang={lang}
+                      placeholder={t("↓ Hier unterschreibt die Mitmieterin / der Mitmieter ↓","↓ Co-tenant signs here ↓")}
+                    />
+                  </>
+                )}
               </>
             )}
             
