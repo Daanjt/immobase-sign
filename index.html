@@ -867,6 +867,8 @@
       const data = contract.contract_data || {};
       const v = data.vertrag || {};
       const apt = v.apt || data.apt || {};
+      const istWohnung = v.vertragsart === "wohnung" || apt.vermietungsart === "wohnung";
+      const pers = Math.max(1, +v.personen || 1);
       const aptAdresse = apt.adresse ? `${apt.adresse}${apt.plz || apt.ort ? `, ${apt.plz || ""} ${apt.ort || ""}`.trim() : ""}` : "-";
       
       const Row = ({ label, value, bold }) => (
@@ -904,15 +906,18 @@
           
           <Sec title={t("Mietobjekt","Rental object")} />
           <Row label={t("Wohnung","Apartment")} value={`${apt.id || "-"} · ${aptAdresse}`} bold />
-          {v.zimmerId && <Row label={t("Zimmer","Room")} value={v.zimmerId} bold />}
+          {istWohnung
+            ? <Row label={t("Mietobjekt","Rental object")} value={t("Ganze Wohnung","Entire apartment") + (apt.zimmer ? ` · ${apt.zimmer} ${t("Zimmer","rooms")}` : "") + (apt.flaeche ? ` · ${apt.flaeche} m²` : "")} bold />
+            : (v.zimmerId && <Row label={t("Zimmer","Room")} value={v.zimmerId} bold />)}
+          {istWohnung && <Row label={t("Anzahl Personen","Number of persons")} value={String(pers)} bold />}
           <Row label={t("Möbliert","Furnished")} value={moebText} bold />
           {v.einzug && <Row label={t("Einzug","Move-in")} value={formatDate(v.einzug)} bold />}
           {v.auszug && <Row label={t("Auszug","Move-out")} value={formatDate(v.auszug)} bold />}
           
           <Sec title={t("Monatliche Kosten","Monthly costs")} />
           {v.nettomiete != null && <Row label={t("Nettomiete","Net rent")} value={chf(v.nettomiete)} bold />}
-          {v.nebenkosten != null && <Row label={t("Nebenkosten","Additional costs")} value={chf(v.nebenkosten)} bold />}
-          {v.strom != null && <Row label={t("Stromkosten","Electricity")} value={chf(v.strom)} bold />}
+          {v.nebenkosten != null && <Row label={istWohnung ? t(`Nebenkosten pauschal (${pers} Pers.)`,`Additional costs, flat rate (${pers} pers.)`) : t("Nebenkosten","Additional costs")} value={chf(v.nebenkosten)} bold />}
+          {v.strom != null && <Row label={istWohnung ? t(`Strom pauschal (${pers} Pers.)`,`Electricity, flat rate (${pers} pers.)`) : t("Stromkosten","Electricity")} value={chf(v.strom)} bold />}
           {moebMonat ? <Row label={t("Möblierung (monatlich)","Furniture (monthly)")} value={chf(moebMonat)} bold /> : null}
           {v.aufschlag ? <Row label={t("Servicegebühr","Service fee")} value={chf(v.aufschlag)} bold /> : null}
           <Row label={t("Total / Mt.","Total / month")} value={chf(totalMonat)} bold />
@@ -1005,6 +1010,43 @@
     // uebersetzen. Layout/CSS/Positionen bleiben identisch. Gesetzesauszug (OR)
     // bleibt bewusst Deutsch (amtlicher Text).
     const DE_EN_MAP = [
+      // Ganze Wohnung (Zwischennutzung, unmöbliert)
+      ["Die Rückerstattung der Kaution erfolgt gemäss den Vertragsbedingungen, sobald sämtliche Schlussabrechnungen (z. B. für offene Mieten, Nebenkosten, Strom, allfällige Reparaturen oder Reinigungen) vorliegen und die Wohnung ordnungsgemäss und ohne Beanstandung zurückgegeben wurden. Die Rückzahlung erfolgt auf das bei Evorest hinterlegte Konto des Untermieters.", "The deposit is refunded in accordance with the contract terms once all final settlements (e.g. for outstanding rent, additional costs, electricity, any repairs or cleaning) are available and the apartment has been returned properly and without objection. Repayment is made to the subtenant's account held at Evorest."],
+      ["Der Untermieter verpflichtet sich, die Wohnung sorgfältig zu behandeln und Schäden oder Mängel dem Hauptmieter unverzüglich zu melden. Die Wohnung ist in dem Zustand zurückzugeben, in dem sie übernommen wurden (normale Abnutzung bleibt vorbehalten). Die Übergabe erfolgt bei Ein- und Auszug mittels schriftlichem Übergabeprotokoll. Die Schlussreinigung erfolgt zu Lasten des Untermieters.", "The subtenant undertakes to treat the apartment with care and to report damage or defects to the main tenant immediately. The apartment must be returned in the condition in which it was taken over (normal wear excepted). Handover takes place at move-in and move-out by means of a written handover protocol. The final cleaning is at the subtenant's expense."],
+      ["Der Untermieter erklärt sich damit einverstanden, dass seine personenbezogenen Daten zum Zweck der Vertragsabwicklung gespeichert, verarbeitet und im erforderlichen Umfang weitergegeben werden dürfen. Eine Weitergabe an Dritte erfolgt ausschliesslich, soweit dies für die Durchführung des Mietverhältnisses notwendig ist.", "The subtenant agrees that their personal data may be stored, processed and, to the extent necessary, passed on for the purpose of executing the contract. Data is passed on to third parties only insofar as this is necessary for carrying out the tenancy."],
+      ["Der Untermieter haftet für Schäden oder Verluste an der Wohnung, die durch fahrlässiges Verhalten oder unsachgemässe Nutzung verursacht werden (einschliesslich durch Besucher). Der Untermieter hat den Nachweis einer gültigen Privathaftpflichtversicherung zu erbringen.", "The subtenant is liable for damage to or loss of the apartment caused by negligent behaviour or improper use (including by visitors). The subtenant must provide proof of a valid private liability insurance."],
+      ["Bei schwerwiegender Vertragsverletzung (insbesondere Zahlungsverzug, unerlaubte Weitergabe der Wohnung, Störung des Hausfriedens, rechtswidrige Nutzung oder falsche Angaben bei Vertragsabschluss) ist der Hauptmieter berechtigt, den Vertrag fristlos aufzulösen und die unverzügliche Räumung zu verlangen.", "In case of serious breach of contract (in particular payment default, unauthorised passing on of the apartment, disturbance of the peace, unlawful use or false statements at conclusion of the contract), the main tenant is entitled to terminate the contract without notice and to demand immediate vacating."],
+      ["Der Hauptmieter ist berechtigt, die Wohnung nach angemessener Vorankündigung zur Kontrolle, Instandhaltung, Besichtigung mit Interessenten oder bei Vertragsverletzungen zu betreten.", "The main tenant is entitled to enter the apartment after reasonable prior notice for inspection, maintenance, viewings with interested parties or in case of breaches of contract."],
+      ["Die Nebenkosten umfassen Heizung, Wasser, Gebäudewartung, allgemeinen Stromverbrauch im Gebäude, Gebäudeversicherung sowie Abwassergebühren.", "The additional costs cover heating, water, building maintenance, common electricity consumption in the building, building insurance and sewage fees."],
+      ["<p>Zusammenfassung aller Kosten gemäss Ziffern 3 und 4:</p>", "<p>Summary of all costs according to clauses 3 and 4:</p>"],
+      ["<span class=\"pl\">Anzahl Personen:</span>", "<span class=\"pl\">Number of persons:</span>"],
+      ["Untervermietet wird die <strong>ganze Wohnung</strong>", "Sublet is the <strong>entire apartment</strong>"],
+      [" Zimmer, ca. ", " rooms, approx. "],
+      [" Zimmer), <strong>unmöbliert</strong>", " rooms), <strong>unfurnished</strong>"],
+      ["m²), <strong>unmöbliert</strong>", "m²), <strong>unfurnished</strong>"],
+      ["</strong>, <strong>unmöbliert</strong>", "</strong>, <strong>unfurnished</strong>"],
+      [", im Rahmen einer befristeten Zwischennutzung.</p>", ", as a fixed-term interim use.</p>"],
+      ["<p>Die Wohnung dient ausschliesslich Wohnzwecken und wird vom Untermieter mit insgesamt <strong>", "<p>The apartment is used exclusively for residential purposes and is occupied by the subtenant with a total of <strong>"],
+      ["</strong> bewohnt.</p>", "</strong>.</p>"],
+      [" Dem Untermieter ist bekannt, dass es sich um eine Zwischennutzung handelt und die Wohnung nach Ablauf der Mietdauer dem Eigentümer bzw. der Verwaltung zurückzugeben ist.", " The subtenant acknowledges that this is an interim use and that the apartment must be returned to the owner or the property management at the end of the rental period."],
+      ["Der monatliche Mietzins für die Wohnung beträgt:", "The monthly rent for the apartment is:"],
+      ["<td>Nebenkosten pauschal (", "<td>Additional costs, flat rate ("],
+      ["<td>Stromkosten pauschal (", "<td>Electricity, flat rate ("],
+      ["<p>Die Nebenkosten und die Stromkosten werden pauschal pro Person erhoben (Nebenkosten CHF ", "<p>Additional costs and electricity are charged as a flat rate per person (additional costs CHF "],
+      [", Strom CHF ", ", electricity CHF "],
+      [" pro Person und Monat) und gelten mit der Pauschale als abgegolten. Eine Nachforderung oder Rückerstattung erfolgt vorbehältlich des nachfolgenden Absatzes nicht.</p>", " per person and month) and are fully settled by the flat rate. Subject to the following paragraph, there will be no additional charge or refund.</p>"],
+      ["<p>Massgebend ist die vereinbarte Anzahl von ", "<p>The agreed number of "],
+      [". Eine Änderung der Personenzahl ist dem Hauptmieter vorgängig schriftlich mitzuteilen; die Pauschalen werden ab dem Folgemonat entsprechend angepasst.</p>", " is decisive. Any change in the number of persons must be notified to the main tenant in writing in advance; the flat rates will be adjusted accordingly from the following month.</p>"],
+      ["Für die Serafe-Abgabe (Radio- und Fernsehabgabe) ist der Untermieter als Haushalt selbst verantwortlich.", "The subtenant, as a household, is responsible for the Serafe fee (radio and television fee) itself."],
+      ["Der Untermieter haftet für das Verhalten sämtlicher Personen, die mit ihm in der Wohnung leben oder sich mit seinem Einverständnis darin aufhalten.", "The subtenant is liable for the conduct of all persons who live with them in the apartment or stay there with their consent."],
+      ["7. Zustand und Ausstattung", "7. Condition and fittings"],
+      ["<p>Die Wohnung wird <strong>unmöbliert</strong> und in gereinigtem Zustand übergeben. Mitvermietet sind einzig die fest eingebauten Einrichtungen (insbesondere Küche mit Geräten, Sanitäranlagen und Beleuchtung, soweit vorhanden). Ein Inventar oder eine Möblierung durch den Hauptmieter ist nicht Bestandteil dieses Vertrags.</p>", "<p>The apartment is handed over <strong>unfurnished</strong> and cleaned. Only the permanently installed fixtures are included in the rental (in particular the kitchen with appliances, sanitary facilities and lighting, where present). Inventory or furnishing by the main tenant is not part of this contract.</p>"],
+      ["Der Untermieter richtet die Wohnung auf eigene Kosten ein. Eigene Möbel und Gegenstände sind bei Vertragsende vollständig zu entfernen. Zurückgelassene Gegenstände kann der Hauptmieter nach erfolgloser Aufforderung auf Kosten des Untermieters entsorgen.", "The subtenant furnishes the apartment at their own expense. Own furniture and belongings must be removed completely at the end of the contract. Items left behind may be disposed of by the main tenant at the subtenant's expense after an unsuccessful request."],
+      ["Bohren, Dübeln oder sonstige Eingriffe in Wände, Decken und Böden sind nur mit vorgängiger schriftlicher Zustimmung des Hauptmieters zulässig. Bei Auszug ist der ursprüngliche Zustand wiederherzustellen.", "Drilling, plugging or other interventions in walls, ceilings and floors are only permitted with the prior written consent of the main tenant. The original condition must be restored upon move-out."],
+      ["Die Wohnung ist ausschliesslich für Wohnzwecke des Untermieters und der vereinbarten Anzahl von ", "The apartment is intended exclusively for residential use by the subtenant and the agreed number of "],
+      [" bestimmt. Eine Belegung durch weitere Personen ist ohne vorgängige schriftliche Zustimmung des Hauptmieters unzulässig.", ". Occupancy by additional persons is not permitted without the prior written consent of the main tenant."],
+      [", ganze Wohnung (", ", entire apartment ("],
+      [", ganze Wohnung<", ", entire apartment<"],
       ["Im Mietpreis sind die Kosten für administrative und koordinative Leistungen, Kundenservice und persönliche Betreuung bereits inbegriffen.", "The rent already includes the costs of administration and coordination services, customer service and personal support."],
       ["<h2>Kostenübersicht</h2>", "<h2>Cost overview</h2>"],
       ["<p>Zusammenfassung aller Kosten gemäss Ziffern 3, 4 und 7:</p>", "<p>Summary of all costs according to clauses 3, 4 and 7:</p>"],
@@ -1230,6 +1272,7 @@
       [" Monate.</p>"," months.</p>"],
       [" Der Mietvertrag endet automatisch zum vereinbarten Enddatum, sofern keine schriftliche Verlängerung vereinbart wird."," The contract ends automatically on the agreed end date, unless a written extension is agreed."],
       [" Da die vereinbarte Mietdauer weniger als zwölf (12) Monate beträgt, ist eine ordentliche Kündigung durch den Untermieter ausgeschlossen. Der Untermieter verpflichtet sich, die gesamte Mietdauer zu mieten und die entsprechenden Mietzinsen vollständig zu entrichten (siehe Ziffer 11.1)."," As the agreed rental term is less than twelve (12) months, ordinary termination by the subtenant is excluded. The subtenant undertakes to rent for the entire term and to pay the corresponding rent in full (see clause 11.1)."],
+      [" Eine ordentliche Kündigung durch den Untermieter richtet sich nach Ziffern 11 und 11.2; in den letzten sechs Monaten der Vertragslaufzeit ist eine Kündigung ausgeschlossen."," Ordinary termination by the subtenant is governed by clauses 11 and 11.2; termination is excluded during the last six months of the contract term."],
       [" Eine ordentliche Kündigung durch den Untermieter richtet sich nach Ziffer 11.1; in den letzten sechs Monaten der Vertragslaufzeit ist eine Kündigung ausgeschlossen."," Ordinary termination by the subtenant is governed by clause 11.1; termination is excluded during the last six months of the contract term."],
       [" Die Befristung erfolgt aufgrund "," The fixed term is based on "],
       [" (Art. 272a Abs. 1 lit. d OR)."," (Art. 272a para. 1 lit. d CO)."],
@@ -1309,6 +1352,7 @@
       const _pairs = [...DE_EN_MAP].sort((a,b)=>b[0].length-a[0].length);
       for (const [de,en] of _pairs) { if(de && out.indexOf(de)!==-1) out = out.split(de).join(en); }
       out = out.replace(/(Nationality:<\/span>\s*<span class="pv">)([^<]*)(<\/span>)/g, (m,a,val,c) => a + translateNationality(val) + c);
+      out = out.replace(/(\d+) Personen\b/g,'$1 persons').replace(/\beine Person\b/g,'one person');
       out = out.replace(/lang="de"/g,'lang="en"');
       return out;
     }
