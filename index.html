@@ -1707,7 +1707,7 @@
       }, [token]);
       
       const _mmRaw = (contract && contract.contract_data && contract.contract_data.vertrag && contract.contract_data.vertrag.mitmieter) || null;
-      const mitmieter = (_mmRaw && _mmRaw.vorname && (pdfs||[]).some(p => p.type === "umv" || p.type === "untermietvertrag")) ? _mmRaw : null;
+      const mitmieter = (_mmRaw && _mmRaw.vorname && (pdfs||[]).some(p => ["umv","untermietvertrag","verlaengerung","nachtrag"].includes(p.type))) ? _mmRaw : null;
       const mitmieterName = mitmieter ? `${mitmieter.vorname||""} ${mitmieter.nachname||""}`.trim() : "";
       const hauptName = contract ? `${contract.mieter_vorname||""} ${contract.mieter_nachname||""}`.trim() : "";
       async function handleSubmit() {
