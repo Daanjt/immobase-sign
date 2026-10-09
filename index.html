@@ -1392,7 +1392,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       const _pairs = [...DE_EN_MAP, ..._var].sort((a,b)=>b[0].length-a[0].length);
       for (const [de,en] of _pairs) { if(de && out.indexOf(de)!==-1) out = out.split(de).join(en); }
       out = out.replace(/(Nationality:<\/span>\s*<span class="pv">)([^<]*)(<\/span>)/g, (m,a,val,c) => a + translateNationality(val) + c);
-      out = out.replace(/(\d+) Personen\b/g,'$1 persons').replace(/\beine Person\b/g,'one person');
+      out = out.replace(/(\d+) Personen\b/g,'$1 persons').replace(/\beine Person\b/g,'one person').replace(/\b1 Person\b/g,'1 person');
       out = out.replace(/, im Erdgeschoss\./g, ', on the ground floor.').replace(/, im Dachgeschoss\./g, ', on the top floor.').replace(/, im (\d+)\. (Obergeschoss|Untergeschoss)\./g, (m,n,k) => { const o = (+n%100>=11&&+n%100<=13)?"th":({1:"st",2:"nd",3:"rd"}[+n%10]||"th"); return k==="Obergeschoss" ? `, on the ${n}${o} floor.` : `, on basement level ${n}.`; }).replace(/, im Untergeschoss\./g, ', in the basement.');
       out = out.replace(/lang="de"/g,'lang="en"');
       return out;
