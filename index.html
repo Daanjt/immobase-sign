@@ -1945,6 +1945,9 @@
                 <div style={{ fontSize: 13, color: "#4a4439", lineHeight: 1.5, marginBottom: 16 }}>
                   {t("Lade "+(pdfs.length > 1 ? "beide PDFs" : "das PDF")+" herunter, drucke aus, unterschreibe mit der Hand, scanne wieder ein und lade "+(pdfs.length > 1 ? "die signierten Dokumente" : "das signierte Dokument")+" unten hoch.","Download "+(pdfs.length > 1 ? "both PDFs" : "the PDF")+", print, sign by hand, scan again and upload "+(pdfs.length > 1 ? "the signed documents" : "the signed document")+" below.")}
                 </div>
+                <div style={{ fontSize: 12.5, color: "#5a5044", lineHeight: 1.5, marginBottom: 16, padding: "10px 12px", background: "#f5f2ec", borderRadius: 6 }}>
+                  {t("Wichtig: Bitte scanne gut lesbar und in Farbe, alle Seiten zusammen in einem PDF (z.B. mit der Scan-Funktion der iPhone-App «Dateien» oder mit Adobe Scan). Ein Foto vom Bildschirm oder ein unscharfer Scan kann nicht akzeptiert werden.","Important: please scan clearly and in colour, with all pages together in one PDF (e.g. with the scan function of the iPhone «Files» app or with Adobe Scan). A photo of a screen or a blurry scan cannot be accepted.")}
+                </div>
                 
                 {pdfs.map((pdf, idx) => {
                   const file = uploadedFiles[pdf.path];
