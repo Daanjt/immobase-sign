@@ -2129,7 +2129,7 @@
         return x;
       };
       const t = (de,en)=>(hoLang==="en"?en:de);
-      const ROOM_EN = {"Mein Zimmer":"My room","Küche":"Kitchen","Bad / WC":"Bathroom / Toilet","Wohnbereich / Flur":"Living area / Hallway"};
+      const ROOM_EN = {"Mein Zimmer":"My room","Küche":"Kitchen","Bad / WC":"Bathroom / Toilet","Wohnbereich / Flur":"Living area / Hallway","Wohnzimmer":"Living room","Schlafzimmer":"Bedroom","Eingang / Flur":"Entrance / Hallway","Balkon / Keller":"Balcony / Cellar"};
       const LangSwitch = () => (<div style={{display:"flex",gap:6,marginBottom:14}}><button onClick={()=>setHoLang("de")} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid #d8d0c0",background:hoLang==="de"?"#3a352d":"#fff",color:hoLang==="de"?"#fff":"#6a6456",fontSize:13,cursor:"pointer"}}>Deutsch</button><button onClick={()=>setHoLang("en")} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid #d8d0c0",background:hoLang==="en"?"#3a352d":"#fff",color:hoLang==="en"?"#fff":"#6a6456",fontSize:13,cursor:"pointer"}}>English</button></div>);
       const [success, setSuccess] = React.useState(false);
       const [newMangel, setNewMangel] = React.useState(null);
@@ -2156,7 +2156,16 @@
       }
       
       // Raum-Kategorien (fixed): Mein Zimmer zuerst, keine Zaehler
-      const RAEUME = [
+      // Ganze Wohnung: eigene Raumliste statt "Mein Zimmer"
+      const istWohnungHO = !!(protocol && protocol.objekt_typ === "wohnung");
+      const RAEUME = istWohnungHO ? [
+        { key: "wohnzimmer", label: "Wohnzimmer", icon: "🛋️" },
+        { key: "schlafzimmer", label: "Schlafzimmer", icon: "🛏️" },
+        { key: "kueche", label: "Küche", icon: "🍳" },
+        { key: "bad", label: "Bad / WC", icon: "🚿" },
+        { key: "flur", label: "Eingang / Flur", icon: "🚪" },
+        { key: "balkonkeller", label: "Balkon / Keller", icon: "🌿" },
+      ] : [
         { key: "zimmer", label: "Mein Zimmer", icon: "🛏️" },
         { key: "kueche", label: "Küche", icon: "🍳" },
         { key: "bad", label: "Bad / WC", icon: "🚿" },
@@ -2801,7 +2810,7 @@
                   <div className="card-eyebrow">{t("Mietobjekt","Rental object")}</div>
                   <div className="info-grid">
                     {protocol.apt_adresse && <><span className="lbl">{t("Wohnung:","Apartment:")}</span><span>{protocol.apt_adresse}{protocol.apt_plz || protocol.apt_ort ? ", " : ""}{protocol.apt_plz||""} {protocol.apt_ort||""}</span></>}
-                    {protocol.room_label && <><span className="lbl">{t("Zimmer:","Room:")}</span><span>{protocol.room_label}</span></>}
+                    {istWohnungHO ? <><span className="lbl">{t("Mietobjekt:","Rental object:")}</span><span>{t("Ganze Wohnung","Entire apartment")}</span></> : (protocol.room_label && <><span className="lbl">{t("Zimmer:","Room:")}</span><span>{protocol.room_label}</span></>)}
                     {protocol.einzug_datum && <><span className="lbl">{t("Einzug am:","Move-in date:")}</span><span>{formatDate(protocol.einzug_datum)}</span></>}
                     <span className="lbl">{t("Eingereicht am:","Submitted on:")}</span><span>{submittedDate}, {submittedTime}</span>
                   </div>
@@ -2913,7 +2922,7 @@
               {(protocol.apt_adresse || protocol.room_label) && (
                 <div style={{background:"#fafaf7",border:"1px solid #e1d8c5",borderRadius:8,padding:"12px 14px",marginBottom:16,fontSize:13,lineHeight:1.5}}>
                   {protocol.apt_adresse && <div>📍 {protocol.apt_adresse}{protocol.apt_plz || protocol.apt_ort ? ", " : ""}{protocol.apt_plz||""} {protocol.apt_ort||""}</div>}
-                  {protocol.room_label && <div style={{marginTop:4}}>🚪 {t("Zimmer","Room")} {protocol.room_label}</div>}
+                  {istWohnungHO ? <div style={{marginTop:4}}>🏠 {t("Ganze Wohnung","Entire apartment")}</div> : (protocol.room_label && <div style={{marginTop:4}}>🚪 {t("Zimmer","Room")} {protocol.room_label}</div>)}
                   {protocol.einzug_datum && <div style={{marginTop:4,color:"#5a5044",fontSize:12}}>{t("Einzug","Move-in")}: {formatDate(protocol.einzug_datum)}</div>}
                 </div>
               )}
