@@ -697,6 +697,7 @@
       function parseD(s){ if(!s) return null; const t=String(s).trim(); if(!t) return null; if(/^\d{4}-\d{2}-\d{2}/.test(t)){const d=new Date(t);return isNaN(d)?null:d;} const m=t.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/); if(m){const d=new Date(+m[3],+m[2]-1,+m[1]);return isNaN(d)?null:d;} const d=new Date(t); return isNaN(d)?null:d; }
       const beginn=parseD(v.einzug), endeDate=parseD(v.mietende||apt.mietende);
       let dauerText;
+      const _befEN = (()=>{ if(!(beginn&&endeDate&&endeDate>beginn)) return false; const mo=(endeDate-beginn)/(1000*60*60*24*30.44); return mo>0&&(mo<12||v.vertragsart==="wohnung"||apt.vermietungsart==="wohnung"||!!apt.immer_befristet); })();
       if(beginn&&endeDate&&endeDate>beginn){
         const months=(endeDate-beginn)/(1000*60*60*24*30.44);
         const endeStr=dateLongEn(v.mietende||apt.mietende);
@@ -819,11 +820,11 @@
       <p>Both parties may terminate the contract ordinarily before the end of the agreed term. The notice period is ${kfW} ${kf===1?"month":"months"} to the end of a month, except end of December, in writing by registered letter or as an electronically signed PDF.</p>
       <p class="clause"><span class="cn">11.1</span>For fixed-term subleases under twelve (12) months, ordinary termination by the subtenant is excluded. The subtenant undertakes to rent for the entire agreed term and to pay the full rent until the end, even if leaving early.</p>
       <p class="clause"><span class="cn">11.2</span>For fixed-term subleases of twelve (12) months or more, termination by the subtenant is excluded in the last six months of the term.</p>
-      <p class="clause"><span class="cn">11.3</span>If an initially open-ended sublease is terminated by the owner or management due to a planned renovation, conversion or other structural measures, an analogous six-month protection period applies from the moment the main tenant is informed; termination by the subtenant is excluded in the last six months before the agreed vacating date.</p>
-      <p class="clause"><span class="cn">11.4</span>In case of repeated non-payment of rent, the main tenant may terminate the contract without notice at the end of a month.</p>
-      <p class="clause"><span class="cn">11.5</span>On early move-out, the subtenant can be released by providing a suitable, solvent and reasonable replacement tenant who enters the contract on the same terms (Art. 264 CO). Otherwise the subtenant remains liable for the rent until the ordinary end.</p>
-      <p class="clause"><span class="cn">11.6</span>In case of serious breach (in particular payment default, unauthorised passing on of the room, disturbance of the peace, unlawful use or false statements), the main tenant may terminate without notice and demand immediate vacating.</p>
-      <p class="clause"><span class="cn">11.7</span>The subtenant must return the object fully vacated and in proper condition by the agreed end date at the latest. For late return, the subtenant owes for each started day (a) a use compensation equal to the pro-rata rent and (b) a lump-sum default compensation of CHF 300 per day; further actual damages remain reserved. The main tenant may offset these amounts against the deposit.</p>
+${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initially open-ended sublease is terminated by the owner or management due to a planned renovation, conversion or other structural measures, an analogous six-month protection period applies from the moment the main tenant is informed; termination by the subtenant is excluded in the last six months before the agreed vacating date.</p>`}
+      <p class="clause"><span class="cn">${_befEN?"11.3":"11.4"}</span>In case of repeated non-payment of rent, the main tenant may terminate the contract without notice at the end of a month.</p>
+      <p class="clause"><span class="cn">${_befEN?"11.4":"11.5"}</span>On early move-out, the subtenant can be released by providing a suitable, solvent and reasonable replacement tenant who enters the contract on the same terms (Art. 264 CO). Otherwise the subtenant remains liable for the rent until the ordinary end.</p>
+      <p class="clause"><span class="cn">${_befEN?"11.5":"11.6"}</span>In case of serious breach (in particular payment default, unauthorised passing on of the room, disturbance of the peace, unlawful use or false statements), the main tenant may terminate without notice and demand immediate vacating.</p>
+      <p class="clause"><span class="cn">${_befEN?"11.6":"11.7"}</span>The subtenant must return the object fully vacated and in proper condition by the agreed end date at the latest. For late return, the subtenant owes for each started day (a) a use compensation equal to the pro-rata rent and (b) a lump-sum default compensation of CHF 300 per day; further actual damages remain reserved. The main tenant may offset these amounts against the deposit.</p>
 
       <h2>12. Contract changes</h2>
       <p>Changes or additions require both parties' consent and can be agreed in text form, including by email or electronic signature. A handwritten signature is not required.</p>
@@ -1379,7 +1380,9 @@
     function translateGermanHtml(html){
       if(!html) return html;
       let out = html;
-      const _pairs = [...DE_EN_MAP].sort((a,b)=>b[0].length-a[0].length);
+      // Bei befristeten Vertraegen entfaellt 11.3, die Ziffern ruecken nach: Varianten mit 11.4 statt 11.5 ergaenzen
+      const _var = DE_EN_MAP.filter(p => p[0].includes("Ziffer 11.5")).map(p => [p[0].split("Ziffer 11.5").join("Ziffer 11.4"), p[1].split("clause 11.5").join("clause 11.4")]);
+      const _pairs = [...DE_EN_MAP, ..._var].sort((a,b)=>b[0].length-a[0].length);
       for (const [de,en] of _pairs) { if(de && out.indexOf(de)!==-1) out = out.split(de).join(en); }
       out = out.replace(/(Nationality:<\/span>\s*<span class="pv">)([^<]*)(<\/span>)/g, (m,a,val,c) => a + translateNationality(val) + c);
       out = out.replace(/(\d+) Personen\b/g,'$1 persons').replace(/\beine Person\b/g,'one person');
