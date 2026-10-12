@@ -2116,6 +2116,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       const [signatureName, setSignatureName] = React.useState("");
       const [signatureData, setSignatureData] = React.useState("");
       const [keyNrs, setKeyNrs] = React.useState([]);
+      const [keyFehler, setKeyFehler] = React.useState(false);
       React.useEffect(()=>{
         const norm = (protocol && protocol.schluessel_data && Array.isArray(protocol.schluessel_data.normal)) ? protocol.schluessel_data.normal : null;
         if(norm && keyNrs.length !== norm.length){ setKeyNrs(norm.map(k=>k.nr||"")); }
@@ -2543,7 +2544,10 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
         }
         const _norm = (protocol.schluessel_data && Array.isArray(protocol.schluessel_data.normal)) ? protocol.schluessel_data.normal : [];
         if(_norm.length>0 && _norm.some((k,i)=>!((keyNrs[i]||"").trim()))){
-          if(!confirm(t("Du hast nicht bei jedem Schlüssel eine Nummer eingetragen. Trotzdem absenden? Wir ergänzen die Nummer dann selbst.","You have not entered a number for every key. Submit anyway? We will then add the number ourselves."))) return;
+          setKeyFehler(true);
+          try { const el=document.getElementById("ho-keys"); if(el) el.scrollIntoView({behavior:"smooth",block:"center"}); } catch(e){}
+          alert(t("Bitte trage die Schlüsselnummer ein. Ohne Schlüsselnummer können wir dein Protokoll nicht abschliessen.","Please enter the key number. Without the key number we cannot complete your protocol."));
+          return;
         }
         const _newSchluesselData = protocol.schluessel_data ? {...protocol.schluessel_data, normal: _norm.map((k,i)=>({...k, nr:(keyNrs[i]||"").trim()}))} : null;
         setSubmitting(true);
@@ -2957,13 +2961,23 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
                 <div style={{fontWeight:600,marginBottom:10,fontSize:14}}>{t("Was du tun musst:","What you need to do:")}</div>
                 <ol style={{paddingLeft:20,lineHeight:1.7,fontSize:14,color:"#3a352d"}}>
                   <li>{t("Mängel pro Raum dokumentieren (Foto + kurze Beschreibung)","Document defects per room (photo + short description)")}</li>
-                  <li>{t("Unterschreiben und absenden","Sign and submit")}</li>
+                  <li><strong>{t("Schlüsselnummer abschreiben","Copy the key number")}</strong> {t("(steht auf dem Schlüssel, halte ihn bereit)","(shown on the key, keep it at hand)")}</li>
+                  <li><strong>{t("Unterschreiben und auf «Protokoll absenden» tippen","Sign and tap «Submit protocol»")}</strong></li>
                 </ol>
+                <div style={{marginTop:12,background:"#fdebe5",border:"1px solid #e0bcb0",borderRadius:8,padding:"11px 14px",fontSize:13,color:"#9b4a3e",lineHeight:1.5}}>
+                  <strong>{t("Wichtig:","Important:")}</strong> {t("Fotos hochladen allein reicht nicht. Dein Protokoll ist erst bei uns eingegangen, wenn du die Schlüsselnummer eingetragen, unterschrieben und abgeschickt hast. Danach siehst du eine Bestätigung und erhältst das Protokoll per Mail.","Uploading photos alone is not enough. Your protocol only reaches us once you have entered the key number, signed and submitted it. You will then see a confirmation and receive the protocol by email.")}
+                </div>
                 <div style={{marginTop:10,fontSize:12.5,color:"#5a5044",lineHeight:1.5}}>
-                  {t("Falls du keine Mängel entdeckst, kannst du direkt weiter zur Unterschrift.","If you don't find any defects, you can go straight to the signature.")}
+                  {t("Falls du keine Mängel entdeckst, kannst du direkt weiter zur Schlüsselnummer und Unterschrift.","If you don't find any defects, you can go straight to the key number and signature.")}
                 </div>
               </div>
-              <button className="primary" onClick={()=>setStep(2)}>{t("Los geht's →","Let's go →")}</button>
+              {photos.length>0 && (
+                <div style={{background:"#fdf7e8",border:"1px solid #e8d2a8",borderRadius:8,padding:"11px 14px",marginBottom:14,fontSize:13,color:"#8a6a2e",lineHeight:1.5}}>
+                  {t(`Du hast bereits ${photos.length} Foto${photos.length===1?"":"s"} hochgeladen, aber das Protokoll noch nicht abgeschickt. Mach weiter bis zum letzten Schritt.`,`You have already uploaded ${photos.length} photo${photos.length===1?"":"s"}, but have not submitted the protocol yet. Please continue to the last step.`)}
+                </div>
+              )}
+              <button className="primary" onClick={()=>setStep(photos.length>0?3:2)}>{photos.length>0 ? t("Weiter zum Abschluss →","Continue to finish →") : t("Los geht's →","Let's go →")}</button>
+              {photos.length>0 && <button className="secondary" onClick={()=>setStep(2)} style={{marginTop:8,width:"100%"}}>{t("Fotos ansehen oder ergänzen","View or add photos")}</button>}
             </div>
           </div>
         );
@@ -3123,9 +3137,12 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
                 {t("+ Weiteren Raum hinzufügen (z.B. Balkon, Keller)","+ Add another room (e.g. balcony, cellar)")}
               </button>
               
-              <div style={{display:"flex",gap:8,marginTop:20}}>
+              <div style={{background:"#fdebe5",border:"1px solid #e0bcb0",borderRadius:8,padding:"11px 14px",marginTop:18,fontSize:12.5,color:"#9b4a3e",lineHeight:1.5}}>
+                {photos.length>0 ? t("Deine Fotos sind gespeichert, aber das Protokoll ist noch nicht abgeschickt. Im nächsten Schritt Schlüsselnummer eintragen, unterschreiben und absenden.","Your photos are saved, but the protocol has not been submitted yet. In the next step, enter the key number, sign and submit.") : t("Im nächsten Schritt trägst du die Schlüsselnummer ein, unterschreibst und schickst das Protokoll ab.","In the next step you enter the key number, sign and submit the protocol.")}
+              </div>
+              <div style={{display:"flex",gap:8,marginTop:14}}>
                 <button className="secondary" onClick={()=>setStep(1)} style={{flex:1}}>{t("← Zurück","← Back")}</button>
-                <button className="primary" onClick={()=>setStep(3)} disabled={uploadingRaum!==null || !!(newMangel && newMangel.uploading)} style={{flex:2}}>{(uploadingRaum!==null || (newMangel && newMangel.uploading)) ? t("Foto lädt …","Photo uploading …") : t("Weiter →","Continue →")}</button>
+                <button className="primary" onClick={()=>setStep(3)} disabled={uploadingRaum!==null || !!(newMangel && newMangel.uploading)} style={{flex:2}}>{(uploadingRaum!==null || (newMangel && newMangel.uploading)) ? t("Foto lädt …","Photo uploading …") : t("Weiter zu Schlüssel und Unterschrift →","Continue to key and signature →")}</button>
               </div>
             </div>
           </div>
@@ -3160,15 +3177,15 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             
             {protocol && protocol.schluessel_data && (((protocol.schluessel_data.normal||[]).length>0) || protocol.schluessel_data.extraText) && (
               <div style={{marginBottom:20}}>
-                <label style={{display:"block",fontSize:13,fontWeight:600,marginBottom:8}}>{t("Schlüssel","Keys")}</label>
+                <label id="ho-keys" style={{display:"block",fontSize:13,fontWeight:600,marginBottom:8}}>{t("🔑 Schlüsselnummer","🔑 Key number")} <span style={{color:"#b0412e"}}>*</span></label>
                 {(protocol.schluessel_data.normal||[]).length>0 && (
                   <div style={{marginBottom:10}}>
-                    <div style={{fontSize:12.5,color:"#5a5044",marginBottom:8}}>{t("Schreibe die ganze Nummer ab, die auf dem Schlüssel steht (eingraviert oder auf dem Anhänger), mit allen Zeichen. Falls du sie nicht findest, kannst du das Feld leer lassen.","Copy the full number shown on the key (engraved or on the tag), with all characters. If you can't find it, you can leave the field empty.")}</div>
+                    <div style={{fontSize:12.5,color:"#5a5044",marginBottom:8}}><strong>{t("Pflichtfeld.","Required.")}</strong> {t("Schreibe die ganze Nummer ab, die auf dem Schlüssel steht (eingraviert oder auf dem Anhänger), vollständig und genau, mit allen Zeichen.","Copy the full number shown on the key (engraved or on the tag), completely and exactly, with all characters.")}</div>
                     {(protocol.schluessel_data.normal||[]).map((k,i)=>(
                       <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
                         <span style={{fontSize:13,minWidth:90,color:"#3a352d"}}>{t("Wohnungsschlüssel","Apartment key")} {i+1}</span>
-                        <input value={keyNrs[i]||""} onChange={e=>setKeyNrs(keyNrs.map((x,j)=>j===i?e.target.value:x))} placeholder={t("Ganze Schlüsselnummer, z.B. 1-LA008031-31.2","Full key number, e.g. 1-LA008031-31.2")}
-                          style={{flex:1,padding:"10px 12px",border:"1px solid #d8d0c0",borderRadius:8,fontSize:13,fontFamily:"inherit"}}/>
+                        <input value={keyNrs[i]||""} onChange={e=>{ setKeyNrs(keyNrs.map((x,j)=>j===i?e.target.value:x)); setKeyFehler(false); }} placeholder={t("Ganze Schlüsselnummer, z.B. 1-LA008031-31.2","Full key number, e.g. 1-LA008031-31.2")}
+                          style={{flex:1,padding:"10px 12px",border:(keyFehler && !((keyNrs[i]||"").trim()))?"2px solid #b0412e":"1px solid #d8d0c0",background:(keyFehler && !((keyNrs[i]||"").trim()))?"#fdf0ec":"#fff",borderRadius:8,fontSize:13,fontFamily:"inherit"}}/>
                       </div>
                     ))}
                   </div>
