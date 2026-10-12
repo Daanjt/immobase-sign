@@ -2543,13 +2543,12 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
         }
         const _norm = (protocol.schluessel_data && Array.isArray(protocol.schluessel_data.normal)) ? protocol.schluessel_data.normal : [];
         if(_norm.length>0 && _norm.some((k,i)=>!((keyNrs[i]||"").trim()))){
-          alert(t("Bitte trage die Nummer jedes Schlüssels ein.","Please enter the number of each key."));
-          return;
+          if(!confirm(t("Du hast nicht bei jedem Schlüssel eine Nummer eingetragen. Trotzdem absenden? Wir ergänzen die Nummer dann selbst.","You have not entered a number for every key. Submit anyway? We will then add the number ourselves."))) return;
         }
         const _newSchluesselData = protocol.schluessel_data ? {...protocol.schluessel_data, normal: _norm.map((k,i)=>({...k, nr:(keyNrs[i]||"").trim()}))} : null;
         setSubmitting(true);
         try {
-          await supabase.from("handover_protocols").update({
+          const { data: _upd, error: _updErr } = await supabase.from("handover_protocols").update({
             photos: photos,
             mangel_notes: mangelText,
             tenant_signature: signatureData,
@@ -2557,11 +2556,13 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             status: "submitted",
             submitted_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
-          }).eq("token", token);
+          }).eq("token", token).select("id");
+          if (_updErr) throw _updErr;
+          if (!_upd || !_upd.length) throw new Error(t("Das Protokoll konnte nicht gespeichert werden. Bitte lade die Seite neu oder melde dich per WhatsApp bei uns.","The protocol could not be saved. Please reload the page or contact us via WhatsApp."));
           // Schluesselnummern gelangen beim Abschluss (finalize-handover) zum Mieter; kein separates Register mehr
           setSuccess(true);
         } catch (e) {
-          alert("Absenden fehlgeschlagen: " + (e.message || e));
+          alert(t("Absenden fehlgeschlagen: ","Submission failed: ") + (e.message || e));
         }
         setSubmitting(false);
       }
@@ -3162,7 +3163,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
                 <label style={{display:"block",fontSize:13,fontWeight:600,marginBottom:8}}>{t("Schlüssel","Keys")}</label>
                 {(protocol.schluessel_data.normal||[]).length>0 && (
                   <div style={{marginBottom:10}}>
-                    <div style={{fontSize:12.5,color:"#5a5044",marginBottom:8}}>{t("Wichtig: Schreibe die ganze Nummer ab, die auf dem Schlüssel steht (eingraviert oder auf dem Anhänger), vollständig und genau, mit allen Zeichen.","Important: copy the full number shown on the key (engraved or on the tag), completely and exactly, with all characters.")}</div>
+                    <div style={{fontSize:12.5,color:"#5a5044",marginBottom:8}}>{t("Schreibe die ganze Nummer ab, die auf dem Schlüssel steht (eingraviert oder auf dem Anhänger), mit allen Zeichen. Falls du sie nicht findest, kannst du das Feld leer lassen.","Copy the full number shown on the key (engraved or on the tag), with all characters. If you can't find it, you can leave the field empty.")}</div>
                     {(protocol.schluessel_data.normal||[]).map((k,i)=>(
                       <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
                         <span style={{fontSize:13,minWidth:90,color:"#3a352d"}}>{t("Wohnungsschlüssel","Apartment key")} {i+1}</span>
