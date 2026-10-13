@@ -2132,7 +2132,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
         let x = String(str || "");
         if (hoLang !== "en") return x;
         const R = [
-          [/Schlüsselnummer:/g, "Key number:"], [/Extra-Schlüssel:/g, "Extra keys:"],
+          [/Schlüsselnummer:/g, "Key number:"], [/Extra-Schlüssel:/g, "Extra keys:"], [/Gemeinsam \(WG\):/g, "Shared (flat):"],
           [/(\d+)\s*x?\s*Wohnungsschlüssel/g, (m, n) => `${n}x apartment key${+n === 1 ? "" : "s"}`],
           [/(\d+)\s*normale Schlüssel/g, (m, n) => `${n}x regular key${+n === 1 ? "" : "s"}`],
           [/Wohnungsschlüssel/g, "apartment key"], [/Wohnungstür/g, "apartment door"],
@@ -2584,7 +2584,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
         });
         
         // Parse Schluesselinfo (Format: "Schlüsselnummer: XYZ\n\nExtra-Schlüssel:\n...")
-        let schluesselNr = "", extraSchluessel = "";
+        let schluesselNr = "", extraSchluessel = "", wgSchluessel = "";
         if (protocol.schluessel_info) {
           const s = protocol.schluessel_info;
           const nrMatch = s.match(/Schlüsselnummer:\s*([^\n]+)/);
@@ -2598,6 +2598,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
           const _nrs = (Array.isArray(_sd.normal) ? _sd.normal : []).map(k => String((k && k.nr) || "").trim()).filter(Boolean);
           if (_nrs.length) schluesselNr = _nrs.join(", ");
           if (_sd.extraText && String(_sd.extraText).trim()) extraSchluessel = String(_sd.extraText).trim();
+          if (_sd.wgText && String(_sd.wgText).trim()) wgSchluessel = String(_sd.wgText).trim();
         }
         
         return (
@@ -2843,12 +2844,13 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
                 </div>
               )}
 
-              {(schluesselNr || extraSchluessel) && (
+              {(schluesselNr || extraSchluessel || wgSchluessel) && (
                 <div className="info-section">
                   <div className="card-eyebrow">{t("Schlüsselübergabe","Key handover")}</div>
                   <div className="info-grid">
                     {schluesselNr && <><span className="lbl">{t("Schlüsselnummer:","Key number:")}</span><span>{schluesselNr}</span></>}
                     {extraSchluessel && <><span className="lbl">{t("Extra-Schlüssel:","Extra keys:")}</span><span style={{whiteSpace:"pre-wrap"}}>{keyEN(extraSchluessel)}</span></>}
+                    {wgSchluessel && <><span className="lbl">{t("Gemeinsame WG-Schlüssel:","Shared flat keys:")}</span><span style={{whiteSpace:"pre-wrap"}}>{keyEN(wgSchluessel)} <em style={{color:"#8a8174"}}>{t("(gehören zur WG, bleiben in der Wohnung, nicht persönlich übergeben)","(belong to the flat share, stay in the apartment, not handed over personally)")}</em></span></>}
                   </div>
                 </div>
               )}
@@ -2899,8 +2901,8 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
                 <div className="ct">{t("Erklärung der Vertragsparteien","Declaration of the contracting parties")}</div>
                 <ol>
                   <li>{hoLang==="en"
-                    ? <>The tenant confirms receipt of the listed keys{schluesselNr ? ` (No. ${schluesselNr}${extraSchluessel ? `; additionally: ${keyEN(extraSchluessel).replace(/\n/g, ", ")}` : ""})` : ""} and undertakes to keep them safe and to return all of them at the end of the tenancy.</>
-                    : <>Die Mietpartei bestätigt den Erhalt der aufgeführten Schlüssel{schluesselNr ? ` (Nr. ${schluesselNr}${extraSchluessel ? `; zusätzlich: ${extraSchluessel.replace(/\n/g, ", ")}` : ""})` : ""} und verpflichtet sich, diese sorgfältig zu verwahren und am Ende des Mietverhältnisses vollzählig zurückzugeben.</>}</li>
+                    ? <>The tenant confirms receipt of the listed keys{schluesselNr ? ` (No. ${schluesselNr}${extraSchluessel ? `; additionally: ${keyEN(extraSchluessel).replace(/\n/g, ", ")}` : ""})` : ""} and undertakes to keep them safe and to return all of them at the end of the tenancy.{wgSchluessel ? " The shared flat keys listed belong to the flat share and are not part of the personal handover." : ""}</>
+                    : <>Die Mietpartei bestätigt den Erhalt der aufgeführten Schlüssel{schluesselNr ? ` (Nr. ${schluesselNr}${extraSchluessel ? `; zusätzlich: ${extraSchluessel.replace(/\n/g, ", ")}` : ""})` : ""} und verpflichtet sich, diese sorgfältig zu verwahren und am Ende des Mietverhältnisses vollzählig zurückzugeben.{wgSchluessel ? " Die aufgeführten gemeinsamen WG-Schlüssel gehören zur WG und sind nicht Teil der persönlichen Übergabe." : ""}</>}</li>
                   <li>{t("Die Mietpartei bestätigt, dass die Wohnung im obenstehend dokumentierten Zustand übernommen wurde. Sichtbare Mängel, die innerhalb der 14-tägigen Frist nach Einzug nicht aufgeführt wurden, gelten als nicht vorhanden.","The tenant confirms that the apartment was taken over in the condition documented above. Visible defects not listed within the 14-day period after move-in are deemed not to exist.")}</li>
                   <li>{t("Verdeckte Mängel, die bei der Übernahme trotz sorgfältiger Prüfung nicht erkennbar waren (z.B. Schimmel hinter Möbeln), sind der Hauptmieterin innert 10 Tagen ab Entdeckung schriftlich zu melden (Art. 256 OR).","Hidden defects that could not be detected at handover despite careful inspection (e.g. mould behind furniture) must be reported to the main tenant in writing within 10 days of discovery (Art. 256 CO).")}</li>
                   <li>{t("Die Mietpartei verpflichtet sich, das Mietobjekt sorgfältig zu nutzen und in vergleichbarem Zustand zurückzugeben (vorbehaltlich normaler Abnutzung gemäss Schweizer Mietrecht).","The tenant undertakes to use the rental object with care and to return it in comparable condition (subject to normal wear and tear under Swiss tenancy law).")}</li>
@@ -3182,7 +3184,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
               />
             </div>
             
-            {protocol && protocol.schluessel_data && (((protocol.schluessel_data.normal||[]).length>0) || protocol.schluessel_data.extraText) && (
+            {protocol && protocol.schluessel_data && (((protocol.schluessel_data.normal||[]).length>0) || protocol.schluessel_data.extraText || protocol.schluessel_data.wgText) && (
               <div style={{marginBottom:20}}>
                 <label id="ho-keys" style={{display:"block",fontSize:13,fontWeight:600,marginBottom:8}}>{t("🔑 Schlüsselnummer","🔑 Key number")} <span style={{color:"#b0412e"}}>*</span></label>
                 {(protocol.schluessel_data.normal||[]).length>0 && (
@@ -3199,6 +3201,9 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
                 )}
                 {protocol.schluessel_data.extraText && (
                   <div style={{fontSize:12.5,color:"#5a5044",padding:"8px 10px",background:"#f5f2ec",borderRadius:6}}>{t("Zusätzlich erhalten","Additionally received")}: {keyEN(protocol.schluessel_data.extraText)}</div>
+                )}
+                {protocol.schluessel_data.wgText && (
+                  <div style={{fontSize:12.5,color:"#5a5044",padding:"8px 10px",background:"#f5f2ec",borderRadius:6,marginTop:6}}>{t("Gemeinsame WG-Schlüssel (gehören zur WG, bleiben in der Wohnung, nicht persönlich übergeben)","Shared flat keys (belong to the flat share, stay in the apartment, not handed over personally)")}: {keyEN(protocol.schluessel_data.wgText)}</div>
                 )}
               </div>
             )}
