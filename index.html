@@ -2592,6 +2592,13 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
           const exMatch = s.match(/Extra-Schlüssel:\s*\n([\s\S]+)/);
           if (exMatch) extraSchluessel = exMatch[1].trim();
         }
+        // Neues Format: Schluesselnummern vom Mieter in schluessel_data (hat Vorrang)
+        if (protocol.schluessel_data) {
+          const _sd = protocol.schluessel_data;
+          const _nrs = (Array.isArray(_sd.normal) ? _sd.normal : []).map(k => String((k && k.nr) || "").trim()).filter(Boolean);
+          if (_nrs.length) schluesselNr = _nrs.join(", ");
+          if (_sd.extraText && String(_sd.extraText).trim()) extraSchluessel = String(_sd.extraText).trim();
+        }
         
         return (
           <div className="protocol-doc">
