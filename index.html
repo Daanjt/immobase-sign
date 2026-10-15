@@ -2636,6 +2636,16 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
           if (_sd.extraText && String(_sd.extraText).trim()) extraSchluessel = String(_sd.extraText).trim();
           if (_sd.wgText && String(_sd.wgText).trim()) wgSchluessel = String(_sd.wgText).trim();
         }
+        // Snapshot-Format vom Uebergabe-Start ("2x Wohnungsschlüssel / Extra: … / Gemeinsam (WG): …")
+        const _info = String(protocol.schluessel_info || "");
+        let schluesselAnzahl = (protocol.schluessel_data && Array.isArray(protocol.schluessel_data.normal)) ? protocol.schluessel_data.normal.length : 0;
+        if (!schluesselAnzahl) { const _m = _info.match(/(\d+)\s*x\s*Wohnungsschl/i); if (_m) schluesselAnzahl = +_m[1]; }
+        if (!extraSchluessel) { const _m = _info.match(/^Extra:\s*(.+)$/m); if (_m) extraSchluessel = _m[1].trim(); }
+        if (!wgSchluessel) { const _m = _info.match(/^Gemeinsam \(WG\):\s*(.+)$/m); if (_m) wgSchluessel = _m[1].trim(); }
+        const wohnungsSchluesselDE = schluesselAnzahl ? `${schluesselAnzahl}×${schluesselNr ? ` (Nr. ${schluesselNr})` : " (Nummer noch nicht erfasst)"}` : (schluesselNr ? `Nr. ${schluesselNr}` : "");
+        const wohnungsSchluesselEN = schluesselAnzahl ? `${schluesselAnzahl}×${schluesselNr ? ` (No. ${schluesselNr})` : " (number not yet recorded)"}` : (schluesselNr ? `No. ${schluesselNr}` : "");
+        const keyKlauselDE = [schluesselAnzahl ? `${schluesselAnzahl}× Wohnungsschlüssel${schluesselNr ? ` Nr. ${schluesselNr}` : ""}` : (schluesselNr ? `Nr. ${schluesselNr}` : ""), extraSchluessel ? `zusätzlich: ${extraSchluessel.replace(/\n/g, ", ")}` : ""].filter(Boolean).join("; ");
+        const keyKlauselEN = [schluesselAnzahl ? `${schluesselAnzahl}× apartment key${schluesselAnzahl>1?"s":""}${schluesselNr ? ` No. ${schluesselNr}` : ""}` : (schluesselNr ? `No. ${schluesselNr}` : ""), extraSchluessel ? `additionally: ${keyEN(extraSchluessel).replace(/\n/g, ", ")}` : ""].filter(Boolean).join("; ");
         
         return (
           <div className="protocol-doc">
@@ -2880,11 +2890,11 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
                 </div>
               )}
 
-              {(schluesselNr || extraSchluessel || wgSchluessel) && (
+              {(wohnungsSchluesselDE || extraSchluessel || wgSchluessel) && (
                 <div className="info-section">
                   <div className="card-eyebrow">{t("Schlüsselübergabe","Key handover")}</div>
                   <div className="info-grid">
-                    {schluesselNr && <><span className="lbl">{t("Schlüsselnummer:","Key number:")}</span><span>{schluesselNr}</span></>}
+                    {wohnungsSchluesselDE && <><span className="lbl">{t("Wohnungsschlüssel:","Apartment keys:")}</span><span>{t(wohnungsSchluesselDE, wohnungsSchluesselEN)}</span></>}
                     {extraSchluessel && <><span className="lbl">{t("Extra-Schlüssel:","Extra keys:")}</span><span style={{whiteSpace:"pre-wrap"}}>{keyEN(extraSchluessel)}</span></>}
                     {wgSchluessel && <><span className="lbl">{t("Gemeinsame WG-Schlüssel:","Shared flat keys:")}</span><span style={{whiteSpace:"pre-wrap"}}>{keyEN(wgSchluessel)} <em style={{color:"#8a8174"}}>{t("(allen Bewohnern der WG gemeinsam anvertraut)","(entrusted jointly to all residents of the flat share)")}</em></span></>}
                   </div>
@@ -2937,8 +2947,8 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
                 <div className="ct">{t("Erklärung der Vertragsparteien","Declaration of the contracting parties")}</div>
                 <ol>
                   <li>{hoLang==="en"
-                    ? <>The tenant confirms receipt of the listed keys{schluesselNr ? ` (No. ${schluesselNr}${extraSchluessel ? `; additionally: ${keyEN(extraSchluessel).replace(/\n/g, ", ")}` : ""})` : ""} and undertakes to keep them safe and to return all of them at the end of the tenancy.{wgSchluessel ? " The tenant acknowledges that the shared flat keys listed are entrusted jointly to all residents of the apartment. If such a key is lost and the person responsible cannot be identified, the subtenants living in the apartment at that time bear the costs of replacement or lock replacement in equal shares." : ""}</>
-                    : <>Die Mietpartei bestätigt den Erhalt der aufgeführten Schlüssel{schluesselNr ? ` (Nr. ${schluesselNr}${extraSchluessel ? `; zusätzlich: ${extraSchluessel.replace(/\n/g, ", ")}` : ""})` : ""} und verpflichtet sich, diese sorgfältig zu verwahren und am Ende des Mietverhältnisses vollzählig zurückzugeben.{wgSchluessel ? " Die Mietpartei nimmt zur Kenntnis, dass die aufgeführten gemeinsamen WG-Schlüssel allen Bewohnern der Wohnung gemeinsam anvertraut sind. Geht ein solcher Schlüssel verloren und lässt sich der Verursacher nicht feststellen, tragen die zu diesem Zeitpunkt in der Wohnung wohnenden Untermieter die Kosten für Ersatz bzw. Schlossersatz zu gleichen Teilen." : ""}</>}</li>
+                    ? <>The tenant confirms receipt of the listed keys{keyKlauselEN ? ` (${keyKlauselEN})` : ""} and undertakes to keep them safe and to return all of them at the end of the tenancy.{wgSchluessel ? " The tenant acknowledges that the shared flat keys listed are entrusted jointly to all residents of the apartment. If such a key is lost and the person responsible cannot be identified, the subtenants living in the apartment at that time bear the costs of replacement or lock replacement in equal shares." : ""}</>
+                    : <>Die Mietpartei bestätigt den Erhalt der aufgeführten Schlüssel{keyKlauselDE ? ` (${keyKlauselDE})` : ""} und verpflichtet sich, diese sorgfältig zu verwahren und am Ende des Mietverhältnisses vollzählig zurückzugeben.{wgSchluessel ? " Die Mietpartei nimmt zur Kenntnis, dass die aufgeführten gemeinsamen WG-Schlüssel allen Bewohnern der Wohnung gemeinsam anvertraut sind. Geht ein solcher Schlüssel verloren und lässt sich der Verursacher nicht feststellen, tragen die zu diesem Zeitpunkt in der Wohnung wohnenden Untermieter die Kosten für Ersatz bzw. Schlossersatz zu gleichen Teilen." : ""}</>}</li>
                   <li>{t("Die Mietpartei bestätigt, dass die Wohnung im obenstehend dokumentierten Zustand übernommen wurde. Sichtbare Mängel, die innerhalb der 14-tägigen Frist nach Einzug nicht aufgeführt wurden, gelten als nicht vorhanden.","The tenant confirms that the apartment was taken over in the condition documented above. Visible defects not listed within the 14-day period after move-in are deemed not to exist.")}</li>
                   <li>{t("Verdeckte Mängel, die bei der Übernahme trotz sorgfältiger Prüfung nicht erkennbar waren (z.B. Schimmel hinter Möbeln), sind der Hauptmieterin innert 10 Tagen ab Entdeckung schriftlich zu melden (Art. 256 OR).","Hidden defects that could not be detected at handover despite careful inspection (e.g. mould behind furniture) must be reported to the main tenant in writing within 10 days of discovery (Art. 256 CO).")}</li>
                   <li>{t("Die Mietpartei verpflichtet sich, das Mietobjekt sorgfältig zu nutzen und in vergleichbarem Zustand zurückzugeben (vorbehaltlich normaler Abnutzung gemäss Schweizer Mietrecht).","The tenant undertakes to use the rental object with care and to return it in comparable condition (subject to normal wear and tear under Swiss tenancy law).")}</li>
