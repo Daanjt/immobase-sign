@@ -682,15 +682,16 @@
     // ════════════════════════════════════════════════════════════════════════
     function SuccessScreen({ contract, lang }) {
       const isVerlaengerung = contract?.contract_type === "verlaengerung" || contract?.contract_type === "nachtrag";
+      const isPark = contract?.contract_type === "parkplatz";
       const t = (de,en) => (lang==="en" ? en : de);
       return (
         <div className="container">
           <Header />
           <div className="status-screen">
             <div className="success-checkmark"></div>
-            <div className="status-title">{isVerlaengerung ? t("Verlängerung unterzeichnet","Extension signed") : t("Vertrag unterzeichnet","Contract signed")}</div>
+            <div className="status-title">{isPark ? t("Parkplatzvertrag unterzeichnet","Parking agreement signed") : isVerlaengerung ? t("Verlängerung unterzeichnet","Extension signed") : t("Vertrag unterzeichnet","Contract signed")}</div>
             <div className="status-message">
-              {t("Vielen Dank","Thank you")}, {contract?.mieter_vorname}. {isVerlaengerung ? t("Die Verlängerung deines Mietvertrags wurde erfolgreich unterzeichnet.","The extension of your rental contract has been signed successfully.") : t("Dein Vertrag wurde erfolgreich unterzeichnet.","Your contract has been signed successfully.")}
+              {t("Vielen Dank","Thank you")}, {contract?.mieter_vorname}. {isPark ? t("Dein Mietvertrag für den Parkplatz wurde erfolgreich unterzeichnet. Sobald wir gegengezeichnet haben, erhältst du den Vertrag per E-Mail.","Your parking space agreement has been signed successfully. Once we have countersigned it, you will receive the agreement by email.") : isVerlaengerung ? t("Die Verlängerung deines Mietvertrags wurde erfolgreich unterzeichnet.","The extension of your rental contract has been signed successfully.") : t("Dein Vertrag wurde erfolgreich unterzeichnet.","Your contract has been signed successfully.")}
               {isVerlaengerung
                 ? <><br /><br />{t("Dein Mietverhältnis läuft zu den bisherigen Bedingungen unverändert weiter bis zum vereinbarten Enddatum.","Your tenancy continues unchanged on the existing terms until the agreed end date.")}</>
                 : null}
@@ -928,6 +929,25 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
           borderTop: "1px solid #e1d8c5"
         }}>{title}</div>
       );
+      if (contract.contract_type === "parkplatz") {
+        const pp = data.parkplatz || {};
+        const pbody = (
+          <>
+            <div className="card-title">{t("📋 Vertragsdetails","📋 Contract details")}</div>
+            <Sec title={t("Mietobjekt","Rental object")} />
+            <Row label={t("Parkplatz","Parking space")} value={pp.bezeichnung || "-"} bold />
+            <Row label={t("Adresse","Address")} value={[pp.objektAdresse, pp.plzOrt].filter(Boolean).join(", ") || "-"} bold />
+            {pp.kennzeichen && <Row label={t("Kennzeichen","Licence plate")} value={pp.kennzeichen} bold />}
+            <Sec title={t("Dauer","Duration")} />
+            {pp.ab && <Row label={t("Mietbeginn","Start")} value={formatDate(pp.ab)} bold />}
+            <Row label={pp.bis ? t("Befristet bis","Fixed term until") : t("Kündigungsfrist","Notice period")} value={pp.bis ? formatDate(pp.bis) : t(`${pp.kuendigungsfrist||1} Mt. auf Monatsende`,`${pp.kuendigungsfrist||1} month(s) to month end`)} bold />
+            <Sec title={t("Kosten","Costs")} />
+            <Row label={t("Miete / Mt.","Rent / month")} value={chf(pp.miete)} bold />
+            {contract.expires_at && (<><Sec title={t("Vertrag","Contract")} /><Row label={t("Link gültig bis","Link valid until")} value={formatDate(contract.expires_at)} /></>)}
+          </>
+        );
+        return bare ? pbody : <div className="card">{pbody}</div>;
+      }
       const moebBetrag = v.moeblierungPauschale || (v.moeblierungModus==="monatlich"?150:990);
       const moebText = v.moebliert
         ? `${t("Ja","Yes")} (CHF ${moebBetrag}${v.moeblierungModus==="monatlich" ? t(" / Monat"," / month") : t(" einmalig"," one-time")})`
@@ -1596,6 +1616,14 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
         const cd = contract && contract.contract_data;
         if (!cd || enPdfs || enPdfBusy) return;
         setEnPdfBusy(true);
+        if (contract.contract_type === "parkplatz") {
+          (async () => {
+            let u = null;
+            try { if (cd.doc_html_en) u = await genPdfFromHtml(cd.doc_html_en); } catch (e) { console.warn("EN PDF gen:", e); }
+            setEnPdfs(u ? [{ name: "Parking Space Agreement (EN)", url: u }] : []); setEnPdfBusy(false);
+          })();
+          return;
+        }
         (async () => {
           const b = cd.bewerber || {}; const v = cd.vertrag || {};
           let umvHtml;
