@@ -1759,6 +1759,20 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
               return;
             }
             
+            if (data.status === "mieter_signiert") {
+              setError({
+                icon: "✓",
+                title: t("Bereits unterzeichnet","Already signed"),
+                message: data.signed_at
+                  ? t(`Du hast diesen Vertrag am ${formatDateTime(data.signed_at)} unterzeichnet. Es ist nichts weiter zu tun. Sobald D&T Homes gegengezeichnet hat, erhältst du das fertige PDF per E-Mail.`,`You signed this contract on ${formatDateTime(data.signed_at)}. Nothing else is needed. As soon as D&T Homes has countersigned, you will receive the final PDF by email.`)
+                  : t("Du hast diesen Vertrag bereits unterzeichnet. Es ist nichts weiter zu tun. Sobald D&T Homes gegengezeichnet hat, erhältst du das fertige PDF per E-Mail.","You have already signed this contract. Nothing else is needed. As soon as D&T Homes has countersigned, you will receive the final PDF by email."),
+                code: "ALREADY_SIGNED"
+              });
+              setContract(data);
+              setLoading(false);
+              return;
+            }
+
             const expired = data.status === "abgelaufen" || (data.expires_at && new Date(data.expires_at) < new Date());
             if (expired) {
               setError({
@@ -1935,6 +1949,17 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
           setSuccess(true);
           window.scrollTo({ top: 0, behavior: "smooth" });
         } catch (e) {
+          if (/Already signed|already signed|bereits (unter)?(zeichnet|signiert)/i.test(String(e && e.message || ""))) {
+            setError({
+              icon: "✓",
+              title: t("Bereits unterzeichnet","Already signed"),
+              message: t("Du hast diesen Vertrag bereits unterzeichnet. Es ist nichts weiter zu tun. Sobald D&T Homes gegengezeichnet hat, erhältst du das fertige PDF per E-Mail.","You have already signed this contract. Nothing else is needed. As soon as D&T Homes has countersigned, you will receive the final PDF by email."),
+              code: "ALREADY_SIGNED"
+            });
+            setSubmitting(false);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            return;
+          }
           console.error("Submit error:", e);
           alert("Es ist ein Fehler aufgetreten:\n\n" + e.message + "\n\nBitte versuche es erneut oder kontaktiere D&T Homes.");
           setSubmitting(false);
