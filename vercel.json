@@ -7,6 +7,10 @@
     {
       "source": "/uebernahme/:token([a-f0-9]{32})",
       "destination": "/"
+    },
+    {
+      "source": "/dokumente/:token([a-f0-9]{32})",
+      "destination": "/"
     }
   ],
   "headers": [
@@ -21,6 +25,15 @@
     },
     {
       "source": "/:token([a-f0-9]{32})",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/dokumente/:token([a-f0-9]{32})",
       "headers": [
         {
           "key": "Cache-Control",

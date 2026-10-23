@@ -450,7 +450,7 @@
     // Die Datenbank prueft ihn damit selbst, nicht nur die App.
     const PORTAL_TOKEN = (() => {
       const p = window.location.pathname.replace(/^\//, "").replace(/\/$/, "");
-      return p.startsWith("uebernahme/") ? p.substring("uebernahme/".length) : p;
+      return p.startsWith("uebernahme/") ? p.substring("uebernahme/".length) : (p.startsWith("dokumente/") ? p.substring("dokumente/".length) : p);
     })();
     // Seitentitel passend zur Ansicht setzen (Tab-Titel und Link-Vorschau in
     // WhatsApp etc.). Uebernahme-Links sollen nicht "Vertrag unterschreiben" zeigen.
@@ -686,7 +686,7 @@
     // ════════════════════════════════════════════════════════════════════════
     // ERROR / STATUS SCREENS
     // ════════════════════════════════════════════════════════════════════════
-    function StatusScreen({ icon, title, message, code }) {
+    function StatusScreen({ icon, title, message, code, children }) {
       return (
         <div className="container">
           <Header />
@@ -694,7 +694,80 @@
             <div className="status-icon">{icon}</div>
             <div className="status-title">{title}</div>
             <div className="status-message">{message}</div>
+            {children}
             {code && <div className="status-code">Code: {code}</div>}
+          </div>
+        </div>
+      );
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // DOKUMENTE (nur ganze Wohnungen): Betreibungsauszug + Pass/Ausweis
+    // ════════════════════════════════════════════════════════════════
+    function DokumenteUpload({ token, lang, eigeneSeite }) {
+      const t = (de,en) => (lang==="en" ? en : de);
+      const [st, setSt] = useState(null);
+      const [busy, setBusy] = useState("");
+      const [msg, setMsg] = useState("");
+      const url = `${SUPABASE_URL}/functions/v1/mieter-dokumente`;
+      const hdr = { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` };
+      useEffect(() => { (async () => {
+        try { const r = await fetch(`${url}?token=${encodeURIComponent(token)}`, { headers: hdr }); setSt(r.ok ? await r.json() : { fehler: true }); }
+        catch (e) { setSt({ fehler: true }); }
+      })(); }, [token]);
+      async function hoch(art, file) {
+        if (!file) return;
+        setBusy(art); setMsg("");
+        try {
+          const fd = new FormData(); fd.append("token", token); fd.append("art", art); fd.append("file", file);
+          const r = await fetch(url, { method: "POST", headers: hdr, body: fd });
+          const j = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(j.error || "Upload fehlgeschlagen");
+          setSt(s => ({ ...s, betreibung: j.betreibung, ausweis: j.ausweis }));
+          setMsg(t("Danke, das Dokument ist angekommen.","Thank you, the document has been received."));
+        } catch (e) { setMsg(t("Das hat nicht geklappt: ","That did not work: ") + e.message); }
+        setBusy("");
+      }
+      if (!st) return eigeneSeite ? <div className="status-message">{t("Wird geladen…","Loading…")}</div> : null;
+      if (st.fehler) return eigeneSeite ? <div className="status-message">{t("Dieser Link ist ungültig. Bitte prüfe den Link aus deiner E-Mail.","This link is invalid. Please check the link from your email.")}</div> : null;
+      if (!st.benoetigt) return eigeneSeite ? <div className="status-message">{t("Für diesen Vertrag sind keine weiteren Dokumente nötig.","No further documents are needed for this contract.")}</div> : null;
+      const fertig = st.betreibung > 0 && st.ausweis > 0;
+      const zeile = (art, titel, info, n) => (
+        <div style={{ border: "1px solid #e1d8c5", borderRadius: 10, padding: "14px 16px", marginTop: 10, background: n > 0 ? "#f3f5ec" : "#fff", textAlign: "left" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 14.5 }}>{n > 0 ? "✓ " : ""}{titel}</div>
+              <div style={{ fontSize: 12.5, color: "#6e6a62", marginTop: 3 }}>{n > 0 ? t(`${n} Datei${n > 1 ? "en" : ""} hochgeladen`, `${n} file${n > 1 ? "s" : ""} uploaded`) : info}</div>
+            </div>
+            <label className="btn-secondary" style={{ cursor: busy ? "wait" : "pointer", whiteSpace: "nowrap", opacity: busy && busy !== art ? .5 : 1 }}>
+              {busy === art ? t("Wird hochgeladen…","Uploading…") : (n > 0 ? t("Weitere Datei","Add file") : t("Hochladen","Upload"))}
+              <input type="file" accept="application/pdf,image/*" style={{ display: "none" }} disabled={!!busy} onChange={e => { const f = e.target.files && e.target.files[0]; e.target.value = ""; hoch(art, f); }} />
+            </label>
+          </div>
+        </div>
+      );
+      return (
+        <div style={{ maxWidth: 440, width: "100%", margin: "22px auto 0", textAlign: "left" }}>
+          <div style={{ fontWeight: 700, fontSize: 16 }}>{fertig ? t("Alle Dokumente sind da","All documents received") : t("Letzter Schritt: zwei Dokumente","Last step: two documents")}</div>
+          <div style={{ fontSize: 13.5, color: "#5a5448", marginTop: 4, lineHeight: 1.5 }}>
+            {fertig ? t("Vielen Dank! Wir prüfen alles und melden uns bei dir.","Thank you! We will check everything and get back to you.")
+              : t("Damit wir deinen Vertrag bestätigen können, brauchen wir noch diese Dokumente. Als PDF oder Foto. Hast du sie gerade nicht zur Hand, kannst du sie auch später über den Link in unserer E-Mail hochladen.","To confirm your contract, we still need these documents, as a PDF or photo. If you don't have them at hand, you can also upload them later via the link in our email.")}
+          </div>
+          {zeile("betreibung", t("Betreibungsregister-Auszug","Debt collection register extract"), t("Aktuell, nicht älter als 3 Monate. Bestellbar über easygov.swiss oder beim Betreibungsamt.","Current, not older than 3 months. Order via easygov.swiss or at the Betreibungsamt."), st.betreibung)}
+          {zeile("ausweis", t("Pass oder ID","Passport or ID card"), t("Gut lesbare Kopie oder Foto, bei der ID beide Seiten.","Clearly readable copy or photo, both sides for ID cards."), st.ausweis)}
+          {msg && <div style={{ fontSize: 13, marginTop: 10, color: msg.startsWith("Danke") || msg.startsWith("Thank") ? "#5a6e4a" : "#9b4a3e" }}>{msg}</div>}
+        </div>
+      );
+    }
+
+    function DokumentePage({ token }) {
+      const [lang] = useState(() => { try { const q = new URLSearchParams(location.search).get("lang"); return q === "en" ? "en" : "de"; } catch(e){ return "de"; } });
+      return (
+        <div className="container">
+          <Header />
+          <div className="status-screen">
+            <div className="status-title">{lang === "en" ? "Upload documents" : "Dokumente hochladen"}</div>
+            <DokumenteUpload token={token} lang={lang} eigeneSeite />
           </div>
         </div>
       );
@@ -723,6 +796,7 @@
               <strong>{t("Unterzeichnet:","Signed:")}</strong> {formatDateTime(new Date())}<br />
               <strong>{t("Vertragsnr.:","Contract no.:")}</strong> {contract?.id?.substring(0, 8)}…
             </div>
+            {!isPark && !isVerlaengerung && <DokumenteUpload token={contract?.token || PORTAL_TOKEN} lang={lang} />}
           </div>
         </div>
       );
@@ -1991,7 +2065,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       
       // ───── RENDER ─────────────────────────────────────────────
       if (loading) return <LoadingScreen />;
-      if (error) return <StatusScreen {...error} />;
+      if (error) return <StatusScreen {...error}>{error.code === "ALREADY_SIGNED" && <DokumenteUpload token={token} lang={lang} />}</StatusScreen>;
       if (success) return <SuccessScreen contract={contract} lang={lang} />;
       
       return (
@@ -3422,6 +3496,11 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
         return <UebernahmePage token={handoverToken} />;
       }
       
+      // Dokumente-Route: /dokumente/{token} (Betreibungsauszug + Ausweis hochladen)
+      if (path.startsWith("dokumente/")) {
+        return <DokumentePage token={path.substring("dokumente/".length)} />;
+      }
+
       // Token-Validierung (mindestens 16 Zeichen)
       if (!path || path.length < 16) {
         return (
