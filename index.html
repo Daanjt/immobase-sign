@@ -731,7 +731,9 @@
       if (!st) return eigeneSeite ? <div className="status-message">{t("Wird geladen…","Loading…")}</div> : null;
       if (st.fehler) return eigeneSeite ? <div className="status-message">{t("Dieser Link ist ungültig. Bitte prüfe den Link aus deiner E-Mail.","This link is invalid. Please check the link from your email.")}</div> : null;
       if (!st.benoetigt) return eigeneSeite ? <div className="status-message">{t("Für diesen Vertrag sind keine weiteren Dokumente nötig.","No further documents are needed for this contract.")}</div> : null;
-      const fertig = st.betreibung > 0 && st.ausweis > 0;
+      const br = st.braucht || { betreibung: true, ausweis: true };
+      const anz = (br.betreibung ? 1 : 0) + (br.ausweis ? 1 : 0);
+      const fertig = (!br.betreibung || st.betreibung > 0) && (!br.ausweis || st.ausweis > 0);
       const zeile = (art, titel, info, n) => (
         <div style={{ border: "1px solid #e1d8c5", borderRadius: 10, padding: "14px 16px", marginTop: 10, background: n > 0 ? "#f3f5ec" : "#fff", textAlign: "left" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -748,13 +750,15 @@
       );
       return (
         <div style={{ maxWidth: 440, width: "100%", margin: "22px auto 0", textAlign: "left" }}>
-          <div style={{ fontWeight: 700, fontSize: 16 }}>{fertig ? t("Alle Dokumente sind da","All documents received") : t("Letzter Schritt: zwei Dokumente","Last step: two documents")}</div>
+          <div style={{ fontWeight: 700, fontSize: 16 }}>{fertig ? t(anz > 1 ? "Alle Dokumente sind da" : "Dokument ist da", anz > 1 ? "All documents received" : "Document received") : (anz > 1 ? t("Letzter Schritt: zwei Dokumente","Last step: two documents") : t("Letzter Schritt: ein Dokument","Last step: one document"))}</div>
           <div style={{ fontSize: 13.5, color: "#5a5448", marginTop: 4, lineHeight: 1.5 }}>
             {fertig ? t("Vielen Dank! Wir prüfen alles und melden uns bei dir.","Thank you! We will check everything and get back to you.")
-              : t("Damit wir deinen Vertrag bestätigen können, brauchen wir noch diese Dokumente. Als PDF oder Foto. Hast du sie gerade nicht zur Hand, kannst du sie auch später über den Link in unserer E-Mail hochladen.","To confirm your contract, we still need these documents, as a PDF or photo. If you don't have them at hand, you can also upload them later via the link in our email.")}
+              : (anz > 1
+                ? t("Damit wir deinen Vertrag bestätigen können, brauchen wir noch diese Dokumente. Als PDF oder Foto. Hast du sie gerade nicht zur Hand, kannst du sie auch später über den Link in unserer E-Mail hochladen.","To confirm your contract, we still need these documents, as a PDF or photo. If you don't have them at hand, you can also upload them later via the link in our email.")
+                : t("Damit wir deinen Vertrag bestätigen können, brauchen wir noch dieses Dokument. Als PDF oder Foto. Hast du es gerade nicht zur Hand, kannst du es auch später über den Link in unserer E-Mail hochladen.","To confirm your contract, we still need this document, as a PDF or photo. If you don't have it at hand, you can also upload it later via the link in our email."))}
           </div>
-          {zeile("betreibung", t("Betreibungsregister-Auszug","Debt collection register extract"), t("Aktuell, nicht älter als 3 Monate. Bestellbar über easygov.swiss oder beim Betreibungsamt.","Current, not older than 3 months. Order via easygov.swiss or at the Betreibungsamt."), st.betreibung)}
-          {zeile("ausweis", t("Pass oder ID","Passport or ID card"), t("Gut lesbare Kopie oder Foto, bei der ID beide Seiten.","Clearly readable copy or photo, both sides for ID cards."), st.ausweis)}
+          {br.betreibung && zeile("betreibung", t("Betreibungsregister-Auszug","Debt collection register extract"), t("Aktuell, nicht älter als 3 Monate. Bestellbar über easygov.swiss oder beim Betreibungsamt.","Current, not older than 3 months. Order via easygov.swiss or at the Betreibungsamt."), st.betreibung)}
+          {br.ausweis && zeile("ausweis", t("Pass oder ID","Passport or ID card"), t("Gut lesbare Kopie oder Foto, bei der ID beide Seiten.","Clearly readable copy or photo, both sides for ID cards."), st.ausweis)}
           {msg && <div style={{ fontSize: 13, marginTop: 10, color: msg.startsWith("Danke") || msg.startsWith("Thank") ? "#5a6e4a" : "#9b4a3e" }}>{msg}</div>}
         </div>
       );
