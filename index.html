@@ -3577,10 +3577,24 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
     }
 
     function PortalRahmen({ children, lang, onLang }) {
+      // Im Portal: kein automatisches Hineinzoomen auf dem Handy (Eingabefelder), kein seitliches Verschieben
+      useEffect(() => {
+        const m = document.querySelector('meta[name="viewport"]');
+        if (m) m.setAttribute("content", "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover");
+      }, []);
       return (
         <div className="container pt-wrap">
           <style>{`
             body:has(.pt-wrap){background:#FBFAF6}
+            html:has(.pt-wrap),body:has(.pt-wrap){overflow-x:hidden;overscroll-behavior-x:none;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+            .pt-wrap{overflow-x:clip}
+            .pt-wrap *{min-width:0}
+            .pt-wrap img,.pt-wrap canvas,.pt-wrap svg{max-width:100%;height:auto}
+            .pt-wrap .card,.pt-wrap .pt-row span,.pt-wrap .pt-item,.pt-wrap .pt-sub{overflow-wrap:anywhere}
+            .pt-wrap input,.pt-wrap select,.pt-wrap textarea{font-size:16px!important;max-width:100%}
+            .pt-wrap input[type=checkbox],.pt-wrap input[type=radio]{width:18px;height:18px;flex:none}
+            .pt-wrap input[type=date]{-webkit-appearance:none;appearance:none;min-height:47px;display:block}
+            .pt-wrap button,.pt-wrap a{touch-action:manipulation}
             .pt-wrap{--paper:#FBFAF6;--ink:#1C1B17;--ink-soft:#54503F;--espresso:#211E19;--sand:#EAE1D2;--sand-deep:#DED2BD;--brass:#6B5F49;--line:#E4DDD0;--grotesk:'Space Grotesk',system-ui,sans-serif;--serif:'Newsreader',Georgia,serif;
               max-width:1120px;font-family:var(--grotesk);color:var(--ink)}
             .pt-wrap .header{border-bottom:1px solid var(--line);padding:4px 0 16px;margin-bottom:22px}
@@ -3616,7 +3630,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
               .pt-wrap .pt-tiles{grid-template-columns:repeat(4,1fr);gap:16px}
               .pt-wrap .pt-tile{min-height:140px;padding:22px 20px}
               .pt-wrap .pt-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
-              .pt-wrap .pt-cols>.card{margin-bottom:0}
+              .pt-wrap .pt-cols>.card{margin-bottom:0;margin-top:0!important}
               .pt-wrap .pt-cols>div>.card:last-child{margin-bottom:0}
               .pt-wrap .pt-cols>.pt-ok,.pt-wrap .pt-cols>.pt-err,.pt-wrap .pt-cols>.pt-full{grid-column:1/-1}
               .pt-wrap .pt-back{font-size:14.5px}
@@ -3989,7 +4003,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       async function kuendigen(e) {
         e.preventDefault(); if (!ok || !datum) return;
         setBusy("k"); setMsg("");
-        try { await portalPost({ aktion: "kuendigen", datum, grund, bestaetigt: true }, sitzung); setModus(null); setHilfeMsg(""); setHilfe({ art: "", termin: isoVon(datum), adresse_neu: "", bemerkung: "" }); setMsg(t("Danke! Deine Kündigung ist eingegangen. Du bekommst eine Bestätigung per E-Mail.", "Thank you! We have received your notice and will confirm it by email.")); await neuLaden(); }
+        try { await portalPost({ aktion: "kuendigen", datum, grund, bestaetigt: true }, sitzung); setModus(null); setHilfeMsg(""); setHilfe({ art: "", termin: isoVon(datum), adresse_neu: "", bemerkung: "" }); setMsg(t("Danke! Deine Kündigung ist eingegangen. Schade, dass du gehst! Du bekommst in Kürze eine Bestätigung per E-Mail.", "Thank you! We have received your notice. We are sorry to see you go! You will receive a confirmation by email shortly.")); await neuLaden(); }
         catch (e2) { setMsg(e2.message); }
         setBusy("");
       }
