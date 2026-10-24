@@ -4128,7 +4128,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       const [busy, setBusy] = useState(false);
       const [msg, setMsg] = useState("");
       async function senden(e) {
-        e.preventDefault(); if (!f.titel.trim()) return;
+        e.preventDefault(); if (!f.titel.trim() || !f.beschreibung.trim() || !freigabe) return;
         setBusy(true); setMsg("");
         try {
           const fd = new FormData(); fd.append("aktion", "schaden");
@@ -4151,19 +4151,19 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
           <input className="pt-in" value={f.titel} maxLength={140} required onChange={e => setF({ ...f, titel: e.target.value })} placeholder={t("z.B. Dusche tropft", "e.g. shower is dripping")} />
           <label className="pt-lbl">{t("Wo?", "Where?")}</label>
           <input className="pt-in" value={f.ort} maxLength={140} onChange={e => setF({ ...f, ort: e.target.value })} placeholder={t("z.B. Bad, Küche, mein Zimmer", "e.g. bathroom, kitchen, my room")} />
-          <label className="pt-lbl">{t("Beschreibung", "Description")}</label>
-          <textarea className="pt-in" rows={4} value={f.beschreibung} maxLength={4000} onChange={e => setF({ ...f, beschreibung: e.target.value })} placeholder={t("Seit wann? Was hast du schon versucht?", "Since when? What have you tried?")} />
+          <label className="pt-lbl">{t("Beschreibung *", "Description *")}</label>
+          <textarea className="pt-in" rows={4} required value={f.beschreibung} maxLength={4000} onChange={e => setF({ ...f, beschreibung: e.target.value })} placeholder={t("Seit wann? Was hast du schon versucht?", "Since when? What have you tried?")} />
           <label className="pt-lbl">{t("Wie dringend?", "How urgent?")}</label>
           <div className="pt-chips">{[["normal", t("Normal", "Normal")], ["dringend", t("Dringend", "Urgent")], ["notfall", t("Notfall", "Emergency")]].map(([k, l]) => <button type="button" key={k} className={"pt-chip" + (f.dringlichkeit === k ? " on" : "")} onClick={() => setF({ ...f, dringlichkeit: k })}>{l}</button>)}</div>
           <label className="pt-lbl">{t("Fotos (max. 6)", "Photos (max. 6)")}</label>
           <FotoDrop fotos={fotos} setFotos={setFotos} max={6} t={t} />
           <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 14, marginTop: 18, lineHeight: 1.5 }}>
             <input type="checkbox" checked={freigabe} onChange={e => setFreigabe(e.target.checked)} style={{ marginTop: 3 }} />
-            <span>{t("Ich bin einverstanden, dass D&T Homes meine Meldung und meine Kontaktdaten (Name, Telefon, E-Mail) an die Verwaltung bzw. den Handwerker weiterleitet, damit direkt ein Termin mit mir vereinbart werden kann.", "I agree that D&T Homes may forward my report and my contact details (name, phone, email) to the property management or the tradesperson so that an appointment can be arranged with me directly.")}</span>
+            <span>{t("* Ich bin einverstanden, dass D&T Homes meine Meldung und meine Kontaktdaten (Name, Telefon, E-Mail) an die Verwaltung bzw. den Handwerker weiterleitet, damit direkt ein Termin mit mir vereinbart werden kann.", "* I agree that D&T Homes may forward my report and my contact details (name, phone, email) to the property management or the tradesperson so that an appointment can be arranged with me directly.")}</span>
           </label>
           <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
             <button type="button" className="btn-secondary" disabled={busy} onClick={() => setNeu(false)}>{t("Abbrechen", "Cancel")}</button>
-            <button type="submit" className="btn-primary" style={{ flex: 1 }} disabled={busy || !f.titel.trim() || !freigabe}>{busy ? t("Wird gesendet…", "Sending…") : t("Meldung senden", "Send report")}</button>
+            <button type="submit" className="btn-primary" style={{ flex: 1 }} disabled={busy || !f.titel.trim() || !f.beschreibung.trim() || !freigabe}>{busy ? t("Wird gesendet…", "Sending…") : t("Meldung senden", "Send report")}</button>
           </div>
         </form>}
         {msg && <div className={/Danke|Thank/.test(msg) ? "pt-ok" : "pt-err"}>{msg}</div>}
