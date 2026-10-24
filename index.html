@@ -3571,6 +3571,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
           {seite === "kuendigung" && <>{zurueck}<PortalKuendigung d={daten} t={t} sitzung={sitzung} neuLaden={laden} /></>}
           {seite === "service" && <>{zurueck}<PortalService d={daten} t={t} sitzung={sitzung} /></>}
           {seite === "hausinfos" && <>{zurueck}<PortalHausinfos d={daten} t={t} /></>}
+          {seite === "uebergabe" && <>{zurueck}<PortalUebergabe d={daten} t={t} sitzung={sitzung} /></>}
           {fehler && <div className="pt-err">{fehler}</div>}
         </PortalRahmen>
       );
@@ -3583,11 +3584,40 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
         if (m) m.setAttribute("content", "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover");
       }, []);
       return (
+        <div className="pt-root">
+          <header className="pt-head">
+            <a className="pt-brand" href="https://www.dthomes.ch" target="_blank" rel="noopener noreferrer" aria-label="D&T Homes"><Header /></a>
+            <span className="pt-tag">{lang === "en" ? "Tenant portal" : "Mieterportal"}</span>
+            {onLang && <div className="pt-lang">{["de", "en"].map(l => <button key={l} className={lang === l ? "on" : ""} onClick={() => onLang(l)}>{l.toUpperCase()}</button>)}</div>}
+          </header>
         <div className="container pt-wrap">
           <style>{`
             body:has(.pt-wrap){background:#FBFAF6}
             html:has(.pt-wrap),body:has(.pt-wrap){overflow-x:hidden;overscroll-behavior-x:none;-webkit-text-size-adjust:100%;text-size-adjust:100%}
-            .pt-wrap{overflow-x:clip}
+            .pt-wrap{overflow-x:clip;padding-top:28px}
+            .pt-hero{display:grid;gap:18px;margin:6px 0 8px}
+            .pt-lead{font-size:14px;font-weight:500;color:var(--brass);margin-bottom:8px}
+            .pt-hero h1{font-family:var(--grotesk);font-weight:600;font-size:34px;letter-spacing:-.02em;line-height:1.05;margin:0 0 12px}
+            .pt-intro{font-family:var(--serif);font-size:18.5px;line-height:1.5;color:var(--ink-soft);max-width:34ch;margin:0}
+            .pt-glance .pt-row{padding:9px 0}
+            .pt-sec{font-size:14px;font-weight:500;color:var(--brass);margin:30px 0 0}
+            .pt-sec+.pt-tiles{margin-top:12px}
+            .pt-kontakt{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-top:28px;background:var(--espresso);color:#fff;border-radius:16px;padding:24px 24px}
+            .pt-kontakt .k1{font-weight:600;font-size:18px;letter-spacing:-.01em}
+            .pt-kontakt .k2{font-family:var(--serif);font-size:16px;opacity:.8;margin-top:4px}
+            .pt-kontakt .kb{display:flex;gap:8px;flex-wrap:wrap}
+            .pt-kontakt a{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;border-radius:12px;padding:11px 18px;font-size:14.5px;font-weight:500;background:#fff;color:var(--ink)}
+            .pt-kontakt a.g{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35)}
+            .pt-fuss{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:22px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-soft)}
+            .pt-fuss a{color:var(--ink-soft)}
+            @media (min-width: 900px){
+              .pt-wrap{padding-top:44px}
+              .pt-hero{grid-template-columns:1.25fr 1fr;gap:40px;align-items:center}
+              .pt-hero h1{font-size:52px}
+              .pt-intro{font-size:20px}
+              .pt-glance{margin-bottom:0}
+              .pt-kontakt{padding:30px 34px}
+            }
             .pt-wrap *{min-width:0}
             .pt-wrap img,.pt-wrap canvas,.pt-wrap svg{max-width:100%;height:auto}
             .pt-wrap .card,.pt-wrap .pt-row span,.pt-wrap .pt-item,.pt-wrap .pt-sub{overflow-wrap:anywhere}
@@ -3595,11 +3625,23 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             .pt-wrap input[type=checkbox],.pt-wrap input[type=radio]{width:18px;height:18px;flex:none}
             .pt-wrap input[type=date]{-webkit-appearance:none;appearance:none;min-height:47px;display:block}
             .pt-wrap button,.pt-wrap a{touch-action:manipulation}
+            .pt-root{--paper:#FBFAF6;--ink:#1C1B17;--ink-soft:#54503F;--espresso:#211E19;--sand:#EAE1D2;--sand-deep:#DED2BD;--brass:#6B5F49;--line:#E4DDD0;--grotesk:'Space Grotesk',system-ui,sans-serif;--serif:'Newsreader',Georgia,serif}
             .pt-wrap{--paper:#FBFAF6;--ink:#1C1B17;--ink-soft:#54503F;--espresso:#211E19;--sand:#EAE1D2;--sand-deep:#DED2BD;--brass:#6B5F49;--line:#E4DDD0;--grotesk:'Space Grotesk',system-ui,sans-serif;--serif:'Newsreader',Georgia,serif;
               max-width:1120px;font-family:var(--grotesk);color:var(--ink)}
-            .pt-wrap .header{border-bottom:1px solid var(--line);padding:4px 0 16px;margin-bottom:22px}
-            .pt-wrap .header img{height:24px!important}
-            .pt-lang{position:absolute;right:0;top:4px;display:inline-flex;align-items:center;font-family:var(--grotesk)}
+            .wa-float{position:fixed;right:20px;bottom:20px;z-index:140;display:flex;align-items:center;height:52px;min-width:52px;padding:0 15px;border-radius:26px;background:#211E19;color:#F7F1E7;text-decoration:none;box-shadow:0 10px 28px rgba(28,27,23,.22);font-family:'Space Grotesk',system-ui,sans-serif;font-size:14px;font-weight:500;transition:background .2s}
+            .wa-float svg{width:22px;height:22px;fill:currentColor;flex:none}
+            .wa-float span{max-width:0;overflow:hidden;white-space:nowrap;transition:max-width .3s,margin .3s}
+            .wa-float:hover{background:#000}
+            .wa-float:hover span{max-width:220px;margin-left:10px}
+            @media (max-width: 700px){ .wa-float{right:14px;bottom:14px;height:48px;min-width:48px;padding:0 13px} }
+            .pt-wrap.container{padding-bottom:96px}
+            .pt-head{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;padding:14px 40px;background:rgba(251,250,246,.92);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid #E4DDD0;font-family:'Space Grotesk',system-ui,sans-serif}
+            .pt-head .header{border:none;padding:0;margin:0}
+            .pt-head .header img{height:22px!important}
+            .pt-brand{display:block;line-height:0}
+            .pt-tag{font-size:13px;font-weight:500;color:#6B5F49;padding-left:14px;border-left:1px solid #DED2BD;line-height:20px}
+            .pt-lang{margin-left:auto;display:inline-flex;align-items:center;font-family:var(--grotesk)}
+            @media (max-width: 700px){ .pt-head{padding:12px 16px;gap:10px} .pt-tag{padding-left:10px;font-size:12.5px} }
             .pt-lang button{border:none;background:none;font-family:var(--grotesk);font-size:12.5px;font-weight:600;letter-spacing:.04em;padding:6px 7px;cursor:pointer;color:var(--ink);opacity:.55}
             .pt-lang button:hover{opacity:.85}
             .pt-lang button.on{opacity:1;text-decoration:underline;text-underline-offset:5px;text-decoration-thickness:1.5px}
@@ -3637,11 +3679,17 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
               .pt-wrap .pt-h1{font-size:34px}
               .pt-wrap .pt-solo{max-width:760px}
             }
+            .pt-ho-step{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)}
+            .pt-ho-step:last-child{border-bottom:none}
+            .pt-ho-step>b{flex:none;width:26px;height:26px;border-radius:50%;background:var(--sand);color:var(--ink-soft);font-size:12.5px;display:inline-flex;align-items:center;justify-content:center}
+            .pt-ho-step.on>b{background:var(--espresso);color:#fff}
+            .pt-ho-step.ok>b{background:#e6eedc;color:#3a5230}
+            .pt-ho-step .h{font-weight:600;font-size:14.5px}
             .pt-tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
-            .pt-tile{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 16px;text-align:left;cursor:pointer;font:inherit;color:inherit;min-height:108px;display:flex;flex-direction:column;justify-content:space-between;transition:border-color .15s,transform .15s}
+            .pt-tile{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 16px;text-align:left;cursor:pointer;font:inherit;color:inherit;min-height:108px;display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;transition:border-color .15s,transform .15s}
             .pt-tile:hover{border-color:var(--sand-deep);transform:translateY(-1px)}
-            .pt-tile .i{font-size:22px}
-            .pt-tile .h{font-family:var(--grotesk);font-weight:600;font-size:15.5px;letter-spacing:-.01em;margin-top:10px}
+            .pt-tile .i{font-size:22px;line-height:1;height:24px;margin-bottom:16px}
+            .pt-tile .h{font-family:var(--grotesk);font-weight:600;font-size:15.5px;letter-spacing:-.01em;margin-top:0}
             .pt-tile .s{font-size:12.5px;color:var(--ink-soft);opacity:.85;margin-top:3px}
             .pt-back{background:none;border:none;color:var(--ink-soft);font-family:var(--grotesk);font-size:14px;cursor:pointer;padding:6px 0;margin:4px 0 6px}
             .pt-h1{font-family:var(--grotesk);font-size:26px;font-weight:600;letter-spacing:-.02em;line-height:1.1;margin:6px 0 6px}
@@ -3663,11 +3711,9 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             .pt-chip{border:1px solid var(--line);background:#fff;border-radius:99px;padding:8px 14px;font-family:var(--grotesk);font-size:13.5px;cursor:pointer;color:var(--ink)}
             .pt-chip.on{background:var(--espresso);color:#fff;border-color:var(--espresso)}
           `}</style>
-          <div style={{ position: "relative" }}>
-            <Header />
-            {onLang && <div className="pt-lang">{["de", "en"].map(l => <button key={l} className={lang === l ? "on" : ""} onClick={() => onLang(l)}>{l.toUpperCase()}</button>)}</div>}
-          </div>
           {children}
+        </div>
+          <a className="wa-float" href="https://wa.me/41766887091" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" dangerouslySetInnerHTML={{ __html: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.1 5.1 0 0 0 1.1 2.7 11.6 11.6 0 0 0 4.4 3.9c1.7.7 2.3.8 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.6-.3Z"/></svg><span>${lang === "en" ? "Chat on WhatsApp" : "Schreib uns auf WhatsApp"}</span>` }} />
         </div>
       );
     }
@@ -3738,25 +3784,113 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       const kdOffen = ((d.kuendigung && d.kuendigung.eintraege) || []).find(k => k.art === "kuendigung" && k.status !== "abgelehnt");
       const hoOffen = (d.uebergabe || []).find(h => h.offen && h.link);
       const kachel = (k, i, h, s) => <button className="pt-tile" onClick={() => onSeite(k)}><span className="i">{i}</span><span><div className="h">{h}</div><div className="s">{s}</div></span></button>;
+      const m = d.miete || {};
+      const ende = m.auszug || (kdOffen && kdOffen.datum) || (d.kuendigung && d.kuendigung.vertragsende) || m.mietende || "";
+      const objekt = m.wohnung ? t("deine Wohnung", "your apartment") : t("dein Zimmer", "your room");
+      const zeile = (a, b) => b ? <div className="pt-row"><span>{a}</span><span>{b}</span></div> : null;
       return (
-        <div style={{ marginTop: 10 }}>
-          <div className="pt-h1">{t(`Hallo ${d.mieter.vorname}`, `Hi ${d.mieter.vorname}`)}</div>
-          <div className="pt-sub">{d.miete.adresse}{d.miete.objekt ? ` · ${t("Zimmer", "Room")} ${d.miete.objekt}` : ""}</div>
-          {hoOffen && <div className="pt-warn" style={{ marginTop: 16, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <div>
+          <div className="pt-hero">
+            <div>
+              <div className="pt-lead">{t("Dein Zuhause bei D&T Homes", "Your home with D&T Homes")}</div>
+              <h1>{t(`Hallo ${d.mieter.vorname}`, `Hi ${d.mieter.vorname}`)}</h1>
+              <p className="pt-intro">{t(`Willkommen! Hier findest du alles rund um ${objekt}: Miete, Dokumente, Schadenmeldungen und deinen Auszug.`, `Welcome! Here you will find everything about ${objekt}: rent, documents, damage reports and moving out.`)}</p>
+            </div>
+            <div className="card pt-glance" style={{ marginBottom: 0 }}>
+              <div className="card-title">{t("Auf einen Blick", "At a glance")}</div>
+              {zeile(m.wohnung ? t("Wohnung", "Apartment") : t("Zimmer", "Room"), [m.adresse, m.wohnung ? "" : m.objekt].filter(Boolean).join(" · "))}
+              {zeile(t("Miete pro Monat", "Rent per month"), d.kosten && d.kosten.total ? chfP(d.kosten.total) : "")}
+              {zeile(t("Fällig", "Due"), t("bis 25. des Vormonats", "by the 25th of the previous month"))}
+              {zeile(t("Einzug", "Move-in"), m.einzug)}
+              {zeile(m.auszug || kdOffen ? t("Auszug", "Move-out") : t("Vertrag bis", "Contract until"), ende)}
+              {d.wlan && zeile("WLAN", `${d.wlan.name} · ${d.wlan.passwort}`)}
+            </div>
+          </div>
+          {hoOffen && <div className="pt-warn" style={{ marginTop: 20, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <div><b>{t("Übergabeprotokoll ausfüllen", "Complete the handover report")}</b><br />{t("Bitte halte Mängel beim Einzug fest", "Please record any defects at move-in")}{hoOffen.frist ? t(` bis ${datP(hoOffen.frist)}`, ` by ${datP(hoOffen.frist)}`) : ""}.</div>
             <a className="btn-primary" href={hoOffen.link}>{t("Jetzt ausfüllen", "Fill in now")}</a>
           </div>}
+          <div className="pt-sec">{t("Was möchtest du tun?", "What would you like to do?")}</div>
           <div className="pt-tiles">
             {kachel("miete", "🏠", t("Miete & Zahlung", "Rent & payment"), d.kosten && d.kosten.total ? `${chfP(d.kosten.total)} / ${t("Monat", "month")}` : t("Mietdetails", "Rental details"))}
-            {kachel("dokumente", "📄", t("Dokumente", "Documents"), fehlt ? t("Ausweis fehlt noch", "ID still missing") : `${d.dokumente.length} ${t("Dokument(e)", "document(s)")}`)}
+            {kachel("dokumente", "📄", t("Dokumente", "Documents"), `${d.dokumente.length} ${t("Dokument(e)", "document(s)")}`)}
+            {kachel("uebergabe", "📋", t("Übergabeprotokoll", "Handover report"), hoStatusText(d, t))}
             {kachel("schaden", "🔧", t("Schaden melden", "Report damage"), offen ? `${offen} ${t("offen", "open")}` : t("Etwas kaputt?", "Something broken?"))}
             {(d.hausinfos || d.wlan) ? kachel("hausinfos", "📌", d.wlan ? t("WLAN & Hausinfos", "Wi-Fi & house info") : t("Hausinfos", "House info"), d.wlan ? t("Netzwerk und Passwort", "Network and password") : t("Abfall, Waschküche & mehr", "Waste, laundry & more")) : null}
             {kachel("service", "🧽", t("Reinigung & Umzug", "Cleaning & moving"), t("Endreinigung, Umzug, Parkplatz", "Final cleaning, moving, parking"))}
             {kachel("kuendigung", "📤", t("Auszug", "Moving out"), kdOffen ? (kdOffen.status === "bestaetigt" ? t(`Bestätigt per ${kdOffen.datum}`, `Confirmed for ${kdOffen.datum}`) : t("Kündigung eingereicht", "Notice submitted")) : t("Kündigen oder Nachmieter stellen", "Give notice or find a successor"))}
           </div>
-          <div className="pt-sub" style={{ marginTop: 22, textAlign: "center" }}>{t("Fragen? ", "Questions? ")}<a href="mailto:info@dthomes.ch" style={{ color: "#5a5448" }}>info@dthomes.ch</a> · <a href="https://wa.me/41766887091" style={{ color: "#5a5448" }}>WhatsApp</a>{onAbmelden && <> · <a href="#" style={{ color: "#5a5448" }} onClick={e => { e.preventDefault(); onAbmelden(); }}>{t("Abmelden", "Sign out")}</a></>}</div>
+          <div className="pt-kontakt">
+            <div><div className="k1">{t("Fragen oder ein Anliegen?", "Questions or a request?")}</div><div className="k2">{t("Schreib uns, wir helfen dir gerne weiter.", "Write to us, we are happy to help.")}</div></div>
+            <div className="kb"><a href="https://wa.me/41766887091" target="_blank" rel="noopener noreferrer">WhatsApp</a><a className="g" href="mailto:info@dthomes.ch">info@dthomes.ch</a></div>
+          </div>
+          <div className="pt-fuss">
+            <span>D&amp;T Homes · <a href="https://www.dthomes.ch" target="_blank" rel="noopener noreferrer">dthomes.ch</a></span>
+            {onAbmelden && <a href="#" onClick={e => { e.preventDefault(); onAbmelden(); }}>{t("Abmelden", "Sign out")}</a>}
+          </div>
         </div>
       );
+    }
+
+    function hoEinzug(d) { return (d.uebergabe || []).find(h => (h.typ || "einzug") === "einzug"); }
+    function hoStatusText(d, t) {
+      const h = hoEinzug(d);
+      if (!h) return t("Noch nicht gestartet", "Not started yet");
+      if (h.offen) return h.frist ? t(`Offen bis ${datP(h.frist)}`, `Open until ${datP(h.frist)}`) : t("Offen", "Open");
+      if (h.status === "submitted") return t("Eingereicht", "Submitted");
+      return t("Abgeschlossen & abgelegt", "Completed & filed");
+    }
+
+    function PortalUebergabe({ d, t, sitzung }) {
+      const h = hoEinzug(d);
+      const st = d.uebergabe_start || {};
+      const doc = (d.dokumente || []).find(x => x.kategorie === "Übergabeprotokoll");
+      const [busy, setBusy] = useState("");
+      const [msg, setMsg] = useState("");
+      async function starten() {
+        setBusy("s"); setMsg("");
+        try { const r = await portalPost({ aktion: "uebergabe_starten" }, sitzung); window.location.href = r.link; return; }
+        catch (e) { setMsg(e.message); }
+        setBusy("");
+      }
+      async function oeffnen(id) {
+        setBusy("d"); setMsg("");
+        try { const r = await portalPost({ aktion: "dokument", id }, sitzung); window.location.href = r.url; }
+        catch (e) { setMsg(e.message); }
+        setBusy("");
+      }
+      const schritt = (n, a, b, aktiv, fertig) => <div className={"pt-ho-step" + (aktiv ? " on" : "") + (fertig ? " ok" : "")}><b>{fertig ? "✓" : n}</b><div><div className="h">{a}</div><div className="pt-sub" style={{ fontSize: 13 }}>{b}</div></div></div>;
+      const fertig = h && !h.offen;
+      return (<div className="pt-cols">
+        <div className="card">
+          <div className="card-title">{t("Übergabeprotokoll Einzug", "Move-in handover report")}</div>
+          {!h && <>
+            <div className="pt-big">{t("Halte beim Einzug fest, in welchem Zustand du dein Zuhause übernimmst: mit Fotos und einer kurzen Beschreibung allfälliger Mängel.", "Record the condition of your new home when you move in: with photos and a short description of any defects.")}</div>
+            <div className="pt-sub">{t("Normalerweise starten wir das Protokoll bei deinem Einzug und schicken dir den Link. Du kannst es aber auch schon selbst starten.", "We usually start the report when you move in and send you the link. You can also start it yourself.")}</div>
+            {st.moeglich && <button className="btn-primary" style={{ marginTop: 16, width: "100%" }} disabled={!!busy} onClick={starten}>{busy === "s" ? t("Wird gestartet…", "Starting…") : t("Protokoll jetzt starten", "Start report now")}</button>}
+            {!st.moeglich && st.ab && <div className="pt-info">{t(`Ab deinem Einzug (${st.ab}) kannst du das Protokoll hier starten.`, `You can start the report here from your move-in date (${st.ab}).`)}</div>}
+          </>}
+          {h && h.offen && <>
+            <div className="pt-big">{h.status === "in_progress" ? t("Du hast angefangen. Füll das Protokoll fertig aus und schick es uns.", "You have started. Complete the report and send it to us.") : t("Das Protokoll ist gestartet. Bitte halte allfällige Mängel mit Fotos fest.", "The report has been started. Please record any defects with photos.")}</div>
+            {h.frist && <div className="pt-warn">{t(`Du hast Zeit bis am ${datP(h.frist)}. Ohne Rückmeldung bis dann gilt ${d.miete.wohnung ? "die Wohnung" : "das Zimmer"} als mängelfrei übernommen.`, `You have until ${datP(h.frist)}. Without a response by then, the ${d.miete.wohnung ? "apartment" : "room"} is considered accepted without defects.`)}</div>}
+            {h.link && <a className="btn-primary" style={{ marginTop: 16, width: "100%" }} href={h.link}>{h.status === "in_progress" ? t("Weiter ausfüllen", "Continue") : t("Jetzt ausfüllen", "Fill in now")}</a>}
+          </>}
+          {fertig && <>
+            <div className="pt-big">{h.status === "submitted" ? t("Danke! Dein Protokoll ist bei uns eingegangen. Wir prüfen es und legen es dann hier ab.", "Thank you! We have received your report. We will review it and file it here.") : t("Dein Übergabeprotokoll ist abgeschlossen und hier abgelegt.", "Your handover report is complete and filed here.")}</div>
+            {doc ? <div className="pt-item" style={{ borderTop: "1px solid var(--line)" }}>
+              <div><div style={{ fontWeight: 600, fontSize: 14.5 }}>{t("Übergabeprotokoll (PDF)", "Handover report (PDF)")}</div><div className="pt-sub" style={{ fontSize: 12.5 }}>{datP(doc.datum)}</div></div>
+              <button className="btn-secondary" disabled={!!busy} onClick={() => oeffnen(doc.id)}>{busy === "d" ? "…" : t("Öffnen", "Open")}</button>
+            </div> : h.status !== "submitted" && <div className="pt-sub">{t("Das PDF wird gerade erstellt. Schau später nochmals vorbei.", "The PDF is being created. Please check back later.")}</div>}
+          </>}
+          {msg && <div className="pt-err">{msg}</div>}
+        </div>
+        <div className="card">
+          <div className="card-title">{t("So läuft es ab", "How it works")}</div>
+          {schritt(1, t("Gestartet", "Started"), h ? (h.gestartet ? t(`Am ${datP(h.gestartet)}`, `On ${datP(h.gestartet)}`) : "") : t("Von uns beim Einzug oder von dir hier", "By us at move-in or by you here"), !h, !!h)}
+          {schritt(2, t("Ausfüllen", "Fill in"), h && h.frist ? t(`Mängel mit Fotos festhalten, bis ${datP(h.frist)}`, `Record defects with photos, by ${datP(h.frist)}`) : t("Mängel mit Fotos festhalten, innert 14 Tagen", "Record defects with photos, within 14 days"), h && h.offen, fertig)}
+          {schritt(3, t("Abgelegt", "Filed"), t("Das PDF findest du hier und bei deinen Dokumenten", "You will find the PDF here and in your documents"), fertig && !doc, !!doc && fertig)}
+        </div>
+      </div>);
     }
 
     function PortalMiete({ d, t }) {
@@ -3842,7 +3976,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             <input type="file" accept="application/pdf,image/*" style={{ display: "none" }} disabled={!!busy} onChange={e => { const f = e.target.files && e.target.files[0]; e.target.value = ""; hoch(art, f); }} /></label>
         </div>
       );
-      return (<div className="pt-cols">
+      return (<div className="pt-solo">
         <div className="card">
           <div className="card-title">{t("Meine Dokumente", "My documents")}</div>
           {d.dokumente.length === 0 && <div className="pt-sub">{t("Noch keine Dokumente vorhanden.", "No documents yet.")}</div>}
@@ -3852,24 +3986,6 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
               <button className="btn-secondary" disabled={!!busy} onClick={() => oeffnen(x.id)}>{busy === "d" + x.id ? "…" : t("Öffnen", "Open")}</button>
             </div>
           ))}
-        </div>
-        {(d.uebergabe || []).length > 0 && <div className="card">
-          <div className="card-title">{t("Übergabeprotokoll", "Handover report")}</div>
-          {d.uebergabe.map((h, i) => (
-            <div className="pt-item" key={i}>
-              <div><div style={{ fontWeight: 600, fontSize: 14.5 }}>{h.typ === "auszug" ? t("Auszug", "Move-out") : t("Einzug", "Move-in")}</div>
-                <div className="pt-sub" style={{ fontSize: 12.5 }}>{h.offen
-                  ? t(`Bitte Mängel festhalten${h.frist ? " bis " + datP(h.frist) : ""}. Ohne Rückmeldung gilt das Objekt als mängelfrei übernommen.`, `Please record any defects${h.frist ? " by " + datP(h.frist) : ""}. Without a response the property is considered accepted without defects.`)
-                  : h.status === "submitted" ? t("Eingereicht, wir prüfen es.", "Submitted, we are reviewing it.")
-                  : t("Abgeschlossen. Das PDF findest du oben bei deinen Dokumenten.", "Completed. You will find the PDF in your documents above.")}</div></div>
-              {h.offen && h.link ? <a className="btn-primary" href={h.link}>{h.status === "in_progress" ? t("Weiter ausfüllen", "Continue") : t("Ausfüllen", "Fill in")}</a> : <span className="pt-badge" style={{ background: "#e6eedc", color: "#3a5230" }}>{h.status === "submitted" ? t("Eingereicht", "Submitted") : t("Abgeschlossen", "Completed")}</span>}
-            </div>
-          ))}
-        </div>}
-        <div className="card">
-          <div className="card-title">{t("Unterlagen von dir", "Your documents")}</div>
-          {upl("ausweis", t("Pass oder ID", "Passport or ID card"), d.unterlagen.ausweis)}
-          {upl("betreibung", t("Betreibungsregister-Auszug", "Debt collection register extract"), d.unterlagen.betreibung)}
         </div>
         {msg && <div className={/Danke|Thank/.test(msg) ? "pt-ok" : "pt-err"}>{msg}</div>}
       </div>);
