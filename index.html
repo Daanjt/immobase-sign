@@ -4139,7 +4139,6 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
         {!neu && <button className="btn-primary" style={{ width: "100%" }} onClick={() => { setNeu(true); setMsg(""); }}>{t("Neuen Schaden melden", "Report new damage")}</button>}
         {neu && <form className="card" onSubmit={senden}>
           <div className="card-title">{t("Schaden melden", "Report damage")}</div>
-          <div className="pt-sub" style={{ background: "#f6e3df", color: "#7a3328", padding: "10px 12px", borderRadius: 10 }}>{t("Bei Wasserschaden, Gasgeruch oder Feuer: sofort Notruf (112 / 118) und uns per WhatsApp informieren.", "For water damage, gas smell or fire: call emergency services (112 / 118) immediately and notify us via WhatsApp.")}</div>
           <label className="pt-lbl">{t("Was ist kaputt?", "What is broken?")} *</label>
           <input className="pt-in" value={f.titel} maxLength={140} required onChange={e => setF({ ...f, titel: e.target.value })} placeholder={t("z.B. Dusche tropft", "e.g. shower is dripping")} />
           <label className="pt-lbl">{t("Wo?", "Where?")}</label>
