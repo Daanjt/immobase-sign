@@ -3882,6 +3882,13 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       }
       const st = s => s === "bestaetigt" ? [t("Bestätigt", "Confirmed"), "#e6eedc", "#3a5230"] : s === "abgelehnt" ? [t("Nicht möglich", "Not possible"), "#f6e3df", "#9b4a3e"] : [t("Eingegangen", "Received"), "#ece8df", "#5a5448"];
       const nachmieterListe = eintraege.filter(e => e.art === "nachmieter");
+      const [kopiert, setKopiert] = useState(false);
+      async function kopieren(l) { try { await navigator.clipboard.writeText(l); setKopiert(true); setTimeout(() => setKopiert(false), 2000); } catch (_) { window.prompt(t("Link kopieren:", "Copy link:"), l); } }
+      async function teilen(l) {
+        const text = d.miete.wohnung ? t("Hier kannst du dich direkt auf meine Wohnung bewerben:", "You can apply for my apartment directly here:") : t("Hier kannst du dich direkt auf mein Zimmer bewerben:", "You can apply for my room directly here:");
+        if (navigator.share) { try { await navigator.share({ title: "D&T Homes", text, url: l }); return; } catch (e) { if (e && e.name === "AbortError") return; } }
+        kopieren(l);
+      }
       return (<>
         <div className="card">
           <div className="card-title">{t("Kündigung", "Notice of termination")}</div>
@@ -3921,7 +3928,17 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
         </div>
         <form className="card" onSubmit={nachmieter}>
           <div className="card-title">{t("Nachmieter vorschlagen", "Suggest a successor tenant")}</div>
-          <div className="pt-sub">{t("Kennst du jemanden, der übernehmen möchte? Wir schicken der Person den Link zur Bewerbung. Ob sie übernehmen kann, entscheiden wir nach der Bewerbung.", "Do you know someone who would like to take over? We will send them the link to apply. We decide after their application whether they can take over.")}</div>
+          <div className="pt-sub">{d.miete.wohnung
+            ? t("Kennst du jemanden, der deine Wohnung übernehmen möchte? Teile diesen Link. Darüber kann sich die Person direkt auf deine Wohnung bewerben, auch wenn sie nicht ausgeschrieben ist. Wir prüfen die Bewerbung und melden uns.", "Do you know someone who would like to take over your apartment? Share this link. They can apply for your apartment directly, even if it is not listed. We will review the application and get in touch.")
+            : t("Kennst du jemanden, der dein Zimmer übernehmen möchte? Teile diesen Link. Darüber kann sich die Person direkt auf dein Zimmer bewerben, auch wenn es nicht ausgeschrieben ist. Wir prüfen die Bewerbung und melden uns.", "Do you know someone who would like to take over your room? Share this link. They can apply for your room directly, even if it is not listed. We will review the application and get in touch.")}</div>
+          {d.nachfolge && d.nachfolge.link && <>
+            <div style={{ marginTop: 12, padding: "10px 12px", background: "#f4f0e8", borderRadius: 10, fontSize: 13, wordBreak: "break-all" }}>{d.nachfolge.link}</div>
+            <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+              <button type="button" className="btn-primary" style={{ flex: 1 }} onClick={() => teilen(d.nachfolge.link)}>{t("Link teilen", "Share link")}</button>
+              <button type="button" className="btn-secondary" onClick={() => kopieren(d.nachfolge.link)}>{kopiert ? t("Kopiert ✓", "Copied ✓") : t("Kopieren", "Copy")}</button>
+            </div>
+          </>}
+          <div className="pt-sub" style={{ marginTop: 18, fontWeight: 600, color: "#5a5448" }}>{t("Oder wir schicken den Link per E-Mail:", "Or we send the link by email:")}</div>
           <label className="pt-lbl">{t("Name", "Name")} *</label>
           <input className="pt-in" required maxLength={120} value={nm.name} onChange={e => setNm({ ...nm, name: e.target.value })} />
           <label className="pt-lbl">{t("E-Mail", "Email")} *</label>
