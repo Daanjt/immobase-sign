@@ -3562,7 +3562,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       const zurueck = <button className="pt-back" onClick={() => { setSeite("start"); window.scrollTo(0, 0); }}>← {t("Zurück zur Übersicht", "Back to overview")}</button>;
       return (
         <PortalRahmen lang={lang} onLang={wechsle}>
-          {seite === "start" && <PortalStart d={daten} t={t} onSeite={setSeite} />}
+          {seite === "start" && <PortalStart d={daten} t={t} onSeite={setSeite} onAbmelden={abmelden} />}
           {seite === "miete" && <>{zurueck}<PortalMiete d={daten} t={t} /></>}
           {seite === "dokumente" && <>{zurueck}<PortalDokumente d={daten} t={t} sitzung={sitzung} neuLaden={laden} /></>}
           {seite === "schaden" && <>{zurueck}<PortalSchaden d={daten} t={t} sitzung={sitzung} neuLaden={laden} /></>}
@@ -3694,7 +3694,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
     const chfP = v => (v == null || v === "" || isNaN(+v)) ? "–" : "CHF " + Number(v).toLocaleString("de-CH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const datP = v => { if (!v) return ""; const d = new Date(v); return isNaN(d) ? String(v) : d.toLocaleDateString("de-CH"); };
 
-    function PortalStart({ d, t, onSeite }) {
+    function PortalStart({ d, t, onSeite, onAbmelden }) {
       const offen = (d.schaeden || []).filter(s => s.status !== "erledigt").length;
       const fehlt = !d.unterlagen.ausweis;
       const kdOffen = ((d.kuendigung && d.kuendigung.eintraege) || []).find(k => k.art === "kuendigung" && k.status !== "abgelehnt");
@@ -3715,9 +3715,8 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             {(d.hausinfos || d.wlan) ? kachel("hausinfos", "📌", d.wlan ? t("WLAN & Hausinfos", "Wi-Fi & house info") : t("Hausinfos", "House info"), d.wlan ? t("Netzwerk und Passwort", "Network and password") : t("Abfall, Waschküche & mehr", "Waste, laundry & more")) : null}
             {kachel("service", "🧽", t("Reinigung & Umzug", "Cleaning & moving"), t("Endreinigung, Umzug, Parkplatz", "Final cleaning, moving, parking"))}
             {kachel("kuendigung", "📤", t("Auszug & Kündigung", "Moving out"), kdOffen ? (kdOffen.status === "bestaetigt" ? t(`Bestätigt per ${kdOffen.datum}`, `Confirmed for ${kdOffen.datum}`) : t("Kündigung eingereicht", "Notice submitted")) : t("Kündigen oder Nachmieter", "Give notice or successor"))}
-            {kachel("sicherheit", "🔒", t("Sicherheit", "Security"), d.passkey ? t("Face ID aktiv", "Face ID active") : t("Geräte & Face ID", "Devices & Face ID"))}
           </div>
-          <div className="pt-sub" style={{ marginTop: 22, textAlign: "center" }}>{t("Fragen? ", "Questions? ")}<a href="mailto:info@dthomes.ch" style={{ color: "#5a5448" }}>info@dthomes.ch</a> · <a href="https://wa.me/41766887091" style={{ color: "#5a5448" }}>WhatsApp</a></div>
+          <div className="pt-sub" style={{ marginTop: 22, textAlign: "center" }}>{t("Fragen? ", "Questions? ")}<a href="mailto:info@dthomes.ch" style={{ color: "#5a5448" }}>info@dthomes.ch</a> · <a href="https://wa.me/41766887091" style={{ color: "#5a5448" }}>WhatsApp</a>{onAbmelden && <> · <a href="#" style={{ color: "#5a5448" }} onClick={e => { e.preventDefault(); onAbmelden(); }}>{t("Abmelden", "Sign out")}</a></>}</div>
         </div>
       );
     }
