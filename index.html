@@ -3847,9 +3847,12 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       const doc = (d.dokumente || []).find(x => x.kategorie === "Übergabeprotokoll");
       const [busy, setBusy] = useState("");
       const [msg, setMsg] = useState("");
-      async function starten() {
+      const [startForm, setStartForm] = useState(false);
+      const [sl, setSl] = useState({ anzahl: "1", extra: st.extra_vorschlag || "", wg: "" });
+      async function starten(e) {
+        if (e) e.preventDefault();
         setBusy("s"); setMsg("");
-        try { const r = await portalPost({ aktion: "uebergabe_starten" }, sitzung); window.location.href = r.link; return; }
+        try { const r = await portalPost({ aktion: "uebergabe_starten", schluessel: sl }, sitzung); window.location.href = r.link; return; }
         catch (e) { setMsg(e.message); }
         setBusy("");
       }
@@ -3866,8 +3869,20 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
           <div className="card-title">{t("Übergabeprotokoll Einzug", "Move-in handover report")}</div>
           {!h && <>
             <div className="pt-big">{t("Halte beim Einzug fest, in welchem Zustand du dein Zuhause übernimmst: mit Fotos und einer kurzen Beschreibung allfälliger Mängel.", "Record the condition of your new home when you move in: with photos and a short description of any defects.")}</div>
-            <div className="pt-sub">{t("Normalerweise starten wir das Protokoll bei deinem Einzug und schicken dir den Link. Du kannst es aber auch schon selbst starten.", "We usually start the report when you move in and send you the link. You can also start it yourself.")}</div>
-            {st.moeglich && <button className="btn-primary" style={{ marginTop: 16, width: "100%" }} disabled={!!busy} onClick={starten}>{busy === "s" ? t("Wird gestartet…", "Starting…") : t("Protokoll jetzt starten", "Start report now")}</button>}
+            <div className="pt-sub">{t("Das ganze Protokoll läuft hier im Mieterportal: Zustand der Räume mit Fotos, allfällige Mängel und deine Schlüssel mit Schlüsselnummern. Das fertige Protokoll wird hier abgelegt.", "The whole report runs here in the tenant portal: condition of the rooms with photos, any defects and your keys with key numbers. The completed report is filed here.")}</div>
+            <div className="pt-sub" style={{ marginTop: 10 }}>{t("Normalerweise starten wir das Protokoll bei deinem Einzug und schicken dir den Link. Du kannst es aber auch schon selbst starten.", "We usually start the report when you move in and send you the link. You can also start it yourself.")}</div>
+            {st.moeglich && !startForm && <button className="btn-primary" style={{ marginTop: 16, width: "100%" }} onClick={() => setStartForm(true)}>{t("Protokoll jetzt starten", "Start report now")}</button>}
+            {st.moeglich && startForm && <form onSubmit={starten} style={{ marginTop: 14, borderTop: "1px solid var(--line)", paddingTop: 6 }}>
+              <div className="pt-lbl" style={{ fontSize: 14, color: "var(--ink)" }}>{t("Welche Schlüssel hast du erhalten?", "Which keys did you receive?")}</div>
+              <label className="pt-lbl">{d.miete.wohnung ? t("Anzahl Wohnungsschlüssel", "Number of apartment keys") : t("Anzahl Wohnungs-/Zimmerschlüssel", "Number of apartment/room keys")}</label>
+              <input className="pt-in" type="number" inputMode="numeric" min="0" max="10" value={sl.anzahl} onChange={e => setSl({ ...sl, anzahl: e.target.value })} />
+              <div className="pt-sub" style={{ fontSize: 12.5, marginTop: 6 }}>{t("Die Schlüsselnummern trägst du im nächsten Schritt im Protokoll ein.", "You will enter the key numbers in the report in the next step.")}</div>
+              <label className="pt-lbl">{t("Weitere Schlüssel (freiwillig)", "Other keys (optional)")}</label>
+              <input className="pt-in" maxLength={200} value={sl.extra} onChange={e => setSl({ ...sl, extra: e.target.value })} placeholder={t("z.B. 1x Briefkasten, 1x Keller", "e.g. 1x mailbox, 1x cellar")} />
+              {!d.miete.wohnung && <><label className="pt-lbl">{t("Gemeinsame WG-Schlüssel (freiwillig)", "Shared flat keys (optional)")}</label>
+                <input className="pt-in" maxLength={200} value={sl.wg} onChange={e => setSl({ ...sl, wg: e.target.value })} placeholder={t("z.B. 1x Waschküche", "e.g. 1x laundry room")} /></>}
+              <button type="submit" className="btn-primary" style={{ marginTop: 16, width: "100%" }} disabled={!!busy}>{busy === "s" ? t("Wird gestartet…", "Starting…") : t("Weiter zum Protokoll", "Continue to the report")}</button>
+            </form>}
             {!st.moeglich && st.ab && <div className="pt-info">{t(`Ab deinem Einzug (${st.ab}) kannst du das Protokoll hier starten.`, `You can start the report here from your move-in date (${st.ab}).`)}</div>}
           </>}
           {h && h.offen && <>
@@ -3884,11 +3899,22 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
           </>}
           {msg && <div className="pt-err">{msg}</div>}
         </div>
+        <div>
+        {h && h.schluessel && <div className="card">
+          <div className="card-title">{t("Deine Schlüssel", "Your keys")}</div>
+          {h.schluessel.info && !h.schluessel.anzahl ? <div className="pt-sub" style={{ whiteSpace: "pre-wrap" }}>{h.schluessel.info}</div> : <>
+            {h.schluessel.anzahl > 0 && h.schluessel.nummern.map((nr, i) => <div className="pt-row" key={i}><span>{(d.miete.wohnung ? t("Wohnungsschlüssel", "Apartment key") : t("Wohnungs-/Zimmerschlüssel", "Apartment/room key")) + (h.schluessel.anzahl > 1 ? ` ${i + 1}` : "")}</span><span>{nr ? t(`Nr. ${nr}`, `No. ${nr}`) : <span style={{ fontWeight: 400, color: "var(--ink-soft)" }}>{h.offen ? t("Nummer im Protokoll eintragen", "Enter number in the report") : t("Keine Nummer erfasst", "No number recorded")}</span>}</span></div>)}
+            {h.schluessel.extra && <div className="pt-row"><span>{t("Weitere Schlüssel", "Other keys")}</span><span>{h.schluessel.extra}</span></div>}
+            {h.schluessel.wg && <div className="pt-row"><span>{t("Gemeinsam (WG)", "Shared (flat)")}</span><span>{h.schluessel.wg}</span></div>}
+            {!h.schluessel.anzahl && !h.schluessel.extra && !h.schluessel.wg && <div className="pt-sub">{t("Keine Schlüssel erfasst.", "No keys recorded.")}</div>}
+          </>}
+        </div>}
         <div className="card">
           <div className="card-title">{t("So läuft es ab", "How it works")}</div>
           {schritt(1, t("Gestartet", "Started"), h ? (h.gestartet ? t(`Am ${datP(h.gestartet)}`, `On ${datP(h.gestartet)}`) : "") : t("Von uns beim Einzug oder von dir hier", "By us at move-in or by you here"), !h, !!h)}
-          {schritt(2, t("Ausfüllen", "Fill in"), h && h.frist ? t(`Mängel mit Fotos festhalten, bis ${datP(h.frist)}`, `Record defects with photos, by ${datP(h.frist)}`) : t("Mängel mit Fotos festhalten, innert 14 Tagen", "Record defects with photos, within 14 days"), h && h.offen, fertig)}
+          {schritt(2, t("Ausfüllen", "Fill in"), h && h.frist ? t(`Räume, Mängel mit Fotos und Schlüsselnummern, bis ${datP(h.frist)}`, `Rooms, defects with photos and key numbers, by ${datP(h.frist)}`) : t("Räume, Mängel mit Fotos und Schlüsselnummern, innert 14 Tagen", "Rooms, defects with photos and key numbers, within 14 days"), h && h.offen, fertig)}
           {schritt(3, t("Abgelegt", "Filed"), t("Das PDF findest du hier und bei deinen Dokumenten", "You will find the PDF here and in your documents"), fertig && !doc, !!doc && fertig)}
+        </div>
         </div>
       </div>);
     }
