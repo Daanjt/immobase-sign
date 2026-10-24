@@ -1,4 +1,5 @@
 {
+  "buildCommand": "node check.cjs index.html",
   "rewrites": [
     {
       "source": "/:token([a-f0-9]{32})",
