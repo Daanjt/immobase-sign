@@ -3743,7 +3743,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
               <div className="card-title">{t("Kosten pro Monat", "Monthly costs")}</div>
               {row(t("Nettomiete", "Net rent"), k.netto != null ? chfP(k.netto) : null)}
               {row(t("Nebenkosten (Akonto)", "Additional costs (on account)"), k.nebenkosten != null ? chfP(k.nebenkosten) : null)}
-              {row(t("Bruttomiete", "Gross rent"), k.brutto != null ? chfP(k.brutto) : null)}
+              {row(k.netto != null ? t("Bruttomiete", "Gross rent") : t("Bruttomiete (inkl. Nebenkosten)", "Gross rent (incl. additional costs)"), k.brutto != null ? chfP(k.brutto) : null)}
               {row(t("Strom (pauschal)", "Electricity (flat rate)"), k.strom != null ? chfP(k.strom) : null)}
               {k.service ? row(t("Servicegebühr Kautionsreduktion", "Service fee deposit reduction"), chfP(k.service)) : null}
               {row(t("Total pro Monat", "Total per month"), k.total != null ? chfP(k.total) : null, true)}
