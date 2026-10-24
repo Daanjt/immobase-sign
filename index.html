@@ -3760,7 +3760,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             <div className="pt-sub" style={{ color: "#1a1814" }}>{t("Bitte richte einen Dauerauftrag ein. Die Miete ist monatlich im Voraus fällig, jeweils bis zum 25. des Vormonats.", "Please set up a standing order. Rent is payable monthly in advance, by the 25th of the previous month.")}</div>
             {z.qr && <div style={{ display: "flex", gap: 16, alignItems: "center", margin: "16px 0 6px", flexWrap: "wrap" }}>
               <img src={z.qr} alt="QR" style={{ width: 168, height: 168, border: "1px solid #e1d8c5", borderRadius: 8, background: "#fff", padding: 6 }} />
-              <div className="pt-sub" style={{ flex: "1 1 180px" }}>{t("Mit der Banking-App scannen: Das Konto ist ausgefüllt. Betrag und Referenz bitte von unten ergänzen und als Dauerauftrag speichern.", "Scan with your banking app: the account is pre-filled. Please add the amount and reference from below and save it as a standing order.")}</div>
+              <div className="pt-sub" style={{ flex: "1 1 180px" }}>{t("Mit der Banking-App scannen: Konto, Betrag und Referenz sind schon ausgefüllt. Danach als Dauerauftrag speichern.", "Scan with your banking app: account, amount and reference are pre-filled. Then save it as a standing order.")}</div>
             </div>}
             {feld("emp", t("Empfänger", "Payee"), z.empfaenger)}
             {feld("bank", "Bank", z.bank)}
