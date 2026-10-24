@@ -3602,6 +3602,13 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             .pt-hero h1{font-family:var(--grotesk);font-weight:600;font-size:34px;letter-spacing:-.02em;line-height:1.05;margin:0 0 12px}
             .pt-intro{font-family:var(--serif);font-size:18.5px;line-height:1.5;color:var(--ink-soft);max-width:34ch;margin:0}
             .pt-glance .pt-row{padding:9px 0}
+            .pt-hero-bild{position:relative;border-radius:18px;overflow:hidden;min-height:340px;display:flex;align-items:flex-end;background:#d9cfbf}
+            .pt-wrap .pt-hero-bild img{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:cover;object-position:center 52%}
+            .pt-hero-bild:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,18,15,.05) 20%,rgba(20,18,15,.78) 100%)}
+            .pt-hero-txt{position:relative;z-index:1;padding:22px 20px;color:#fff}
+            .pt-hero-txt .pt-lead{color:rgba(255,255,255,.82)}
+            .pt-hero-txt h1{color:#fff}
+            .pt-hero-txt .pt-intro{color:rgba(255,255,255,.9)}
             .pt-sec{font-size:14px;font-weight:500;color:var(--brass);margin:30px 0 0}
             .pt-sec+.pt-tiles{margin-top:12px}
             .pt-kontakt{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-top:28px;background:var(--espresso);color:#fff;border-radius:16px;padding:24px 24px}
@@ -3614,7 +3621,9 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             .pt-fuss a{color:var(--ink-soft)}
             @media (min-width: 900px){
               .pt-wrap{padding-top:44px}
-              .pt-hero{grid-template-columns:1.25fr 1fr;gap:40px;align-items:center}
+              .pt-hero{grid-template-columns:1.25fr 1fr;gap:24px;align-items:stretch}
+              .pt-hero-bild{min-height:420px}
+              .pt-hero-txt{padding:34px 34px}
               .pt-hero h1{font-size:52px}
               .pt-intro{font-size:20px}
               .pt-glance{margin-bottom:0}
@@ -3822,10 +3831,13 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       return (
         <div>
           <div className="pt-hero">
-            <div>
+            <div className="pt-hero-bild">
+              <img src="/haus.webp" alt="" loading="eager" decoding="async" />
+              <div className="pt-hero-txt">
               <div className="pt-lead">{t("Dein Zuhause bei D&T Homes", "Your home with D&T Homes")}</div>
               <h1>{t(`Hallo ${d.mieter.vorname}`, `Hi ${d.mieter.vorname}`)}</h1>
               <p className="pt-intro">{t(`Willkommen! Hier findest du alles rund um ${objekt}: Miete, Dokumente, Schadenmeldungen und deinen Auszug.`, `Welcome! Here you will find everything about ${objekt}: rent, documents, damage reports and moving out.`)}</p>
+              </div>
             </div>
             <div className="card pt-glance" style={{ marginBottom: 0 }}>
               <div className="card-title">{t("Auf einen Blick", "At a glance")}</div>

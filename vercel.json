@@ -1,5 +1,5 @@
 {
-  "buildCommand": "node check.cjs index.html && rm -rf public && mkdir public && cp index.html *.png favicon.ico public/",
+  "buildCommand": "node check.cjs index.html && rm -rf public && mkdir public && cp index.html *.png *.webp favicon.ico public/",
   "outputDirectory": "public",
   "rewrites": [
     {
