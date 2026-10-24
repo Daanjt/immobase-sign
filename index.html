@@ -3975,12 +3975,21 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       const [busy, setBusy] = useState("");
       const [msg, setMsg] = useState("");
       const [kopiert, setKopiert] = useState(false);
+      const [hilfe, setHilfe] = useState(null);           // nach der Kündigung: { art, termin, adresse_neu, bemerkung }
+      const [hilfeMsg, setHilfeMsg] = useState("");
       const link = d.nachfolge && d.nachfolge.link;
+      const isoVon = (x) => { const m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(x || ""); return m ? `${m[3]}-${m[2]}-${m[1]}` : ""; };
+      async function hilfeSenden(e) {
+        e.preventDefault(); setBusy("h"); setHilfeMsg("");
+        try { await portalPost({ aktion: "service", ...hilfe }, sitzung); setHilfe(null); setHilfeMsg(t("Danke! Deine Anfrage ist eingegangen. Wir melden uns mit einer Offerte.", "Thank you! We received your request and will get back to you with a quote.")); }
+        catch (e2) { setHilfeMsg(e2.message); }
+        setBusy("");
+      }
 
       async function kuendigen(e) {
         e.preventDefault(); if (!ok || !datum) return;
         setBusy("k"); setMsg("");
-        try { await portalPost({ aktion: "kuendigen", datum, grund, bestaetigt: true }, sitzung); setModus(null); setMsg(t("Danke! Deine Kündigung ist eingegangen. Du bekommst eine Bestätigung per E-Mail.", "Thank you! We have received your notice and will confirm it by email.")); await neuLaden(); }
+        try { await portalPost({ aktion: "kuendigen", datum, grund, bestaetigt: true }, sitzung); setModus(null); setHilfeMsg(""); setHilfe({ art: "", termin: isoVon(datum), adresse_neu: "", bemerkung: "" }); setMsg(t("Danke! Deine Kündigung ist eingegangen. Du bekommst eine Bestätigung per E-Mail.", "Thank you! We have received your notice and will confirm it by email.")); await neuLaden(); }
         catch (e2) { setMsg(e2.message); }
         setBusy("");
       }
@@ -4015,9 +4024,29 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             <span className="pt-badge" style={offen.status === "bestaetigt" ? { background: "#e6eedc", color: "#3a5230" } : { background: "#ece8df", color: "#5a5448" }}>{offen.status === "bestaetigt" ? t("Bestätigt", "Confirmed") : t("Eingegangen", "Received")}</span>
           </div>
         </div>}
+        {msg && /Danke|Thank/.test(msg) && !modus && <div className="pt-ok">{msg}</div>}
+        {hilfe && <form className="card" style={{ marginTop: 14 }} onSubmit={hilfeSenden}>
+          <div className="card-title">{t("Hilfe beim Auszug", "Help with moving out")}</div>
+          <div className="pt-big" style={{ marginBottom: 12 }}>{t("Möchtest du, dass wir die Endreinigung oder deinen Umzug organisieren?", "Would you like us to organise the final cleaning or your move?")}</div>
+          <div className="pt-chips">{[["reinigung", t("Endreinigung", "Final cleaning")], ["umzug", t("Umzug", "Move")], ["umzug_reinigung", t("Umzug + Endreinigung", "Move + final cleaning")]].map(([key, l]) => <button type="button" key={key} className={"pt-chip" + (hilfe.art === key ? " on" : "")} onClick={() => setHilfe({ ...hilfe, art: key })}>{l}</button>)}</div>
+          {hilfe.art && <>
+            <label className="pt-lbl">{t("Wunschtermin", "Preferred date")}</label>
+            <input className="pt-in" type="date" value={hilfe.termin} onChange={e => setHilfe({ ...hilfe, termin: e.target.value })} />
+            {hilfe.art !== "reinigung" && <><label className="pt-lbl">{t("Neue Adresse", "New address")}</label>
+              <input className="pt-in" maxLength={200} value={hilfe.adresse_neu} onChange={e => setHilfe({ ...hilfe, adresse_neu: e.target.value })} placeholder={t("Strasse, PLZ Ort", "Street, postcode, town")} /></>}
+            <label className="pt-lbl">{t("Bemerkung (freiwillig)", "Notes (optional)")}</label>
+            <textarea className="pt-in" rows={2} maxLength={2000} value={hilfe.bemerkung} onChange={e => setHilfe({ ...hilfe, bemerkung: e.target.value })} placeholder={hilfe.art !== "reinigung" ? t("z.B. Anzahl Möbel, Stockwerk, Lift", "e.g. amount of furniture, floor, lift") : ""} />
+            <div className="pt-sub" style={{ marginTop: 10, fontSize: 13 }}>{t("Unverbindlich: Du bekommst zuerst eine Offerte von uns.", "No obligation: we will send you a quote first.")}</div>
+          </>}
+          <div className="pt-send" style={{ marginTop: 16 }}>
+            {hilfe.art && <button type="submit" className="btn-primary" style={{ whiteSpace: "nowrap" }} disabled={busy === "h"}>{busy === "h" ? t("Wird gesendet…", "Sending…") : t("Offerte anfragen", "Request a quote")}</button>}
+            <button type="button" className="btn-secondary" onClick={() => setHilfe(null)}>{t("Nein, danke", "No, thanks")}</button>
+          </div>
+        </form>}
+        {hilfeMsg && <div className={/Danke|Thank/.test(hilfeMsg) ? "pt-ok" : "pt-err"}>{hilfeMsg}</div>}
         {abgelehnt && abgelehnt.antwort && <div className="pt-warn" style={{ marginTop: 14 }}>{t("Deine letzte Kündigung war so nicht möglich:", "Your last notice was not possible:")} {abgelehnt.antwort}</div>}
 
-        {!modus && <>
+        {!modus && !hilfe && <>
           <div className="pt-sub" style={{ marginTop: 6 }}>{offen ? t("Du kannst trotzdem einen Nachmieter vorschlagen, wenn du früher raus möchtest.", "You can still suggest a successor if you want to leave earlier.") : t("Wie möchtest du ausziehen?", "How would you like to move out?")}</div>
           <div className="pt-tiles" style={{ gridTemplateColumns: "1fr 1fr" }}>
             {!offen && wahl("kuendigen", "📝", t("Kündigen", "Give notice"), kannKuendigen ? t(`Frühestens per ${k.termine[0]}`, `Earliest ${k.termine[0]}`) : t("Bei deinem Vertrag nicht möglich", "Not possible with your contract"), !kannKuendigen)}
@@ -4060,7 +4089,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
           </div>
         </div>}
 
-        {msg && <div className={/Danke|Thank|Erledigt|Done/.test(msg) ? "pt-ok" : "pt-err"}>{msg}</div>}
+        {msg && !(/Danke|Thank/.test(msg) && !modus) && <div className={/Danke|Thank/.test(msg) ? "pt-ok" : "pt-err"}>{msg}</div>}
       </div>);
     }
 
