@@ -3539,6 +3539,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       const [daten, setDaten] = useState(null);     // Uebersicht (nach Login)
       const [fehler, setFehler] = useState("");
       const [seite, setSeite] = useState("start");
+      useEffect(() => { try { window.scrollTo({ top: 0, left: 0, behavior: "instant" }); } catch (_) { window.scrollTo(0, 0); } }, [seite]);
       const [sprWahl, setSprWahl] = useState(() => pSpeicher.get("dt_portal_sprache"));
       const lang = sprWahl || (daten && daten.mieter.sprache) || (info && info.sprache) || "de";
       const wechsle = (l) => { pSpeicher.set("dt_portal_sprache", l); setSprWahl(l); };
@@ -3626,6 +3627,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             .pt-wrap input[type=checkbox],.pt-wrap input[type=radio]{width:18px;height:18px;flex:none}
             .pt-wrap input[type=date]{-webkit-appearance:none;appearance:none;min-height:47px;display:block}
             .pt-wrap button,.pt-wrap a{touch-action:manipulation}
+            .pt-wrap .btn-secondary,.pt-wrap .btn-primary,.pt-wrap .pt-badge,.pt-wrap .pt-chip{white-space:nowrap;overflow-wrap:normal;flex-shrink:0}
             .pt-root{--paper:#FBFAF6;--ink:#1C1B17;--ink-soft:#54503F;--espresso:#211E19;--sand:#EAE1D2;--sand-deep:#DED2BD;--brass:#6B5F49;--line:#E4DDD0;--grotesk:'Space Grotesk',system-ui,sans-serif;--serif:'Newsreader',Georgia,serif}
             .pt-wrap{--paper:#FBFAF6;--ink:#1C1B17;--ink-soft:#54503F;--espresso:#211E19;--sand:#EAE1D2;--sand-deep:#DED2BD;--brass:#6B5F49;--line:#E4DDD0;--grotesk:'Space Grotesk',system-ui,sans-serif;--serif:'Newsreader',Georgia,serif;
               max-width:1120px;font-family:var(--grotesk);color:var(--ink)}
@@ -3834,7 +3836,6 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
               {zeile(t("Adresse", "Address"), m.adresse)}
               {zeile(t("Stockwerk", "Floor"), m.stockwerk)}
               {zeile(t("Miete pro Monat", "Rent per month"), d.kosten && d.kosten.total ? chfP(d.kosten.total) : "")}
-              {zeile(t("Fällig", "Due"), t("bis 25. des Vormonats", "by the 25th of the previous month"))}
               {zeile(t("Einzug", "Move-in"), m.einzug)}
               {zeile(m.auszug || kdOffen ? t("Auszug", "Move-out") : t("Vertrag bis", "Contract until"), ende)}
               {d.wlan && zeile("WLAN", `${d.wlan.name} · ${d.wlan.passwort}`)}
@@ -3978,6 +3979,12 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       </div>);
     }
 
+    // "Evorest" im Text als Link auf die Webseite
+    function mitEvorest(text) {
+      const teile = String(text).split("Evorest");
+      return teile.map((x, i) => i === 0 ? x : <React.Fragment key={i}><a href="https://www.evorest.ch" target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "underline", textUnderlineOffset: 3 }}>Evorest</a>{x}</React.Fragment>);
+    }
+
     function PortalMiete({ d, t }) {
       const m = d.miete, k = d.kosten || {}, z = d.zahlung || {}, kau = d.kaution || {};
       const [kopiert, setKopiert] = useState("");
@@ -3995,7 +4002,10 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
           <div>
             <div className="card">
               <div className="card-title">{t("Meine Miete", "My rental")}</div>
-              {row(t("Objekt", "Property"), m.wohnung ? t("Ganze Wohnung", "Entire apartment") : `${t("Zimmer", "Room")} ${m.objekt || ""}`)}
+              {row(t("Objekt", "Property"), m.wohnung ? (m.zimmer ? t(`${m.zimmer}-Zimmer-Wohnung`, `${m.zimmer}-room apartment`) : t("Ganze Wohnung", "Entire apartment")) : `${t("Zimmer", "Room")} ${m.objekt || ""}`)}
+              {row(m.wohnung ? t("Wohnfläche", "Living space") : t("Zimmergrösse", "Room size"), m.flaeche ? `${m.flaeche} m²` : "")}
+              {!m.wohnung && row(t("Balkon", "Balcony"), m.balkon ? t("Ja", "Yes") : "")}
+              {!m.wohnung && row(t("WG", "Shared flat"), m.zimmer ? t(`${m.zimmer}-Zimmer-Wohnung`, `${m.zimmer}-room apartment`) : "")}
               {row(t("Adresse", "Address"), m.adresse)}
               {row(t("Stockwerk", "Floor"), m.stockwerk)}
               {row(t("Einzug", "Move-in"), m.einzug)}
@@ -4015,7 +4025,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             {kau.evorest != null && <div className="card">
               <div className="card-title">{t("Kaution", "Deposit")}</div>
               <div className="pt-sub" style={{ color: "#1a1814" }}>{kau.evorest
-                ? t(`Deine Kaution${kau.betrag ? ` von ${chfP(kau.betrag)}` : ""} (${kau.monate} ${kau.monate === 1 ? "Monatsmiete" : "Monatsmieten"}) liegt bei Evorest, einer Schweizer Plattform für Mietkautionen, auf einem Konto auf deinen Namen. Den Link zur Einrichtung hat dir Evorest per E-Mail geschickt.`, `Your deposit${kau.betrag ? ` of ${chfP(kau.betrag)}` : ""} (${kau.monate} ${kau.monate === 1 ? "month's rent" : "months' rent"}) is held by Evorest, a Swiss rental deposit platform, in an account in your name. Evorest sent you the setup link by email.`)
+                ? mitEvorest(t(`Deine Kaution${kau.betrag ? ` von ${chfP(kau.betrag)}` : ""} (${kau.monate} ${kau.monate === 1 ? "Monatsmiete" : "Monatsmieten"}) liegt bei Evorest, einer Schweizer Plattform für Mietkautionen, auf einem Konto auf deinen Namen. Den Link zur Einrichtung hat dir Evorest per E-Mail geschickt.`, `Your deposit${kau.betrag ? ` of ${chfP(kau.betrag)}` : ""} (${kau.monate} ${kau.monate === 1 ? "month's rent" : "months' rent"}) is held by Evorest, a Swiss rental deposit platform, in an account in your name. Evorest sent you the setup link by email.`))
                 : t("Bei deiner Variante ist keine Kaution nötig. Dafür ist die monatliche Servicegebühr im Mietzins enthalten.", "With your option no deposit is required. Instead, the monthly service fee is included in your rent.")}</div>
             </div>}
           </div>
