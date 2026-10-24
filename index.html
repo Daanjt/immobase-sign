@@ -3828,7 +3828,9 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       // Nach dem Auszug: Hinweis, wie lange der Zugang noch läuft (3 Monate nach Auszug)
       const _dm = (x) => { const m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(String(x || "").trim()); if (m) return new Date(+m[3], +m[2] - 1, +m[1]); const i = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(x || "")); return i ? new Date(+i[1], +i[2] - 1, +i[3]) : null; };
       const _aus = _dm(m.auszug), _heute = new Date(); _heute.setHours(0, 0, 0, 0);
-      if (d.zugang_bis && _aus && _aus < _heute) ansteht.push({ seite: "dokumente", icon: "dokumente", art: "warn", h: t(`Dein Zugang zum Mieterportal läuft bis ${d.zugang_bis}`, `Your access to the tenant portal ends on ${d.zugang_bis}`), s: t("Lade dir wichtige Dokumente wie Vertrag und Übergabeprotokoll bis dahin herunter.", "Please download important documents such as your contract and handover report before then.") });
+      // ausgezogen: Auszug liegt in der Vergangenheit (oder archiviert ohne Auszugsdatum)
+      const ausgezogen = !!d.zugang_bis && (!_aus || _aus < _heute);
+      if (ausgezogen) ansteht.push({ seite: "dokumente", icon: "dokumente", art: "warn", h: t(`Dein Zugang zum Mieterportal läuft bis ${d.zugang_bis}`, `Your access to the tenant portal ends on ${d.zugang_bis}`), s: t("Lade dir wichtige Dokumente wie Vertrag und Übergabeprotokoll bis dahin herunter.", "Please download important documents such as your contract and handover report before then.") });
       const nst = d.nachfolge && d.nachfolge.stand;
       if (nst) {
         const vn = nst.vorname ? " " + nst.vorname : "";
@@ -3858,7 +3860,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
               {zeile(t("Einzug", "Move-in"), m.einzug)}
               {zeile(m.auszug || kdOffen ? t("Auszug", "Move-out") : t("Vertrag bis", "Contract until"), ende)}
               {d.wlan && zeile("WLAN", `${d.wlan.name} · ${d.wlan.passwort}`)}
-              {d.zugang_bis && zeile(t("Portal-Zugang bis", "Portal access until"), d.zugang_bis)}
+              {ausgezogen && zeile(t("Portal-Zugang bis", "Portal access until"), d.zugang_bis)}
             </div>
           </div>
           {ansteht.length > 0 && <div className="pt-an">
