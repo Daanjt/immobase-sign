@@ -456,6 +456,7 @@
     // WhatsApp etc.). Uebernahme-Links sollen nicht "Vertrag unterschreiben" zeigen.
     (() => {
       const istUebernahme = window.location.pathname.replace(/^\//, "").startsWith("uebernahme/");
+      if (/^\/(p|portal)(\/|$)/.test(window.location.pathname) || window.location.pathname === "/") { document.title = "Mieterportal - D&T Homes"; return; }
       document.title = istUebernahme
         ? "Übernahmeprotokoll - D&T Homes"
         : "Vertrag unterschreiben - D&T Homes";
@@ -3480,6 +3481,635 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
     // ════════════════════════════════════════════════════════════════════════
     // APP ROOT
     // ════════════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════════════════
+    // MIETERPORTAL  /p/{portal_token}
+    // Login: Code per E-Mail (einmal pro Geraet) oder Face ID (Passkey).
+    // Alle Daten ueber die Server-Funktion mieter-portal.
+    // ════════════════════════════════════════════════════════════════════════
+    const PORTAL_API = `${SUPABASE_URL}/functions/v1/mieter-portal`;
+    const PORTAL_HDR = { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` };
+    const pSpeicher = {
+      get(k) { try { return localStorage.getItem(k); } catch (_) { return null; } },
+      set(k, v) { try { localStorage.setItem(k, v); } catch (_) {} },
+      del(k) { try { localStorage.removeItem(k); } catch (_) {} },
+    };
+    async function portalPost(body, sitzung) {
+      const r = await fetch(PORTAL_API, { method: "POST", headers: { ...PORTAL_HDR, "Content-Type": "application/json", ...(sitzung ? { "x-portal-sitzung": sitzung } : {}) }, body: JSON.stringify(body) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { const e = new Error(j.error || "Fehler"); e.status = r.status; throw e; }
+      return j;
+    }
+    async function portalForm(fd, sitzung) {
+      const r = await fetch(PORTAL_API, { method: "POST", headers: { ...PORTAL_HDR, "x-portal-sitzung": sitzung }, body: fd });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { const e = new Error(j.error || "Fehler"); e.status = r.status; throw e; }
+      return j;
+    }
+    function geraetName() {
+      const u = navigator.userAgent || "";
+      const os = /iPhone/.test(u) ? "iPhone" : /iPad/.test(u) ? "iPad" : /Android/.test(u) ? "Android" : /Mac OS X/.test(u) ? "Mac" : /Windows/.test(u) ? "Windows" : "Gerät";
+      const br = /Edg\//.test(u) ? "Edge" : /Chrome\//.test(u) ? "Chrome" : /Firefox\//.test(u) ? "Firefox" : /Safari\//.test(u) ? "Safari" : "Browser";
+      return `${os} · ${br}`;
+    }
+    // Fotos vor dem Hochladen verkleinern (spart Daten), HEIC unveraendert lassen
+    async function verkleinere(file, max = 1600) {
+      if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return file;
+      try {
+        const bmp = await createImageBitmap(file);
+        const f = Math.min(1, max / Math.max(bmp.width, bmp.height));
+        const c = document.createElement("canvas"); c.width = Math.round(bmp.width * f); c.height = Math.round(bmp.height * f);
+        c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+        const blob = await new Promise(res => c.toBlob(res, "image/jpeg", 0.82));
+        return blob ? new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" }) : file;
+      } catch (_) { return file; }
+    }
+    // WebAuthn-Hilfen (base64url <-> ArrayBuffer)
+    const b64u = {
+      toBuf(s) { s = s.replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "="; const b = atob(s); const a = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a.buffer; },
+      fromBuf(buf) { const a = new Uint8Array(buf); let s = ""; for (let i = 0; i < a.length; i++) s += String.fromCharCode(a[i]); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); },
+    };
+    const passkeyMoeglich = () => !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.create);
+
+    function PortalApp({ token }) {
+      const sKey = `dt_portal_${token}`;
+      const [sitzung, setSitzung] = useState(() => pSpeicher.get(sKey));
+      const [info, setInfo] = useState(null);       // start-Infos (vor Login)
+      const [daten, setDaten] = useState(null);     // Uebersicht (nach Login)
+      const [fehler, setFehler] = useState("");
+      const [seite, setSeite] = useState("start");
+      const lang = (daten && daten.mieter.sprache) || (info && info.sprache) || "de";
+      const t = (de, en) => (lang === "en" ? en : de);
+
+      useEffect(() => { pSpeicher.set("dt_portal_letzter", token); }, [token]);
+      async function laden(s = sitzung) {
+        try { setDaten(await portalPost({ aktion: "uebersicht" }, s)); setFehler(""); }
+        catch (e) { if (e.status === 401) { pSpeicher.del(sKey); setSitzung(null); } else setFehler(e.message); }
+      }
+      useEffect(() => {
+        if (sitzung) laden(sitzung);
+        else portalPost({ aktion: "start", token }).then(setInfo).catch(e => setFehler(e.message));
+      }, [sitzung]);
+
+      function angemeldet(s) { pSpeicher.set(sKey, s); setSitzung(s); }
+      async function abmelden() { try { await portalPost({ aktion: "abmelden" }, sitzung); } catch (_) {} pSpeicher.del(sKey); setSitzung(null); setDaten(null); setInfo(null); setSeite("start"); }
+
+      if (fehler && !info && !daten) return <StatusScreen icon="🔗" title={t("Link nicht gültig", "Link not valid")} message={fehler}><div style={{ marginTop: 18 }}><a className="btn-secondary" href="/p">{t("Neuen Link anfordern", "Request a new link")}</a></div></StatusScreen>;
+      if (!sitzung) return info ? <PortalLogin token={token} info={info} t={t} onOk={angemeldet} /> : <PortalRahmen><div className="loading-center"><div className="spinner"></div></div></PortalRahmen>;
+      if (!daten) return <PortalRahmen><div className="loading-center"><div className="spinner"></div><div className="loading-text">{t("Wird geladen…", "Loading…")}</div></div></PortalRahmen>;
+
+      const zurueck = <button className="pt-back" onClick={() => { setSeite("start"); window.scrollTo(0, 0); }}>← {t("Zurück zur Übersicht", "Back to overview")}</button>;
+      return (
+        <PortalRahmen>
+          {seite === "start" && <PortalStart d={daten} t={t} onSeite={setSeite} />}
+          {seite === "miete" && <>{zurueck}<PortalMiete d={daten} t={t} /></>}
+          {seite === "dokumente" && <>{zurueck}<PortalDokumente d={daten} t={t} sitzung={sitzung} neuLaden={laden} /></>}
+          {seite === "schaden" && <>{zurueck}<PortalSchaden d={daten} t={t} sitzung={sitzung} neuLaden={laden} /></>}
+          {seite === "sicherheit" && <>{zurueck}<PortalSicherheit d={daten} t={t} sitzung={sitzung} neuLaden={laden} onAbmelden={abmelden} /></>}
+          {seite === "kuendigung" && <>{zurueck}<PortalKuendigung d={daten} t={t} sitzung={sitzung} neuLaden={laden} /></>}
+          {seite === "service" && <>{zurueck}<PortalService d={daten} t={t} sitzung={sitzung} /></>}
+          {seite === "hausinfos" && <>{zurueck}<PortalHausinfos d={daten} t={t} /></>}
+          {fehler && <div className="pt-err">{fehler}</div>}
+        </PortalRahmen>
+      );
+    }
+
+    function PortalRahmen({ children }) {
+      return (
+        <div className="container pt-wrap">
+          <style>{`
+            .pt-wrap{max-width:1120px}
+            .pt-wrap a.btn-primary,.pt-wrap a.btn-secondary{text-decoration:none;display:inline-flex;align-items:center;justify-content:center;width:auto;white-space:nowrap;padding-left:20px;padding-right:20px}
+            .pt-nav{display:none;gap:6px;flex-wrap:wrap;margin:0 0 20px}
+            .pt-nav button{border:1px solid #e1d8c5;background:#fff;border-radius:99px;padding:8px 14px;font:inherit;font-size:13.5px;cursor:pointer;color:#3a352d}
+            .pt-nav button.on{background:#1a1814;color:#fff;border-color:#1a1814}
+            .pt-warn{background:#fbf3e2;border:1px solid #ecd9ae;border-radius:10px;padding:14px 16px;color:#5c4512;font-size:14px;line-height:1.55}
+            .pt-info{background:#f4f0e8;border-radius:10px;padding:12px 14px;font-size:13.5px;line-height:1.55;color:#3a352d;margin-top:12px}
+            @media (min-width: 900px){
+              .pt-tiles{grid-template-columns:repeat(4,1fr);gap:16px}
+              .pt-tile{min-height:132px;padding:22px 20px}
+              .pt-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+              .pt-cols>.card{margin-bottom:0}
+              .pt-cols>div>.card:last-child{margin-bottom:0}
+              .pt-cols>.pt-ok,.pt-cols>.pt-err,.pt-cols>.pt-full{grid-column:1/-1}
+              .pt-back{font-size:14.5px}
+              .pt-h1{font-size:28px}
+              .pt-solo{max-width:760px}
+            }
+            .pt-tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+            .pt-tile{background:#fff;border:1px solid #e1d8c5;border-radius:14px;padding:18px 16px;text-align:left;cursor:pointer;font:inherit;color:inherit;min-height:104px;display:flex;flex-direction:column;justify-content:space-between}
+            .pt-tile:hover{border-color:#b9ad95}
+            .pt-tile .i{font-size:22px}
+            .pt-tile .h{font-weight:700;font-size:15px;margin-top:10px}
+            .pt-tile .s{font-size:12.5px;color:#6e6a62;margin-top:3px}
+            .pt-back{background:none;border:none;color:#6e6a62;font:inherit;font-size:13.5px;cursor:pointer;padding:6px 0;margin:4px 0 6px}
+            .pt-h1{font-size:22px;font-weight:600;margin:6px 0 2px}
+            .pt-sub{font-size:13.5px;color:#6e6a62;line-height:1.5}
+            .pt-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #f0eadd;font-size:14px}
+            .pt-row:last-child{border-bottom:none}
+            .pt-row span:first-child{color:#6e6a62}
+            .pt-row span:last-child{text-align:right;font-weight:500}
+            .pt-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #f0eadd}
+            .pt-item:last-child{border-bottom:none}
+            .pt-in{width:100%;box-sizing:border-box;padding:12px 13px;border:1px solid #d8d0c0;border-radius:10px;font:inherit;font-size:15px;background:#fff}
+            .pt-lbl{font-size:12.5px;font-weight:600;color:#5a5448;margin:14px 0 6px;display:block}
+            .pt-err{color:#9b4a3e;font-size:13.5px;margin-top:10px}
+            .pt-ok{color:#4f6b3f;font-size:13.5px;margin-top:10px}
+            .pt-badge{font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:99px;white-space:nowrap}
+            .pt-code{font-size:28px;letter-spacing:.4em;text-align:center;font-weight:600}
+            .pt-chips{display:flex;gap:8px;flex-wrap:wrap}
+            .pt-chip{border:1px solid #d8d0c0;background:#fff;border-radius:99px;padding:8px 14px;font:inherit;font-size:13.5px;cursor:pointer}
+            .pt-chip.on{background:#1a1814;color:#fff;border-color:#1a1814}
+          `}</style>
+          <Header />
+          {children}
+        </div>
+      );
+    }
+
+    function PortalLogin({ token, info, t, onOk }) {
+      const [schritt, setSchritt] = useState("wahl");   // wahl | code
+      const [code, setCode] = useState("");
+      const [busy, setBusy] = useState(false);
+      const [msg, setMsg] = useState("");
+      async function codeSenden() {
+        setBusy(true); setMsg("");
+        try { await portalPost({ aktion: "code_senden", token }); setSchritt("code"); }
+        catch (e) { setMsg(e.message); }
+        setBusy(false);
+      }
+      async function codePruefen(e) {
+        e && e.preventDefault(); if (code.replace(/\D/g, "").length !== 6) return;
+        setBusy(true); setMsg("");
+        try { const r = await portalPost({ aktion: "code_pruefen", token, code, geraet: geraetName() }); onOk(r.sitzung); }
+        catch (e2) { setMsg(e2.message); }
+        setBusy(false);
+      }
+      async function faceId() {
+        setBusy(true); setMsg("");
+        try {
+          const o = await portalPost({ aktion: "pk_login_optionen", token });
+          const cred = await navigator.credentials.get({ publicKey: {
+            challenge: b64u.toBuf(o.challenge), rpId: o.rpId, timeout: o.timeout, userVerification: o.userVerification,
+            allowCredentials: (o.allowCredentials || []).map(c => ({ type: "public-key", id: b64u.toBuf(c.id), transports: c.transports })) } });
+          const antwort = { id: cred.id, rawId: b64u.fromBuf(cred.rawId), type: cred.type, clientExtensionResults: {},
+            response: { clientDataJSON: b64u.fromBuf(cred.response.clientDataJSON), authenticatorData: b64u.fromBuf(cred.response.authenticatorData),
+              signature: b64u.fromBuf(cred.response.signature), userHandle: cred.response.userHandle ? b64u.fromBuf(cred.response.userHandle) : undefined } };
+          const r = await portalPost({ aktion: "pk_login", token, antwort, geraet: geraetName() });
+          onOk(r.sitzung);
+        } catch (e) { setMsg(e.name === "NotAllowedError" ? t("Abgebrochen.", "Cancelled.") : (e.message || t("Face ID hat nicht geklappt.", "Face ID did not work."))); }
+        setBusy(false);
+      }
+      return (
+        <PortalRahmen>
+          <div className="card" style={{ maxWidth: 440, margin: "24px auto 0" }}>
+            <div className="pt-h1">{t(`Hallo ${info.vorname}`, `Hi ${info.vorname}`)}</div>
+            <div className="pt-sub" style={{ marginTop: 6 }}>{t("Willkommen im D&T Homes Mieterportal. Zu deinem Schutz bestätigen wir auf jedem neuen Gerät kurz, dass du es bist.", "Welcome to the D&T Homes tenant portal. To protect your data, we briefly confirm it's you on every new device.")}</div>
+            {schritt === "wahl" && <>
+              {info.passkey && passkeyMoeglich() && <button className="btn-primary" style={{ marginTop: 20, width: "100%" }} disabled={busy} onClick={faceId}>{t("Mit Face ID / Fingerabdruck anmelden", "Sign in with Face ID / fingerprint")}</button>}
+              <button className={info.passkey && passkeyMoeglich() ? "btn-secondary" : "btn-primary"} style={{ marginTop: 12, width: "100%" }} disabled={busy || !info.hatEmail} onClick={codeSenden}>
+                {busy ? t("Wird gesendet…", "Sending…") : t(`Code an ${info.email} senden`, `Send code to ${info.email}`)}
+              </button>
+            </>}
+            {schritt === "code" && <form onSubmit={codePruefen}>
+              <div className="pt-sub" style={{ marginTop: 18 }}>{t(`Wir haben dir einen 6-stelligen Code an ${info.email} geschickt.`, `We sent a 6-digit code to ${info.email}.`)}</div>
+              <input className="pt-in pt-code" style={{ marginTop: 14 }} inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} autoFocus
+                onChange={e => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="••••••" />
+              <button className="btn-primary" type="submit" style={{ marginTop: 14, width: "100%" }} disabled={busy || code.length !== 6}>{busy ? t("Wird geprüft…", "Checking…") : t("Anmelden", "Sign in")}</button>
+              <button type="button" className="pt-back" style={{ marginTop: 8 }} disabled={busy} onClick={codeSenden}>{t("Neuen Code senden", "Send a new code")}</button>
+            </form>}
+            {msg && <div className="pt-err">{msg}</div>}
+          </div>
+        </PortalRahmen>
+      );
+    }
+
+    const chfP = v => (v == null || v === "" || isNaN(+v)) ? "–" : "CHF " + Number(v).toLocaleString("de-CH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const datP = v => { if (!v) return ""; const d = new Date(v); return isNaN(d) ? String(v) : d.toLocaleDateString("de-CH"); };
+
+    function PortalStart({ d, t, onSeite }) {
+      const offen = (d.schaeden || []).filter(s => s.status !== "erledigt").length;
+      const fehlt = !d.unterlagen.ausweis;
+      const kdOffen = ((d.kuendigung && d.kuendigung.eintraege) || []).find(k => k.art === "kuendigung" && k.status !== "abgelehnt");
+      const hoOffen = (d.uebergabe || []).find(h => h.offen && h.link);
+      const kachel = (k, i, h, s) => <button className="pt-tile" onClick={() => onSeite(k)}><span className="i">{i}</span><span><div className="h">{h}</div><div className="s">{s}</div></span></button>;
+      return (
+        <div style={{ marginTop: 10 }}>
+          <div className="pt-h1">{t(`Hallo ${d.mieter.vorname}`, `Hi ${d.mieter.vorname}`)}</div>
+          <div className="pt-sub">{d.miete.adresse}{d.miete.objekt ? ` · ${t("Zimmer", "Room")} ${d.miete.objekt}` : ""}</div>
+          {hoOffen && <div className="pt-warn" style={{ marginTop: 16, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <div><b>{t("Übergabeprotokoll ausfüllen", "Complete the handover report")}</b><br />{t("Bitte halte Mängel beim Einzug fest", "Please record any defects at move-in")}{hoOffen.frist ? t(` bis ${datP(hoOffen.frist)}`, ` by ${datP(hoOffen.frist)}`) : ""}.</div>
+            <a className="btn-primary" href={hoOffen.link}>{t("Jetzt ausfüllen", "Fill in now")}</a>
+          </div>}
+          <div className="pt-tiles">
+            {kachel("miete", "🏠", t("Miete & Zahlung", "Rent & payment"), d.kosten && d.kosten.total ? `${chfP(d.kosten.total)} / ${t("Monat", "month")}` : t("Mietdetails", "Rental details"))}
+            {kachel("dokumente", "📄", t("Dokumente", "Documents"), fehlt ? t("Ausweis fehlt noch", "ID still missing") : `${d.dokumente.length} ${t("Dokument(e)", "document(s)")}`)}
+            {kachel("schaden", "🔧", t("Schaden melden", "Report damage"), offen ? `${offen} ${t("offen", "open")}` : t("Etwas kaputt?", "Something broken?"))}
+            {d.hausinfos ? kachel("hausinfos", "📌", t("Hausinfos", "House info"), t("Abfall, Waschküche & mehr", "Waste, laundry & more")) : null}
+            {kachel("service", "🧽", t("Reinigung & Umzug", "Cleaning & moving"), t("Endreinigung, Umzug, Parkplatz", "Final cleaning, moving, parking"))}
+            {kachel("kuendigung", "📤", t("Auszug & Kündigung", "Moving out"), kdOffen ? (kdOffen.status === "bestaetigt" ? t(`Bestätigt per ${kdOffen.datum}`, `Confirmed for ${kdOffen.datum}`) : t("Kündigung eingereicht", "Notice submitted")) : t("Kündigen oder Nachmieter", "Give notice or successor"))}
+            {kachel("sicherheit", "🔒", t("Sicherheit", "Security"), d.passkey ? t("Face ID aktiv", "Face ID active") : t("Geräte & Face ID", "Devices & Face ID"))}
+          </div>
+          <div className="pt-sub" style={{ marginTop: 22, textAlign: "center" }}>{t("Fragen? ", "Questions? ")}<a href="mailto:info@dthomes.ch" style={{ color: "#5a5448" }}>info@dthomes.ch</a> · <a href="https://wa.me/41766887091" style={{ color: "#5a5448" }}>WhatsApp</a></div>
+        </div>
+      );
+    }
+
+    function PortalMiete({ d, t }) {
+      const m = d.miete, k = d.kosten || {}, z = d.zahlung || {}, kau = d.kaution || {};
+      const [kopiert, setKopiert] = useState("");
+      const row = (a, b, fett) => b != null && b !== "" ? <div className="pt-row" style={fett ? { borderTop: "2px solid #1a1814", fontWeight: 700 } : undefined}><span style={fett ? { color: "#1a1814" } : undefined}>{a}</span><span>{b}</span></div> : null;
+      const ende = !m.auszug ? ((d.kuendigung && d.kuendigung.vertragsende) || m.mietende) : "";
+      async function kopiere(key, text) { try { await navigator.clipboard.writeText(text); setKopiert(key); setTimeout(() => setKopiert(""), 1800); } catch (_) { window.prompt(t("Kopieren:", "Copy:"), text); } }
+      const feld = (key, label, wert, mono) => wert ? (
+        <div className="pt-item" style={{ padding: "9px 0" }}>
+          <div style={{ minWidth: 0 }}><div className="pt-sub" style={{ fontSize: 11.5, textTransform: "uppercase", letterSpacing: ".1em" }}>{label}</div>
+            <div style={{ fontWeight: 600, fontSize: 14.5, wordBreak: "break-word", fontFamily: mono ? "Menlo,Monaco,monospace" : undefined }}>{wert}</div></div>
+          <button className="btn-secondary" style={{ padding: "6px 12px", fontSize: 12.5 }} onClick={() => kopiere(key, String(wert).replace(/^CHF\s*/, ""))}>{kopiert === key ? "✓" : t("Kopieren", "Copy")}</button>
+        </div>) : null;
+      return (
+        <div className="pt-cols">
+          <div>
+            <div className="card">
+              <div className="card-title">{t("Meine Miete", "My rental")}</div>
+              {row(t("Objekt", "Property"), m.wohnung ? t("Ganze Wohnung", "Entire apartment") : `${t("Zimmer", "Room")} ${m.objekt || ""}`)}
+              {row(t("Adresse", "Address"), m.adresse)}
+              {row(t("Stockwerk", "Floor"), m.stockwerk)}
+              {row(t("Einzug", "Move-in"), m.einzug)}
+              {row(t("Auszug", "Move-out"), m.auszug)}
+              {row(t("Befristet bis", "Fixed term until"), ende)}
+              {k.personen ? row(t("Personen", "Persons"), String(k.personen)) : null}
+            </div>
+            <div className="card">
+              <div className="card-title">{t("Kosten pro Monat", "Monthly costs")}</div>
+              {row(t("Nettomiete", "Net rent"), k.netto != null ? chfP(k.netto) : null)}
+              {row(t("Nebenkosten (Akonto)", "Additional costs (on account)"), k.nebenkosten != null ? chfP(k.nebenkosten) : null)}
+              {row(k.netto != null ? t("Bruttomiete", "Gross rent") : t("Bruttomiete (inkl. Nebenkosten)", "Gross rent (incl. additional costs)"), k.brutto != null ? chfP(k.brutto) : null)}
+              {row(t("Strom (pauschal)", "Electricity (flat rate)"), k.strom != null ? chfP(k.strom) : null)}
+              {k.service ? row(t("Servicegebühr Kautionsreduktion", "Service fee deposit reduction"), chfP(k.service)) : null}
+              {row(t("Total pro Monat", "Total per month"), k.total != null ? chfP(k.total) : null, true)}
+            </div>
+            {kau.evorest != null && <div className="card">
+              <div className="card-title">{t("Kaution", "Deposit")}</div>
+              <div className="pt-sub" style={{ color: "#1a1814" }}>{kau.evorest
+                ? t(`Deine Kaution${kau.betrag ? ` von ${chfP(kau.betrag)}` : ""} (${kau.monate} ${kau.monate === 1 ? "Monatsmiete" : "Monatsmieten"}) liegt bei Evorest, einer Schweizer Plattform für Mietkautionen, auf einem Konto auf deinen Namen. Den Link zur Einrichtung hat dir Evorest per E-Mail geschickt.`, `Your deposit${kau.betrag ? ` of ${chfP(kau.betrag)}` : ""} (${kau.monate} ${kau.monate === 1 ? "month's rent" : "months' rent"}) is held by Evorest, a Swiss rental deposit platform, in an account in your name. Evorest sent you the setup link by email.`)
+                : t("Bei deiner Variante ist keine Kaution nötig. Dafür ist die monatliche Servicegebühr im Mietzins enthalten.", "With your option no deposit is required. Instead, the monthly service fee is included in your rent.")}</div>
+            </div>}
+          </div>
+          <div className="card">
+            <div className="card-title">{t("Miete bezahlen", "Paying your rent")}</div>
+            <div className="pt-sub" style={{ color: "#1a1814" }}>{t("Bitte richte einen Dauerauftrag ein. Die Miete ist monatlich im Voraus fällig, jeweils bis zum 25. des Vormonats.", "Please set up a standing order. Rent is payable monthly in advance, by the 25th of the previous month.")}</div>
+            {z.qr && <div style={{ textAlign: "center", margin: "18px 0 8px" }}>
+              <img src={z.qr} alt="QR" style={{ width: 190, height: 190, border: "1px solid #e1d8c5", borderRadius: 8, background: "#fff", padding: 6, display: "block", margin: "0 auto" }} />
+              <div className="pt-sub" style={{ marginTop: 10, maxWidth: 380, marginLeft: "auto", marginRight: "auto" }}>{t("Mit der Banking-App scannen: Konto, Betrag und Referenz sind schon ausgefüllt. Danach als Dauerauftrag speichern.", "Scan with your banking app: account, amount and reference are pre-filled. Then save it as a standing order.")}</div>
+            </div>}
+            {feld("emp", t("Empfänger", "Payee"), z.empfaenger)}
+            {feld("bank", "Bank", z.bank)}
+            {feld("iban", "IBAN", z.iban, true)}
+            {feld("bic", "BIC / SWIFT", z.bic, true)}
+            {feld("betrag", t("Betrag pro Monat", "Amount per month"), z.betrag != null ? chfP(z.betrag) : null)}
+            {feld("ref", t("Mitteilung / Referenz", "Message / reference"), z.referenz)}
+            <div className="pt-sub" style={{ marginTop: 10 }}>{t("Stimmt etwas nicht? Schreib uns an info@dthomes.ch.", "Something not right? Write to info@dthomes.ch.")}</div>
+          </div>
+        </div>
+      );
+    }
+
+    function PortalDokumente({ d, t, sitzung, neuLaden }) {
+      const [busy, setBusy] = useState("");
+      const [msg, setMsg] = useState("");
+      async function oeffnen(id) {
+        setBusy("d" + id); setMsg("");
+        try { const r = await portalPost({ aktion: "dokument", id }, sitzung); window.location.href = r.url; }
+        catch (e) { setMsg(e.message); }
+        setBusy("");
+      }
+      async function hoch(art, file) {
+        if (!file) return; setBusy(art); setMsg("");
+        try { const fd = new FormData(); fd.append("aktion", "hochladen"); fd.append("art", art); fd.append("file", await verkleinere(file, 2400)); await portalForm(fd, sitzung); setMsg(t("Danke, das Dokument ist angekommen.", "Thank you, the document has been received.")); await neuLaden(); }
+        catch (e) { setMsg(e.message); }
+        setBusy("");
+      }
+      const name = k => ({ "Untermietvertrag (unterzeichnet)": t("Mietvertrag (unterzeichnet)", "Rental agreement (signed)"), "Anfangsmietzinsformular (unterzeichnet)": t("Anfangsmietzinsformular", "Initial rent form"), "Verlängerung (unterzeichnet)": t("Verlängerung (unterzeichnet)", "Extension (signed)"), "Übergabeprotokoll": t("Übergabeprotokoll", "Handover report"), "Kautionsbestätigung": t("Kautionsbestätigung", "Deposit confirmation") }[k] || k);
+      const upl = (art, titel, da) => (
+        <div className="pt-item">
+          <div><div style={{ fontWeight: 600, fontSize: 14.5 }}>{da ? "✓ " : ""}{titel}</div><div className="pt-sub" style={{ fontSize: 12.5 }}>{da ? t("Hochgeladen. Aus Datenschutzgründen nicht mehr abrufbar.", "Uploaded. Not viewable again for privacy reasons.") : t("Als PDF oder Foto", "As PDF or photo")}</div></div>
+          <label className="btn-secondary" style={{ cursor: "pointer", whiteSpace: "nowrap" }}>{busy === art ? t("Lädt…", "Uploading…") : (da ? t("Ersetzen", "Replace") : t("Hochladen", "Upload"))}
+            <input type="file" accept="application/pdf,image/*" style={{ display: "none" }} disabled={!!busy} onChange={e => { const f = e.target.files && e.target.files[0]; e.target.value = ""; hoch(art, f); }} /></label>
+        </div>
+      );
+      return (<div className="pt-cols">
+        <div className="card">
+          <div className="card-title">{t("Meine Dokumente", "My documents")}</div>
+          {d.dokumente.length === 0 && <div className="pt-sub">{t("Noch keine Dokumente vorhanden.", "No documents yet.")}</div>}
+          {d.dokumente.map(x => (
+            <div className="pt-item" key={x.id}>
+              <div><div style={{ fontWeight: 600, fontSize: 14.5 }}>{name(x.kategorie)}</div><div className="pt-sub" style={{ fontSize: 12.5 }}>{datP(x.datum)}</div></div>
+              <button className="btn-secondary" disabled={!!busy} onClick={() => oeffnen(x.id)}>{busy === "d" + x.id ? "…" : t("Öffnen", "Open")}</button>
+            </div>
+          ))}
+        </div>
+        {(d.uebergabe || []).length > 0 && <div className="card">
+          <div className="card-title">{t("Übergabeprotokoll", "Handover report")}</div>
+          {d.uebergabe.map((h, i) => (
+            <div className="pt-item" key={i}>
+              <div><div style={{ fontWeight: 600, fontSize: 14.5 }}>{h.typ === "auszug" ? t("Auszug", "Move-out") : t("Einzug", "Move-in")}</div>
+                <div className="pt-sub" style={{ fontSize: 12.5 }}>{h.offen
+                  ? t(`Bitte Mängel festhalten${h.frist ? " bis " + datP(h.frist) : ""}. Ohne Rückmeldung gilt das Objekt als mängelfrei übernommen.`, `Please record any defects${h.frist ? " by " + datP(h.frist) : ""}. Without a response the property is considered accepted without defects.`)
+                  : h.status === "submitted" ? t("Eingereicht, wir prüfen es.", "Submitted, we are reviewing it.")
+                  : t("Abgeschlossen. Das PDF findest du oben bei deinen Dokumenten.", "Completed. You will find the PDF in your documents above.")}</div></div>
+              {h.offen && h.link ? <a className="btn-primary" href={h.link}>{h.status === "in_progress" ? t("Weiter ausfüllen", "Continue") : t("Ausfüllen", "Fill in")}</a> : <span className="pt-badge" style={{ background: "#e6eedc", color: "#3a5230" }}>{h.status === "submitted" ? t("Eingereicht", "Submitted") : t("Abgeschlossen", "Completed")}</span>}
+            </div>
+          ))}
+        </div>}
+        <div className="card">
+          <div className="card-title">{t("Unterlagen von dir", "Your documents")}</div>
+          {upl("ausweis", t("Pass oder ID", "Passport or ID card"), d.unterlagen.ausweis)}
+          {upl("betreibung", t("Betreibungsregister-Auszug", "Debt collection register extract"), d.unterlagen.betreibung)}
+        </div>
+        {msg && <div className={/Danke|Thank/.test(msg) ? "pt-ok" : "pt-err"}>{msg}</div>}
+      </div>);
+    }
+
+    function PortalSchaden({ d, t, sitzung, neuLaden }) {
+      const [neu, setNeu] = useState(false);
+      const [f, setF] = useState({ titel: "", ort: "", beschreibung: "", dringlichkeit: "normal" });
+      const [fotos, setFotos] = useState([]);
+      const [busy, setBusy] = useState(false);
+      const [msg, setMsg] = useState("");
+      async function senden(e) {
+        e.preventDefault(); if (!f.titel.trim()) return;
+        setBusy(true); setMsg("");
+        try {
+          const fd = new FormData(); fd.append("aktion", "schaden");
+          Object.entries(f).forEach(([k, v]) => fd.append(k, v));
+          for (const x of fotos) fd.append("fotos", await verkleinere(x));
+          await portalForm(fd, sitzung);
+          setNeu(false); setF({ titel: "", ort: "", beschreibung: "", dringlichkeit: "normal" }); setFotos([]);
+          setMsg(t("Danke! Deine Meldung ist bei uns eingegangen. Wir melden uns so rasch wie möglich.", "Thank you! We received your report and will get back to you as soon as possible."));
+          await neuLaden();
+        } catch (e2) { setMsg(e2.message); }
+        setBusy(false);
+      }
+      const status = s => s === "erledigt" ? [t("Erledigt", "Done"), "#e6eedc", "#3a5230"] : s === "in_arbeit" ? [t("In Arbeit", "In progress"), "#f6edd6", "#7a5b14"] : [t("Eingegangen", "Received"), "#ece8df", "#5a5448"];
+      return (<div className="pt-cols">
+        {!neu && <button className="btn-primary" style={{ width: "100%" }} onClick={() => { setNeu(true); setMsg(""); }}>{t("Neuen Schaden melden", "Report new damage")}</button>}
+        {neu && <form className="card" onSubmit={senden}>
+          <div className="card-title">{t("Schaden melden", "Report damage")}</div>
+          <div className="pt-sub" style={{ background: "#f6e3df", color: "#7a3328", padding: "10px 12px", borderRadius: 10 }}>{t("Bei Wasserschaden, Gasgeruch oder Feuer: sofort Notruf (112 / 118) und uns per WhatsApp informieren.", "For water damage, gas smell or fire: call emergency services (112 / 118) immediately and notify us via WhatsApp.")}</div>
+          <label className="pt-lbl">{t("Was ist kaputt?", "What is broken?")} *</label>
+          <input className="pt-in" value={f.titel} maxLength={140} required onChange={e => setF({ ...f, titel: e.target.value })} placeholder={t("z.B. Dusche tropft", "e.g. shower is dripping")} />
+          <label className="pt-lbl">{t("Wo?", "Where?")}</label>
+          <input className="pt-in" value={f.ort} maxLength={140} onChange={e => setF({ ...f, ort: e.target.value })} placeholder={t("z.B. Bad, Küche, mein Zimmer", "e.g. bathroom, kitchen, my room")} />
+          <label className="pt-lbl">{t("Beschreibung", "Description")}</label>
+          <textarea className="pt-in" rows={4} value={f.beschreibung} maxLength={4000} onChange={e => setF({ ...f, beschreibung: e.target.value })} placeholder={t("Seit wann? Was hast du schon versucht?", "Since when? What have you tried?")} />
+          <label className="pt-lbl">{t("Wie dringend?", "How urgent?")}</label>
+          <div className="pt-chips">{[["normal", t("Normal", "Normal")], ["dringend", t("Dringend", "Urgent")], ["notfall", t("Notfall", "Emergency")]].map(([k, l]) => <button type="button" key={k} className={"pt-chip" + (f.dringlichkeit === k ? " on" : "")} onClick={() => setF({ ...f, dringlichkeit: k })}>{l}</button>)}</div>
+          <label className="pt-lbl">{t("Fotos (max. 6)", "Photos (max. 6)")}</label>
+          <input type="file" accept="image/*" multiple onChange={e => setFotos(Array.from(e.target.files || []).slice(0, 6))} />
+          {fotos.length > 0 && <div className="pt-sub" style={{ marginTop: 6 }}>{fotos.length} {t("Foto(s) ausgewählt", "photo(s) selected")}</div>}
+          <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+            <button type="button" className="btn-secondary" disabled={busy} onClick={() => setNeu(false)}>{t("Abbrechen", "Cancel")}</button>
+            <button type="submit" className="btn-primary" style={{ flex: 1 }} disabled={busy || !f.titel.trim()}>{busy ? t("Wird gesendet…", "Sending…") : t("Meldung senden", "Send report")}</button>
+          </div>
+        </form>}
+        {msg && <div className={/Danke|Thank/.test(msg) ? "pt-ok" : "pt-err"}>{msg}</div>}
+        <div className="card" style={{ marginTop: 14 }}>
+          <div className="card-title">{t("Meine Meldungen", "My reports")}</div>
+          {(d.schaeden || []).length === 0 && <div className="pt-sub">{t("Noch keine Meldungen.", "No reports yet.")}</div>}
+          {(d.schaeden || []).map(s => { const [l, bg, c] = status(s.status); return (
+            <div className="pt-item" key={s.id} style={{ alignItems: "flex-start" }}>
+              <div><div style={{ fontWeight: 600, fontSize: 14.5 }}>{s.titel}</div>
+                <div className="pt-sub" style={{ fontSize: 12.5 }}>{datP(s.created_at)}{s.ort_im_objekt ? ` · ${s.ort_im_objekt}` : ""}{s.fotos ? ` · ${s.fotos} ${t("Foto(s)", "photo(s)")}` : ""}</div>
+                {s.antwort && <div className="pt-sub" style={{ marginTop: 6, color: "#1a1814" }}>💬 {s.antwort}</div>}</div>
+              <span className="pt-badge" style={{ background: bg, color: c }}>{l}</span>
+            </div>); })}
+        </div>
+      </div>);
+    }
+
+    function PortalSicherheit({ d, t, sitzung, neuLaden, onAbmelden }) {
+      const [busy, setBusy] = useState(false);
+      const [msg, setMsg] = useState("");
+      async function faceIdEinrichten() {
+        setBusy(true); setMsg("");
+        try {
+          const o = await portalPost({ aktion: "pk_reg_optionen" }, sitzung);
+          const cred = await navigator.credentials.create({ publicKey: {
+            challenge: b64u.toBuf(o.challenge), rp: o.rp, user: { id: b64u.toBuf(o.user.id), name: o.user.name, displayName: o.user.displayName },
+            pubKeyCredParams: o.pubKeyCredParams, timeout: o.timeout, attestation: o.attestation, authenticatorSelection: o.authenticatorSelection,
+            excludeCredentials: (o.excludeCredentials || []).map(c => ({ type: "public-key", id: b64u.toBuf(c.id) })) } });
+          const antwort = { id: cred.id, rawId: b64u.fromBuf(cred.rawId), type: cred.type, clientExtensionResults: {},
+            response: { clientDataJSON: b64u.fromBuf(cred.response.clientDataJSON), attestationObject: b64u.fromBuf(cred.response.attestationObject),
+              transports: cred.response.getTransports ? cred.response.getTransports() : undefined } };
+          await portalPost({ aktion: "pk_reg", antwort, geraet: geraetName() }, sitzung);
+          setMsg(t("Face ID ist eingerichtet. Beim nächsten Mal kannst du dich damit anmelden.", "Face ID is set up. Next time you can sign in with it."));
+          await neuLaden();
+        } catch (e) { setMsg(e.name === "NotAllowedError" ? t("Abgebrochen.", "Cancelled.") : (e.message || t("Hat nicht geklappt.", "Did not work."))); }
+        setBusy(false);
+      }
+      async function geraetAbmelden(id) { setBusy(true); try { await portalPost({ aktion: "geraet_abmelden", id }, sitzung); await neuLaden(); } catch (e) { setMsg(e.message); } setBusy(false); }
+      return (<div className="pt-cols">
+        <div className="card">
+          <div className="card-title">{t("Face ID / Fingerabdruck", "Face ID / fingerprint")}</div>
+          <div className="pt-sub">{d.passkey ? t("Ist eingerichtet. Du kannst dich ohne Code anmelden.", "Is set up. You can sign in without a code.") : t("Melde dich beim nächsten Mal ohne Code an, sicher und schnell.", "Sign in next time without a code, safely and quickly.")}</div>
+          {passkeyMoeglich() && <button className="btn-secondary" style={{ marginTop: 12 }} disabled={busy} onClick={faceIdEinrichten}>{d.passkey ? t("Auf diesem Gerät zusätzlich einrichten", "Also set up on this device") : t("Jetzt einrichten", "Set up now")}</button>}
+        </div>
+        <div className="card">
+          <div className="card-title">{t("Angemeldete Geräte", "Signed-in devices")}</div>
+          {(d.sitzungen || []).map(s => (
+            <div className="pt-item" key={s.id}>
+              <div><div style={{ fontWeight: 600, fontSize: 14 }}>{s.geraet || t("Gerät", "Device")}{s.aktuell ? ` · ${t("dieses Gerät", "this device")}` : ""}</div>
+                <div className="pt-sub" style={{ fontSize: 12.5 }}>{t("Zuletzt aktiv", "Last active")}: {datP(s.zuletzt)} · {s.art === "passkey" ? "Face ID" : "Code"}</div></div>
+              {!s.aktuell && <button className="btn-secondary" disabled={busy} onClick={() => geraetAbmelden(s.id)}>{t("Abmelden", "Sign out")}</button>}
+            </div>
+          ))}
+          <div className="pt-sub" style={{ marginTop: 10 }}>{t("Ein Gerät, das du nicht kennst? Melde es hier ab und schreib uns.", "A device you don't recognise? Sign it out here and let us know.")}</div>
+        </div>
+        <button className="btn-secondary" style={{ width: "100%" }} onClick={onAbmelden}>{t("Auf diesem Gerät abmelden", "Sign out on this device")}</button>
+        {msg && <div className={/eingerichtet|set up/.test(msg) ? "pt-ok" : "pt-err"}>{msg}</div>}
+      </div>);
+    }
+
+
+    function PortalKuendigung({ d, t, sitzung, neuLaden }) {
+      const k = d.kuendigung || { termine: [], eintraege: [] };
+      const eintraege = k.eintraege || [];
+      const offen = eintraege.find(e => e.art === "kuendigung" && e.status !== "abgelehnt");
+      const [datum, setDatum] = useState(k.termine[0] || "");
+      const [grund, setGrund] = useState("");
+      const [ok, setOk] = useState(false);
+      const [nm, setNm] = useState({ name: "", email: "", telefon: "" });
+      const [busy, setBusy] = useState("");
+      const [msg, setMsg] = useState("");
+      const [formular, setFormular] = useState(false);
+      async function kuendigen(e) {
+        e.preventDefault(); if (!ok || !datum) return;
+        setBusy("k"); setMsg("");
+        try { await portalPost({ aktion: "kuendigen", datum, grund, bestaetigt: true }, sitzung); setMsg(t("Danke. Deine Kündigung ist bei uns eingegangen, du erhältst eine Bestätigung per E-Mail.", "Thank you. We have received your notice and will send you a confirmation by email.")); setFormular(false); await neuLaden(); }
+        catch (e2) { setMsg(e2.message); }
+        setBusy("");
+      }
+      async function nachmieter(e) {
+        e.preventDefault();
+        setBusy("n"); setMsg("");
+        try { await portalPost({ aktion: "nachmieter", ...nm }, sitzung); setMsg(t(`Danke! Wir haben ${nm.name} den Link zur Bewerbung geschickt.`, `Thank you! We have sent ${nm.name} the link to apply.`)); setNm({ name: "", email: "", telefon: "" }); await neuLaden(); }
+        catch (e2) { setMsg(e2.message); }
+        setBusy("");
+      }
+      const st = s => s === "bestaetigt" ? [t("Bestätigt", "Confirmed"), "#e6eedc", "#3a5230"] : s === "abgelehnt" ? [t("Nicht möglich", "Not possible"), "#f6e3df", "#9b4a3e"] : [t("Eingegangen", "Received"), "#ece8df", "#5a5448"];
+      const nachmieterListe = eintraege.filter(e => e.art === "nachmieter");
+      const [kopiert, setKopiert] = useState(false);
+      async function kopieren(l) { try { await navigator.clipboard.writeText(l); setKopiert(true); setTimeout(() => setKopiert(false), 2000); } catch (_) { window.prompt(t("Link kopieren:", "Copy link:"), l); } }
+      async function teilen(l) {
+        const text = d.miete.wohnung ? t("Hier kannst du dich direkt auf meine Wohnung bewerben:", "You can apply for my apartment directly here:") : t("Hier kannst du dich direkt auf mein Zimmer bewerben:", "You can apply for my room directly here:");
+        if (navigator.share) { try { await navigator.share({ title: "D&T Homes", text, url: l }); return; } catch (e) { if (e && e.name === "AbortError") return; } }
+        kopieren(l);
+      }
+      return (<div className="pt-cols">
+        <div className="card">
+          <div className="card-title">{t("Kündigung", "Notice of termination")}</div>
+          {eintraege.filter(e => e.art === "kuendigung").map(e => { const [l, bg, c] = st(e.status); return (
+            <div className="pt-item" key={e.id} style={{ alignItems: "flex-start" }}>
+              <div><div style={{ fontWeight: 600, fontSize: 14.5 }}>{t(`Kündigung per ${e.datum}`, `Notice effective ${e.datum}`)}</div>
+                <div className="pt-sub" style={{ fontSize: 12.5 }}>{t("Eingereicht am", "Submitted on")} {datP(e.created_at)}</div>
+                {e.status === "abgelehnt" && e.antwort && <div className="pt-sub" style={{ marginTop: 6, color: "#1a1814" }}>💬 {e.antwort}</div>}</div>
+              <span className="pt-badge" style={{ background: bg, color: c }}>{l}</span>
+            </div>); })}
+          {!offen && k.nurNachmieter && <>
+            <div className="pt-warn">
+              <div style={{ fontWeight: 700, marginBottom: 4 }}>{k.hinweis === "endet" ? t("Eine Kündigung ist nicht nötig", "No notice needed") : t("Eine Kündigung ist laut deinem Vertrag nicht möglich", "Your contract does not allow notice of termination")}</div>
+              {k.hinweis === "kurz" && t(`Dein Vertrag ist befristet bis ${k.vertragsende} und läuft weniger als 12 Monate. Für solche Verträge ist eine ordentliche Kündigung ausgeschlossen (Ziffer 9.1).`, `Your contract runs for a fixed term until ${k.vertragsende}, which is less than 12 months. Ordinary notice is excluded for such contracts (clause 9.1).`)}
+              {k.hinweis === "verlaengerung" && t(`Dein Vertrag wurde bis ${k.vertragsende} verlängert. Während der Verlängerung ist eine ordentliche Kündigung ausgeschlossen (Nachtrag, Ziffer 1).`, `Your contract has been extended until ${k.vertragsende}. Ordinary notice is excluded during the extension (addendum, clause 1).`)}
+              {k.hinweis === "fest" && t(`Dein Vertrag ist befristet bis ${k.vertragsende}. Kündigen kann man nur auf einen Termin, der mindestens ${k.wohnung ? 12 : 6} Monate vor Vertragsende liegt. Dieser Termin ist bereits vorbei (Ziffer 9.1).`, `Your contract is fixed until ${k.vertragsende}. Notice is only possible for a date at least ${k.wohnung ? 12 : 6} months before the end of the contract, and that date has passed (clause 9.1).`)}
+              {k.hinweis === "endet" && t(`Die Liegenschaft steht nur bis ${k.vertragsende} zur Verfügung. Dein Mietverhältnis endet spätestens dann, wir melden uns rechtzeitig wegen der Übergabe.`, `The property is only available until ${k.vertragsende}. Your tenancy ends then at the latest, and we will contact you in good time about the handover.`)}
+              {k.hinweis === "keine" && t("Für dein Mietverhältnis gibt es keinen möglichen Kündigungstermin mehr.", "There is no possible notice date left for your tenancy.")}
+            </div>
+            {k.hinweis !== "endet" && <div className="pt-info">
+              <b>{t("Trotzdem früher ausziehen? Stell einen Nachmieter.", "Want to move out earlier? Find a successor tenant.")}</b><br />
+              {t("Wenn eine geeignete Person dein " + (k.wohnung ? "Wohnung" : "Zimmer") + " zu den gleichen Bedingungen übernimmt, kannst du jederzeit früher ausziehen. Bis dahin bleibt die Miete geschuldet. Teile dafür einfach deinen Nachfolge-Link.", "If a suitable person takes over your " + (k.wohnung ? "apartment" : "room") + " on the same terms, you can move out earlier at any time. Until then the rent remains due. Just share your successor link.")}
+              <div><button className="btn-primary" style={{ marginTop: 12 }} onClick={() => { const el = document.getElementById("pt-nachmieter"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }}>{t("Nachmieter vorschlagen", "Suggest a successor")}</button></div>
+            </div>}
+          </>}
+          {!offen && !k.nurNachmieter && <>
+            <div className="pt-sub">
+              {t(`Kündigungsfrist: ${k.frist} Monate auf ein Monatsende, nicht auf Ende Dezember.`, `Notice period: ${k.frist} months to the end of a month, not to the end of December.`)}
+              {k.minBis ? " " + t(`Die Mindestmietdauer läuft bis ${k.minBis}, deshalb ist der früheste Termin später.`, `The minimum rental period runs until ${k.minBis}, so the earliest date is later.`) : ""}
+            </div>
+            {k.letzterTermin && <div className="pt-info">
+              {t(`Dein Vertrag ist befristet bis ${k.vertragsende}. Der letztmögliche Kündigungstermin ist der `, `Your contract is fixed until ${k.vertragsende}. The last possible notice date is `)}<b>{k.letzterTermin}</b>{t(`; die Kündigung muss bis spätestens ${k.spaetestens} bei uns sein. Danach ist ein früherer Auszug nur noch mit Nachmieter möglich.`, `; your notice must reach us by ${k.spaetestens} at the latest. After that, moving out early is only possible with a successor tenant.`)}
+            </div>}
+            <div className="pt-sub" style={{ marginTop: 10 }}>{t("Du möchtest früher raus, als die Frist erlaubt? Mit einem Nachmieter geht das jederzeit.", "Want to leave earlier than the notice period allows? With a successor tenant that is possible at any time.")}</div>
+            {!formular && <button className="btn-secondary" style={{ marginTop: 14 }} onClick={() => { setFormular(true); setMsg(""); }}>{t("Kündigung einreichen", "Submit notice")}</button>}
+            {formular && <form onSubmit={kuendigen}>
+              <label className="pt-lbl">{t("Auszug per", "Move out on")}</label>
+              <select className="pt-in" value={datum} onChange={e => setDatum(e.target.value)}>{k.termine.map(x => <option key={x} value={x}>{x}</option>)}</select>
+              <label className="pt-lbl">{t("Grund (freiwillig)", "Reason (optional)")}</label>
+              <textarea className="pt-in" rows={3} maxLength={1000} value={grund} onChange={e => setGrund(e.target.value)} />
+              <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 14, marginTop: 14, lineHeight: 1.45 }}>
+                <input type="checkbox" checked={ok} onChange={e => setOk(e.target.checked)} style={{ marginTop: 3 }} />
+                <span>{t(`Hiermit kündige ich meinen Mietvertrag per ${datum}.`, `I hereby give notice to terminate my rental agreement effective ${datum}.`)}</span>
+              </label>
+              <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+                <button type="button" className="btn-secondary" disabled={!!busy} onClick={() => setFormular(false)}>{t("Abbrechen", "Cancel")}</button>
+                <button type="submit" className="btn-primary" style={{ flex: 1 }} disabled={!!busy || !ok}>{busy === "k" ? t("Wird gesendet…", "Sending…") : t("Verbindlich kündigen", "Submit notice")}</button>
+              </div>
+            </form>}
+          </>}
+        </div>
+        <form className="card" id="pt-nachmieter" onSubmit={nachmieter} style={offen || !k.nurNachmieter ? undefined : { borderColor: "#c9b98f" }}>
+          <div className="card-title">{t("Nachmieter vorschlagen", "Suggest a successor tenant")}</div>
+          <div className="pt-sub">{d.miete.wohnung
+            ? t("Kennst du jemanden, der deine Wohnung übernehmen möchte? Teile diesen Link. Darüber kann sich die Person direkt auf deine Wohnung bewerben, auch wenn sie nicht ausgeschrieben ist. Wir prüfen die Bewerbung und melden uns.", "Do you know someone who would like to take over your apartment? Share this link. They can apply for your apartment directly, even if it is not listed. We will review the application and get in touch.")
+            : t("Kennst du jemanden, der dein Zimmer übernehmen möchte? Teile diesen Link. Darüber kann sich die Person direkt auf dein Zimmer bewerben, auch wenn es nicht ausgeschrieben ist. Wir prüfen die Bewerbung und melden uns.", "Do you know someone who would like to take over your room? Share this link. They can apply for your room directly, even if it is not listed. We will review the application and get in touch.")}</div>
+          {d.nachfolge && d.nachfolge.link && <>
+            <div style={{ marginTop: 12, padding: "10px 12px", background: "#f4f0e8", borderRadius: 10, fontSize: 13, wordBreak: "break-all" }}>{d.nachfolge.link}</div>
+            <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+              <button type="button" className="btn-primary" style={{ flex: 1 }} onClick={() => teilen(d.nachfolge.link)}>{t("Link teilen", "Share link")}</button>
+              <button type="button" className="btn-secondary" onClick={() => kopieren(d.nachfolge.link)}>{kopiert ? t("Kopiert ✓", "Copied ✓") : t("Kopieren", "Copy")}</button>
+            </div>
+          </>}
+          <div className="pt-sub" style={{ marginTop: 18, fontWeight: 600, color: "#5a5448" }}>{t("Oder wir schicken den Link per E-Mail:", "Or we send the link by email:")}</div>
+          <label className="pt-lbl">{t("Name", "Name")} *</label>
+          <input className="pt-in" required maxLength={120} value={nm.name} onChange={e => setNm({ ...nm, name: e.target.value })} />
+          <label className="pt-lbl">{t("E-Mail", "Email")} *</label>
+          <input className="pt-in" type="email" required value={nm.email} onChange={e => setNm({ ...nm, email: e.target.value })} />
+          <label className="pt-lbl">{t("Telefon (freiwillig)", "Phone (optional)")}</label>
+          <input className="pt-in" type="tel" value={nm.telefon} onChange={e => setNm({ ...nm, telefon: e.target.value })} />
+          <button type="submit" className="btn-primary" style={{ marginTop: 16, width: "100%" }} disabled={!!busy}>{busy === "n" ? t("Wird gesendet…", "Sending…") : t("Link zur Bewerbung senden", "Send application link")}</button>
+          {nachmieterListe.length > 0 && <div style={{ marginTop: 14 }}>
+            {nachmieterListe.map(e => <div className="pt-item" key={e.id}><div style={{ fontSize: 14 }}>{e.nachmieter_name}</div><div className="pt-sub" style={{ fontSize: 12.5 }}>{t("vorgeschlagen am", "suggested on")} {datP(e.created_at)}</div></div>)}
+          </div>}
+        </form>
+        {msg && <div className={/Danke|Thank/.test(msg) ? "pt-ok" : "pt-err"}>{msg}</div>}
+      </div>);
+    }
+
+    function PortalService({ d, t, sitzung }) {
+      const [art, setArt] = useState("reinigung");
+      const [f, setF] = useState({ termin: "", adresse_neu: "", bemerkung: "" });
+      const [busy, setBusy] = useState(false);
+      const [msg, setMsg] = useState("");
+      async function senden(e) {
+        e.preventDefault(); setBusy(true); setMsg("");
+        try { await portalPost({ aktion: "service", art, ...f }, sitzung); setMsg(t("Danke! Deine Anfrage ist eingegangen. Wir melden uns mit einer Offerte.", "Thank you! We received your request and will get back to you with a quote.")); setF({ termin: "", adresse_neu: "", bemerkung: "" }); }
+        catch (e2) { setMsg(e2.message); }
+        setBusy(false);
+      }
+      const umzug = art !== "reinigung";
+      return (<div className="pt-cols">
+        <form className="card" onSubmit={senden}>
+          <div className="card-title">{t("Reinigung & Umzug anfragen", "Request cleaning & moving")}</div>
+          <div className="pt-sub">{t("Wir organisieren auf Wunsch die Endreinigung und deinen Umzug. Du bekommst von uns eine Offerte.", "On request, we organise your final cleaning and your move. We will send you a quote.")}</div>
+          <label className="pt-lbl">{t("Was brauchst du?", "What do you need?")}</label>
+          <div className="pt-chips">{[["reinigung", t("Endreinigung", "Final cleaning")], ["umzug", t("Umzug", "Move")], ["umzug_reinigung", t("Umzug + Endreinigung", "Move + final cleaning")]].map(([k, l]) => <button type="button" key={k} className={"pt-chip" + (art === k ? " on" : "")} onClick={() => setArt(k)}>{l}</button>)}</div>
+          <label className="pt-lbl">{t("Wunschtermin", "Preferred date")}</label>
+          <input className="pt-in" type="date" value={f.termin} onChange={e => setF({ ...f, termin: e.target.value })} />
+          {umzug && <><label className="pt-lbl">{t("Neue Adresse", "New address")}</label>
+            <input className="pt-in" maxLength={200} value={f.adresse_neu} onChange={e => setF({ ...f, adresse_neu: e.target.value })} placeholder={t("Strasse, PLZ Ort", "Street, postcode, town")} /></>}
+          <label className="pt-lbl">{t("Bemerkung", "Notes")}</label>
+          <textarea className="pt-in" rows={3} maxLength={2000} value={f.bemerkung} onChange={e => setF({ ...f, bemerkung: e.target.value })} placeholder={umzug ? t("z.B. Anzahl Möbel, Stockwerk, Lift", "e.g. amount of furniture, floor, lift") : ""} />
+          <button type="submit" className="btn-primary" style={{ marginTop: 16, width: "100%" }} disabled={busy}>{busy ? t("Wird gesendet…", "Sending…") : t("Anfrage senden", "Send request")}</button>
+        </form>
+        {msg && <div className={/Danke|Thank/.test(msg) ? "pt-ok" : "pt-err"}>{msg}</div>}
+        <div className="card" style={{ marginTop: 14 }}>
+          <div className="card-title">{t("Parkplatz", "Parking")}</div>
+          <div className="pt-sub">{t("Freie Parkplätze und das Anfrageformular findest du auf unserer Webseite.", "You can find available parking spaces and the request form on our website.")}</div>
+          <a className="btn-secondary" style={{ marginTop: 12, display: "inline-block" }} href={d.mieter.sprache === "en" ? "https://www.dthomes.ch/en/parkplaetze.html" : "https://www.dthomes.ch/parkplaetze.html"} target="_blank" rel="noopener noreferrer">{t("Parkplätze ansehen", "View parking spaces")}</a>
+        </div>
+      </div>);
+    }
+
+    function PortalHausinfos({ d, t }) {
+      const teile = String(d.hausinfos || "").split(/(https?:\/\/[^\s]+)/g);
+      return (
+        <div className="card pt-solo">
+          <div className="card-title">{t("Hausinfos", "House info")}</div>
+          <div className="pt-sub" style={{ marginBottom: 10 }}>{d.miete.adresse}</div>
+          <div style={{ whiteSpace: "pre-wrap", fontSize: 14.5, lineHeight: 1.6 }}>{teile.map((x, i) => /^https?:\/\//.test(x) ? <a key={i} href={x} target="_blank" rel="noopener noreferrer" style={{ color: "#5a5448", wordBreak: "break-all" }}>{x}</a> : x)}</div>
+        </div>
+      );
+    }
+
+    // Startseite ohne Link: letzten Portal-Link oeffnen oder Link per Mail anfordern
+    function PortalOhneLink() {
+      const [email, setEmail] = useState("");
+      const [ok, setOk] = useState(false);
+      const [busy, setBusy] = useState(false);
+      async function anfordern(e) { e.preventDefault(); setBusy(true); try { await portalPost({ aktion: "link_anfordern", email }); } catch (_) {} setOk(true); setBusy(false); }
+      return (
+        <PortalRahmen>
+          <form className="card" style={{ maxWidth: 440, margin: "24px auto 0" }} onSubmit={anfordern}>
+            <div className="pt-h1">Mieterportal · Tenant portal</div>
+            <div className="pt-sub" style={{ marginTop: 6 }}>Gib die E-Mail-Adresse aus deinem Mietvertrag ein. Wir schicken dir deinen persönlichen Link. · Enter the email address from your rental agreement and we'll send you your personal link.</div>
+            {!ok ? <>
+              <input className="pt-in" type="email" required style={{ marginTop: 16 }} value={email} onChange={e => setEmail(e.target.value)} placeholder="name@beispiel.ch" />
+              <button className="btn-primary" type="submit" style={{ marginTop: 12, width: "100%" }} disabled={busy}>{busy ? "…" : "Link senden · Send link"}</button>
+            </> : <div className="pt-ok">Falls die Adresse bei uns hinterlegt ist, ist der Link unterwegs. Schau auch im Spam-Ordner nach. · If the address is registered with us, the link is on its way. Please also check your spam folder.</div>}
+          </form>
+        </PortalRahmen>
+      );
+    }
+
     function App() {
       // Extract token from URL pathname
       const path = window.location.pathname.replace(/^\//, "").replace(/\/$/, "");
@@ -3500,6 +4130,20 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
         return <UebernahmePage token={handoverToken} />;
       }
       
+      // Mieterportal: /p/{portal_token}, /p ohne Link = Link per Mail anfordern
+      if (path === "p" || path === "portal") return <PortalOhneLink />;
+      if (path.startsWith("p/")) {
+        const pt = path.substring(2);
+        if (!/^[a-f0-9]{32}$/.test(pt)) return <PortalOhneLink />;
+        return <PortalApp token={pt} />;
+      }
+      // Startseite ohne Token: zuletzt benutztes Portal oeffnen
+      if (!path) {
+        const letzter = pSpeicher.get("dt_portal_letzter");
+        if (letzter && /^[a-f0-9]{32}$/.test(letzter)) { window.location.replace("/p/" + letzter); return null; }
+        return <PortalOhneLink />;
+      }
+
       // Dokumente-Route: /dokumente/{token} (Betreibungsauszug + Ausweis hochladen)
       if (path.startsWith("dokumente/")) {
         return <DokumentePage token={path.substring("dokumente/".length)} />;

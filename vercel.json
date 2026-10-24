@@ -3,6 +3,14 @@
   "outputDirectory": "public",
   "rewrites": [
     {
+      "source": "/p/:token([a-f0-9]{32})",
+      "destination": "/"
+    },
+    {
+      "source": "/p",
+      "destination": "/"
+    },
+    {
       "source": "/:token([a-f0-9]{32})",
       "destination": "/"
     },
@@ -16,6 +24,19 @@
     }
   ],
   "headers": [
+    {
+      "source": "/p/:token([a-f0-9]{32})",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "no-referrer"
+        }
+      ]
+    },
     {
       "source": "/",
       "headers": [
