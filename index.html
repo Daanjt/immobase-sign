@@ -3540,7 +3540,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       const [fehler, setFehler] = useState("");
       const [seite, setSeite] = useState("start");
       useEffect(() => { try { window.scrollTo({ top: 0, left: 0, behavior: "instant" }); } catch (_) { window.scrollTo(0, 0); } }, [seite]);
-      const [sprWahl, setSprWahl] = useState(() => pSpeicher.get("dt_portal_sprache"));
+      const [sprWahl, setSprWahl] = useState(() => portalSpracheStart());
       const lang = sprWahl || (daten && daten.mieter.sprache) || (info && info.sprache) || "de";
       const wechsle = (l) => { pSpeicher.set("dt_portal_sprache", l); setSprWahl(l); };
       const t = (de, en) => (lang === "en" ? en : de);
@@ -3558,7 +3558,15 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       function angemeldet(s) { pSpeicher.set(sKey, s); setSitzung(s); }
       async function abmelden() { try { await portalPost({ aktion: "abmelden" }, sitzung); } catch (_) {} pSpeicher.del(sKey); setSitzung(null); setDaten(null); setInfo(null); setSeite("start"); }
 
-      if (fehler && !info && !daten) return <StatusScreen icon="🔗" title={t("Link nicht gültig", "Link not valid")} message={fehler}><div style={{ marginTop: 18 }}><a className="btn-secondary" href="/p">{t("Neuen Link anfordern", "Request a new link")}</a></div></StatusScreen>;
+      if (fehler && !info && !daten) return (
+        <PortalRahmen lang={lang} onLang={wechsle}>
+          <div className="card" style={{ maxWidth: 440, margin: "24px auto 0" }}>
+            <div className="pt-portal">{t("Mieterportal", "Tenant portal")}</div>
+            <div className="pt-h1">{t("Link nicht gültig", "Link not valid")}</div>
+            <div className="pt-sub" style={{ marginTop: 6 }}>{meldungIn(fehler, lang)}</div>
+            <a className="btn-primary" style={{ marginTop: 18, width: "100%", display: "block", textAlign: "center", textDecoration: "none", boxSizing: "border-box" }} href={"/p?lang=" + lang} onClick={() => pSpeicher.del("dt_portal_letzter")}>{t("Neuen Link anfordern", "Request a new link")}</a>
+          </div>
+        </PortalRahmen>);
       if (!sitzung) return info ? <PortalLogin token={token} info={info} t={t} onOk={angemeldet} lang={lang} onLang={wechsle} /> : <PortalRahmen lang={lang} onLang={wechsle}><div className="loading-center"><div className="spinner"></div></div></PortalRahmen>;
       if (!daten) return <PortalRahmen lang={lang} onLang={wechsle}><div className="loading-center"><div className="spinner"></div><div className="loading-text">{t("Wird geladen…", "Loading…")}</div></div></PortalRahmen>;
 
@@ -3786,6 +3794,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       return (
         <PortalRahmen lang={lang} onLang={onLang}>
           <div className="card" style={{ maxWidth: 440, margin: "24px auto 0" }}>
+            <div className="pt-portal">{t("Mieterportal", "Tenant portal")}</div>
             <div className="pt-h1">{t(`Hallo ${info.vorname}`, `Hi ${info.vorname}`)}</div>
             <div className="pt-sub" style={{ marginTop: 6 }}>{t("Willkommen im D&T Homes Mieterportal. Zu deinem Schutz bestätigen wir auf jedem neuen Gerät kurz, dass du es bist.", "Welcome to the D&T Homes tenant portal. To protect your data, we briefly confirm it's you on every new device.")}</div>
             {schritt === "wahl" && <>
@@ -3801,7 +3810,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
               <button className="btn-primary" type="submit" style={{ marginTop: 14, width: "100%" }} disabled={busy || code.length !== 6}>{busy ? t("Wird geprüft…", "Checking…") : t("Anmelden", "Sign in")}</button>
               <button type="button" className="pt-back" style={{ marginTop: 8 }} disabled={busy} onClick={codeSenden}>{t("Neuen Code senden", "Send a new code")}</button>
             </form>}
-            {msg && <div className="pt-err">{msg}</div>}
+            {msg && <div className="pt-err">{meldungIn(msg, lang)}</div>}
           </div>
         </PortalRahmen>
       );
@@ -4426,21 +4435,36 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       );
     }
 
-    // Startseite ohne Link: letzten Portal-Link oeffnen oder Link per Mail anfordern
+    // Sprache: ?lang=en aus der Webseite gewinnt, sonst die gespeicherte Wahl, sonst Browser-Sprache
+    function portalSpracheStart() {
+      try { const q = new URLSearchParams(window.location.search).get("lang"); if (q === "de" || q === "en") { pSpeicher.set("dt_portal_sprache", q); return q; } } catch (_) {}
+      return pSpeicher.get("dt_portal_sprache") || null;
+    }
+    // Zweisprachige Server-Meldungen ("Deutsch / English") nur in der gewählten Sprache zeigen
+    const meldungIn = (m, lang) => { const s = String(m || ""); const i = s.indexOf(" / "); return i > 0 ? (lang === "en" ? s.slice(i + 3) : s.slice(0, i)) : s; };
+
+    // Startseite ohne Link (z.B. von der Webseite): auf diesem Gerät schon angemeldet -> direkt ins Portal, sonst Link per Mail anfordern
     function PortalOhneLink() {
+      const letzter = pSpeicher.get("dt_portal_letzter");
+      const [lang, setLang] = useState(() => portalSpracheStart() || ((navigator.language || "").toLowerCase().startsWith("de") ? "de" : "en"));
+      const wechsle = (l) => { pSpeicher.set("dt_portal_sprache", l); setLang(l); };
+      const t = (de, en) => (lang === "en" ? en : de);
       const [email, setEmail] = useState("");
       const [ok, setOk] = useState(false);
       const [busy, setBusy] = useState(false);
+      useEffect(() => { if (letzter && /^[a-f0-9]{32}$/.test(letzter)) window.location.replace("/p/" + letzter); }, []);
       async function anfordern(e) { e.preventDefault(); setBusy(true); try { await portalPost({ aktion: "link_anfordern", email }); } catch (_) {} setOk(true); setBusy(false); }
+      if (letzter && /^[a-f0-9]{32}$/.test(letzter)) return <PortalRahmen lang={lang} onLang={wechsle}><div className="loading-center"><div className="spinner"></div></div></PortalRahmen>;
       return (
-        <PortalRahmen>
+        <PortalRahmen lang={lang} onLang={wechsle}>
           <form className="card" style={{ maxWidth: 440, margin: "24px auto 0" }} onSubmit={anfordern}>
-            <div className="pt-h1">Mieterportal · Tenant portal</div>
-            <div className="pt-sub" style={{ marginTop: 6 }}>Gib die E-Mail-Adresse aus deinem Mietvertrag ein. Wir schicken dir deinen persönlichen Link. · Enter the email address from your rental agreement and we'll send you your personal link.</div>
+            <div className="pt-portal">{t("Mieterportal", "Tenant portal")}</div>
+            <div className="pt-h1">{t("Anmelden", "Sign in")}</div>
+            <div className="pt-sub" style={{ marginTop: 6 }}>{t("Gib die E-Mail-Adresse aus deinem Mietvertrag ein. Wir schicken dir deinen persönlichen Link zum Mieterportal.", "Enter the email address from your rental agreement and we'll send you your personal link to the tenant portal.")}</div>
             {!ok ? <>
-              <input className="pt-in" type="email" required style={{ marginTop: 16 }} value={email} onChange={e => setEmail(e.target.value)} placeholder="name@beispiel.ch" />
-              <button className="btn-primary" type="submit" style={{ marginTop: 12, width: "100%" }} disabled={busy}>{busy ? "…" : "Link senden · Send link"}</button>
-            </> : <div className="pt-ok">Falls die Adresse bei uns hinterlegt ist, ist der Link unterwegs. Schau auch im Spam-Ordner nach. · If the address is registered with us, the link is on its way. Please also check your spam folder.</div>}
+              <input className="pt-in" type="email" required style={{ marginTop: 16 }} value={email} onChange={e => setEmail(e.target.value)} placeholder={t("name@beispiel.ch", "name@example.com")} />
+              <button className="btn-primary" type="submit" style={{ marginTop: 12, width: "100%" }} disabled={busy}>{busy ? "…" : t("Link senden", "Send link")}</button>
+            </> : <div className="pt-ok">{t("Falls die Adresse bei uns hinterlegt ist, ist der Link unterwegs. Schau auch im Spam-Ordner nach.", "If the address is registered with us, the link is on its way. Please also check your spam folder.")}</div>}
           </form>
         </PortalRahmen>
       );
