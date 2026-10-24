@@ -3088,7 +3088,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
                   <div className="card-eyebrow">{t("Mietobjekt","Rental object")}</div>
                   <div className="info-grid">
                     {protocol.apt_adresse && <><span className="lbl">{t("Wohnung:","Apartment:")}</span><span>{protocol.apt_adresse}{protocol.apt_plz || protocol.apt_ort ? ", " : ""}{protocol.apt_plz||""} {protocol.apt_ort||""}</span></>}
-                    {istWohnungHO ? <><span className="lbl">{t("Mietobjekt:","Rental object:")}</span><span>{t("Ganze Wohnung","Entire apartment")}</span></> : (protocol.room_label && <><span className="lbl">{t("Zimmer:","Room:")}</span><span>{protocol.room_label}</span></>)}
+                    {istWohnungHO ? <><span className="lbl">{t("Mietobjekt:","Rental object:")}</span><span>{t("Ganze Wohnung","Entire apartment")}</span></> : (protocol.room_label && <><span className="lbl">{t("Mietobjekt:","Rental object:")}</span><span>{t("WG-Zimmer","Room in a shared flat")}</span></>)}
                     {protocol.einzug_datum && <><span className="lbl">{t("Einzug am:","Move-in date:")}</span><span>{formatDate(protocol.einzug_datum)}</span></>}
                     <span className="lbl">{t("Eingereicht am:","Submitted on:")}</span><span>{submittedDate}, {submittedTime}</span>
                   </div>
@@ -3201,7 +3201,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
               {(protocol.apt_adresse || protocol.room_label) && (
                 <div style={{background:"#fafaf7",border:"1px solid #e1d8c5",borderRadius:8,padding:"12px 14px",marginBottom:16,fontSize:13,lineHeight:1.5}}>
                   {protocol.apt_adresse && <div>📍 {protocol.apt_adresse}{protocol.apt_plz || protocol.apt_ort ? ", " : ""}{protocol.apt_plz||""} {protocol.apt_ort||""}</div>}
-                  {istWohnungHO ? <div style={{marginTop:4}}>🏠 {t("Ganze Wohnung","Entire apartment")}</div> : (protocol.room_label && <div style={{marginTop:4}}>🚪 {t("Zimmer","Room")} {protocol.room_label}</div>)}
+                  {istWohnungHO ? <div style={{marginTop:4}}>🏠 {t("Ganze Wohnung","Entire apartment")}</div> : (protocol.room_label && <div style={{marginTop:4}}>🚪 {t("WG-Zimmer","Room in a shared flat")}</div>)}
                   {protocol.einzug_datum && <div style={{marginTop:4,color:"#5a5044",fontSize:12}}>{t("Einzug","Move-in")}: {formatDate(protocol.einzug_datum)}</div>}
                 </div>
               )}
@@ -3617,6 +3617,8 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             .pt-kontakt a.g{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35)}
             .pt-fuss{display:flex;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;margin-top:36px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-soft)}
             .pt-fuss a{color:var(--ink-soft)}
+            .pt-stimmt{margin-top:12px;padding-top:10px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink-soft)}
+            .pt-stimmt a{color:var(--ink-soft)}
             @media (min-width: 900px){
               .pt-wrap{padding-top:44px}
               .pt-hero{grid-template-columns:1.1fr 1fr;grid-template-areas:"txt bild" "glance bild";gap:28px 32px;align-items:start}
@@ -3852,7 +3854,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
               <div className="card-title">{t("Auf einen Blick", "At a glance")}</div>
               {zeile(t("Objekt", "Property"), m.wohnung
                 ? [m.zimmer && t(`${m.zimmer}-Zimmer-Wohnung`, `${m.zimmer}-room apartment`), m.flaeche && `${m.flaeche} m²`].filter(Boolean).join(" · ") || t("Wohnung", "Apartment")
-                : [t(`Zimmer ${m.objekt || ""}`.trim(), `Room ${m.objekt || ""}`.trim()), m.flaeche && `${m.flaeche} m²`, m.balkon && t("mit Balkon", "with balcony")].filter(Boolean).join(" · "))}
+                : [t("WG-Zimmer", "Room in a shared flat"), m.flaeche && `${m.flaeche} m²`, m.balkon && t("mit Balkon", "with balcony")].filter(Boolean).join(" · "))}
               {!m.wohnung && m.zimmer && zeile(t("WG", "Shared flat"), t(`${m.zimmer}-Zimmer-Wohnung`, `${m.zimmer}-room apartment`))}
               {zeile(t("Adresse", "Address"), m.adresse)}
               {zeile(t("Stockwerk", "Floor"), m.stockwerk)}
@@ -3861,6 +3863,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
               {zeile(m.auszug || kdOffen ? t("Auszug", "Move-out") : t("Vertrag bis", "Contract until"), ende)}
               {d.wlan && zeile("WLAN", `${d.wlan.name} · ${d.wlan.passwort}`)}
               {ausgezogen && zeile(t("Portal-Zugang bis", "Portal access until"), d.zugang_bis)}
+              <div className="pt-stimmt">{t("Stimmt etwas nicht? Schreib uns per ", "Something not right? Let us know via ")}<a href="https://wa.me/41766887091" target="_blank" rel="noopener noreferrer">WhatsApp</a>{t(" oder an ", " or at ")}<a href="mailto:info@dthomes.ch">info@dthomes.ch</a>.</div>
             </div>
           </div>
           {ansteht.length > 0 && <div className="pt-an">
@@ -4024,7 +4027,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
           <div>
             <div className="card">
               <div className="card-title">{t("Meine Miete", "My rental")}</div>
-              {row(t("Objekt", "Property"), m.wohnung ? (m.zimmer ? t(`${m.zimmer}-Zimmer-Wohnung`, `${m.zimmer}-room apartment`) : t("Ganze Wohnung", "Entire apartment")) : `${t("Zimmer", "Room")} ${m.objekt || ""}`)}
+              {row(t("Objekt", "Property"), m.wohnung ? (m.zimmer ? t(`${m.zimmer}-Zimmer-Wohnung`, `${m.zimmer}-room apartment`) : t("Ganze Wohnung", "Entire apartment")) : t("WG-Zimmer", "Room in a shared flat"))}
               {row(m.wohnung ? t("Wohnfläche", "Living space") : t("Zimmergrösse", "Room size"), m.flaeche ? `${m.flaeche} m²` : "")}
               {!m.wohnung && row(t("Balkon", "Balcony"), m.balkon ? t("Ja", "Yes") : "")}
               {!m.wohnung && row(t("WG", "Shared flat"), m.zimmer ? t(`${m.zimmer}-Zimmer-Wohnung`, `${m.zimmer}-room apartment`) : "")}
