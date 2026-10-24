@@ -3557,12 +3557,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       if (!sitzung) return info ? <PortalLogin token={token} info={info} t={t} onOk={angemeldet} /> : <PortalRahmen><div className="loading-center"><div className="spinner"></div></div></PortalRahmen>;
       if (!daten) return <PortalRahmen><div className="loading-center"><div className="spinner"></div><div className="loading-text">{t("Wird geladen…", "Loading…")}</div></div></PortalRahmen>;
 
-      const navPunkte = [["start", t("Übersicht", "Overview")], ["miete", t("Meine Miete", "My rental")], ["dokumente", t("Dokumente", "Documents")], ["schaden", t("Schaden melden", "Report damage")],
-        ...(daten.hausinfos ? [["hausinfos", t("Hausinfos", "House info")]] : []), ["service", t("Reinigung & Umzug", "Cleaning & moving")], ["kuendigung", t("Auszug & Kündigung", "Moving out")], ["sicherheit", t("Sicherheit", "Security")]];
-      const zurueck = <>
-        <div className="pt-nav">{navPunkte.map(([k, l]) => <button key={k} className={seite === k ? "on" : ""} onClick={() => setSeite(k)}>{l}</button>)}</div>
-        <button className="pt-back" onClick={() => setSeite("start")}>← {t("Übersicht", "Overview")}</button>
-      </>;
+      const zurueck = <button className="pt-back" onClick={() => { setSeite("start"); window.scrollTo(0, 0); }}>← {t("Zurück zur Übersicht", "Back to overview")}</button>;
       return (
         <PortalRahmen>
           {seite === "start" && <PortalStart d={daten} t={t} onSeite={setSeite} />}
@@ -3583,6 +3578,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
         <div className="container pt-wrap">
           <style>{`
             .pt-wrap{max-width:1120px}
+            .pt-wrap a.btn-primary,.pt-wrap a.btn-secondary{text-decoration:none;display:inline-flex;align-items:center;justify-content:center;width:auto;white-space:nowrap;padding-left:20px;padding-right:20px}
             .pt-nav{display:none;gap:6px;flex-wrap:wrap;margin:0 0 20px}
             .pt-nav button{border:1px solid #e1d8c5;background:#fff;border-radius:99px;padding:8px 14px;font:inherit;font-size:13.5px;cursor:pointer;color:#3a352d}
             .pt-nav button.on{background:#1a1814;color:#fff;border-color:#1a1814}
@@ -3594,8 +3590,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
               .pt-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
               .pt-cols>.card{margin-bottom:0}
               .pt-cols>.pt-ok,.pt-cols>.pt-err,.pt-cols>.pt-full{grid-column:1/-1}
-              .pt-back{display:none}
-              .pt-nav{display:flex}
+              .pt-back{font-size:14.5px}
               .pt-h1{font-size:28px}
               .pt-solo{max-width:760px}
             }
@@ -3694,11 +3689,16 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       const offen = (d.schaeden || []).filter(s => s.status !== "erledigt").length;
       const fehlt = !d.unterlagen.ausweis;
       const kdOffen = ((d.kuendigung && d.kuendigung.eintraege) || []).find(k => k.art === "kuendigung" && k.status !== "abgelehnt");
+      const hoOffen = (d.uebergabe || []).find(h => h.offen && h.link);
       const kachel = (k, i, h, s) => <button className="pt-tile" onClick={() => onSeite(k)}><span className="i">{i}</span><span><div className="h">{h}</div><div className="s">{s}</div></span></button>;
       return (
         <div style={{ marginTop: 10 }}>
           <div className="pt-h1">{t(`Hallo ${d.mieter.vorname}`, `Hi ${d.mieter.vorname}`)}</div>
           <div className="pt-sub">{d.miete.adresse}{d.miete.objekt ? ` · ${t("Zimmer", "Room")} ${d.miete.objekt}` : ""}</div>
+          {hoOffen && <div className="pt-warn" style={{ marginTop: 16, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <div><b>{t("Übergabeprotokoll ausfüllen", "Complete the handover report")}</b><br />{t("Bitte halte Mängel beim Einzug fest", "Please record any defects at move-in")}{hoOffen.frist ? t(` bis ${datP(hoOffen.frist)}`, ` by ${datP(hoOffen.frist)}`) : ""}.</div>
+            <a className="btn-primary" href={hoOffen.link}>{t("Jetzt ausfüllen", "Fill in now")}</a>
+          </div>}
           <div className="pt-tiles">
             {kachel("miete", "🏠", t("Meine Miete", "My rental"), d.miete.mietzins != null ? `${chfP(d.miete.mietzins)} / ${t("Monat", "month")}` : t("Mietdetails", "Rental details"))}
             {kachel("dokumente", "📄", t("Dokumente", "Documents"), fehlt ? t("Ausweis fehlt noch", "ID still missing") : `${d.dokumente.length} ${t("Dokument(e)", "document(s)")}`)}
@@ -3767,6 +3767,19 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             </div>
           ))}
         </div>
+        {(d.uebergabe || []).length > 0 && <div className="card">
+          <div className="card-title">{t("Übergabeprotokoll", "Handover report")}</div>
+          {d.uebergabe.map((h, i) => (
+            <div className="pt-item" key={i}>
+              <div><div style={{ fontWeight: 600, fontSize: 14.5 }}>{h.typ === "auszug" ? t("Auszug", "Move-out") : t("Einzug", "Move-in")}</div>
+                <div className="pt-sub" style={{ fontSize: 12.5 }}>{h.offen
+                  ? t(`Bitte Mängel festhalten${h.frist ? " bis " + datP(h.frist) : ""}. Ohne Rückmeldung gilt das Objekt als mängelfrei übernommen.`, `Please record any defects${h.frist ? " by " + datP(h.frist) : ""}. Without a response the property is considered accepted without defects.`)
+                  : h.status === "submitted" ? t("Eingereicht, wir prüfen es.", "Submitted, we are reviewing it.")
+                  : t("Abgeschlossen. Das PDF findest du oben bei deinen Dokumenten.", "Completed. You will find the PDF in your documents above.")}</div></div>
+              {h.offen && h.link ? <a className="btn-primary" href={h.link}>{h.status === "in_progress" ? t("Weiter ausfüllen", "Continue") : t("Ausfüllen", "Fill in")}</a> : <span className="pt-badge" style={{ background: "#e6eedc", color: "#3a5230" }}>{h.status === "submitted" ? t("Eingereicht", "Submitted") : t("Abgeschlossen", "Completed")}</span>}
+            </div>
+          ))}
+        </div>}
         <div className="card">
           <div className="card-title">{t("Unterlagen von dir", "Your documents")}</div>
           {upl("ausweis", t("Pass oder ID", "Passport or ID card"), d.unterlagen.ausweis)}
