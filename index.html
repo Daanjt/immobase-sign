@@ -2244,7 +2244,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
                       </a>
                       
                       <div style={{ marginTop: 4 }}>
-                        <label style={{
+                        <label onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f && (/pdf/i.test(f.type) || /\.pdf$/i.test(f.name))) setUploadedFiles(prev => ({ ...prev, [pdf.path]: f })); }} style={{
                           display: "block",
                           padding: "10px 14px",
                           border: `2px dashed ${file ? "#5a6e4a" : "#c4b9a3"}`,
@@ -2263,7 +2263,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
                               </div>
                             </>
                           ) : (
-                            <>{t("📤 Signiertes PDF hier hochladen","📤 Upload signed PDF here")}<div style={{ fontSize: 10, color: "#8a8174", marginTop: 2 }}>{t("klicken zum Auswählen","click to select")}</div></>
+                            <>{t("📤 Signiertes PDF hier hochladen","📤 Upload signed PDF here")}<div style={{ fontSize: 10, color: "#8a8174", marginTop: 2 }}>{t("klicken zum Auswählen oder hierher ziehen","click to select or drag here")}</div></>
                           )}
                           <input
                             type="file"
@@ -3358,7 +3358,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
                             <button onClick={()=>removeMangelTempPhoto()} style={{position:"absolute",top:3,right:3,background:"rgba(0,0,0,.7)",color:"#fff",border:"none",borderRadius:"50%",width:22,height:22,fontSize:12,cursor:"pointer",lineHeight:"22px",padding:0}}>×</button>
                           </div>
                         ) : (
-                          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
+                          <div onDragOver={e=>e.preventDefault()} onDrop={e=>{ e.preventDefault(); const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f && !newMangel.uploading && /^image\//.test(f.type)) uploadMangelPhoto(f); }} style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center",marginBottom:8,padding:8,border:"1.5px dashed #d8d0c0",borderRadius:8}}>
                           <label style={{display:"inline-block",cursor:"pointer",background:newMangel.uploading ? "#f0ebe1" : "#e8efde",color:newMangel.uploading ? "#8a8174" : "#3a5230",border:"1px solid " + (newMangel.uploading ? "#d8d0c0" : "#c5d5b0"),borderRadius:5,padding:"7px 12px",fontSize:12,fontWeight:600}}>
                             {newMangel.uploading ? t("Lade hoch...","Uploading...") : t("📸 Foto aufnehmen","📸 Take photo")}
                             <input type="file" accept="image/*" capture="environment" disabled={newMangel.uploading} onChange={e=>{
@@ -3375,6 +3375,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
                               e.target.value = "";
                             }} style={{display:"none"}}/>
                           </label>
+                          <span style={{fontSize:11.5,color:"#8a8174"}}>{t("oder Foto hierher ziehen","or drag a photo here")}</span>
                           </div>
                         )}
                         <div style={{display:"flex",gap:6,marginTop:6}}>
@@ -3608,7 +3609,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             .pt-kontakt .kb{display:flex;gap:8px;flex-wrap:wrap}
             .pt-kontakt a{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;border-radius:12px;padding:11px 18px;font-size:14.5px;font-weight:500;background:#fff;color:var(--ink)}
             .pt-kontakt a.g{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35)}
-            .pt-fuss{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:22px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-soft)}
+            .pt-fuss{display:flex;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;margin-top:36px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-soft)}
             .pt-fuss a{color:var(--ink-soft)}
             @media (min-width: 900px){
               .pt-wrap{padding-top:44px}
@@ -3685,6 +3686,15 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             .pt-ho-step.on>b{background:var(--espresso);color:#fff}
             .pt-ho-step.ok>b{background:#e6eedc;color:#3a5230}
             .pt-ho-step .h{font-weight:600;font-size:14.5px}
+            .pt-drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;border:1.5px dashed var(--sand-deep);border-radius:14px;background:var(--paper);padding:20px 14px;cursor:pointer;font-size:14px;color:var(--ink-soft);transition:border-color .15s,background .15s}
+            .pt-drop:hover,.pt-drop.on{border-color:var(--brass);background:#F3EEE4}
+            .pt-drop b{color:var(--ink);font-weight:600}
+            .pt-drop-i{font-size:22px}
+            .pt-thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px;margin-top:10px}
+            .pt-thumb{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:#fff}
+            .pt-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+            .pt-thumb button{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;border:none;background:rgba(28,27,23,.75);color:#fff;font-size:15px;line-height:1;cursor:pointer}
+            @media (max-width: 420px){ .pt-hide-s{display:none} }
             .pt-tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
             .pt-tile{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 16px;text-align:left;cursor:pointer;font:inherit;color:inherit;min-height:108px;display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;transition:border-color .15s,transform .15s}
             .pt-tile:hover{border-color:var(--sand-deep);transform:translateY(-1px)}
@@ -3820,13 +3830,9 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             {kachel("service", "🧽", t("Reinigung & Umzug", "Cleaning & moving"), t("Endreinigung, Umzug, Parkplatz", "Final cleaning, moving, parking"))}
             {kachel("kuendigung", "📤", t("Auszug", "Moving out"), kdOffen ? (kdOffen.status === "bestaetigt" ? t(`Bestätigt per ${kdOffen.datum}`, `Confirmed for ${kdOffen.datum}`) : t("Kündigung eingereicht", "Notice submitted")) : t("Kündigen oder Nachmieter stellen", "Give notice or find a successor"))}
           </div>
-          <div className="pt-kontakt">
-            <div><div className="k1">{t("Fragen oder ein Anliegen?", "Questions or a request?")}</div><div className="k2">{t("Schreib uns, wir helfen dir gerne weiter.", "Write to us, we are happy to help.")}</div></div>
-            <div className="kb"><a href="https://wa.me/41766887091" target="_blank" rel="noopener noreferrer">WhatsApp</a><a className="g" href="mailto:info@dthomes.ch">info@dthomes.ch</a></div>
-          </div>
           <div className="pt-fuss">
-            <span>D&amp;T Homes · <a href="https://www.dthomes.ch" target="_blank" rel="noopener noreferrer">dthomes.ch</a></span>
-            {onAbmelden && <a href="#" onClick={e => { e.preventDefault(); onAbmelden(); }}>{t("Abmelden", "Sign out")}</a>}
+            <span>{t("Fragen? ", "Questions? ")}<a href="https://wa.me/41766887091" target="_blank" rel="noopener noreferrer">WhatsApp +41 76 688 70 91</a> · <a href="mailto:info@dthomes.ch">info@dthomes.ch</a></span>
+            <span><a href="https://www.dthomes.ch" target="_blank" rel="noopener noreferrer">dthomes.ch</a>{onAbmelden && <> · <a href="#" onClick={e => { e.preventDefault(); onAbmelden(); }}>{t("Abmelden", "Sign out")}</a></>}</span>
           </div>
         </div>
       );
@@ -3856,10 +3862,11 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
         catch (e) { setMsg(e.message); }
         setBusy("");
       }
-      async function oeffnen(id) {
-        setBusy("d"); setMsg("");
-        try { const r = await portalPost({ aktion: "dokument", id }, sitzung); window.location.href = r.url; }
-        catch (e) { setMsg(e.message); }
+      async function oeffnen(id, ansehen) {
+        setBusy(ansehen ? "a" : "d"); setMsg("");
+        const fenster = ansehen ? window.open("", "_blank") : null;
+        try { const r = await portalPost({ aktion: "dokument", id, ansehen: !!ansehen }, sitzung); if (fenster) fenster.location.href = r.url; else window.location.href = r.url; }
+        catch (e) { if (fenster) fenster.close(); setMsg(e.message); }
         setBusy("");
       }
       const schritt = (n, a, b, aktiv, fertig) => <div className={"pt-ho-step" + (aktiv ? " on" : "") + (fertig ? " ok" : "")}><b>{fertig ? "✓" : n}</b><div><div className="h">{a}</div><div className="pt-sub" style={{ fontSize: 13 }}>{b}</div></div></div>;
@@ -3894,7 +3901,10 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             <div className="pt-big">{h.status === "submitted" ? t("Danke! Dein Protokoll ist bei uns eingegangen. Wir prüfen es und legen es dann hier ab.", "Thank you! We have received your report. We will review it and file it here.") : t("Dein Übergabeprotokoll ist abgeschlossen und hier abgelegt.", "Your handover report is complete and filed here.")}</div>
             {doc ? <div className="pt-item" style={{ borderTop: "1px solid var(--line)" }}>
               <div><div style={{ fontWeight: 600, fontSize: 14.5 }}>{t("Übergabeprotokoll (PDF)", "Handover report (PDF)")}</div><div className="pt-sub" style={{ fontSize: 12.5 }}>{datP(doc.datum)}</div></div>
-              <button className="btn-secondary" disabled={!!busy} onClick={() => oeffnen(doc.id)}>{busy === "d" ? "…" : t("Öffnen", "Open")}</button>
+              <div style={{ display: "flex", gap: 6, flex: "none" }}>
+                <button className="btn-secondary" style={{ padding: "8px 12px", fontSize: 13.5 }} disabled={!!busy} onClick={() => oeffnen(doc.id, true)}>{busy === "a" ? "…" : t("Ansehen", "View")}</button>
+                <button className="btn-secondary" style={{ padding: "8px 12px", fontSize: 13.5 }} disabled={!!busy} onClick={() => oeffnen(doc.id, false)}>{busy === "d" ? "…" : <>↓ <span className="pt-hide-s">{t("Herunterladen", "Download")}</span></>}</button>
+              </div>
             </div> : h.status !== "submitted" && <div className="pt-sub">{t("Das PDF wird gerade erstellt. Schau später nochmals vorbei.", "The PDF is being created. Please check back later.")}</div>}
           </>}
           {msg && <div className="pt-err">{msg}</div>}
@@ -3982,10 +3992,11 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
     function PortalDokumente({ d, t, sitzung, neuLaden }) {
       const [busy, setBusy] = useState("");
       const [msg, setMsg] = useState("");
-      async function oeffnen(id) {
-        setBusy("d" + id); setMsg("");
-        try { const r = await portalPost({ aktion: "dokument", id }, sitzung); window.location.href = r.url; }
-        catch (e) { setMsg(e.message); }
+      async function oeffnen(id, ansehen) {
+        setBusy((ansehen ? "a" : "d") + id); setMsg("");
+        const fenster = ansehen ? window.open("", "_blank") : null;   // sofort öffnen, sonst blockiert der Browser das neue Fenster
+        try { const r = await portalPost({ aktion: "dokument", id, ansehen: !!ansehen }, sitzung); if (fenster) fenster.location.href = r.url; else window.location.href = r.url; }
+        catch (e) { if (fenster) fenster.close(); setMsg(e.message); }
         setBusy("");
       }
       async function hoch(art, file) {
@@ -4009,7 +4020,10 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
           {d.dokumente.map(x => (
             <div className="pt-item" key={x.id}>
               <div><div style={{ fontWeight: 600, fontSize: 14.5 }}>{name(x.kategorie)}</div><div className="pt-sub" style={{ fontSize: 12.5 }}>{datP(x.datum)}</div></div>
-              <button className="btn-secondary" disabled={!!busy} onClick={() => oeffnen(x.id)}>{busy === "d" + x.id ? "…" : t("Öffnen", "Open")}</button>
+              <div style={{ display: "flex", gap: 6, flex: "none" }}>
+                <button className="btn-secondary" style={{ padding: "8px 12px", fontSize: 13.5 }} disabled={!!busy} onClick={() => oeffnen(x.id, true)}>{busy === "a" + x.id ? "…" : t("Ansehen", "View")}</button>
+                <button className="btn-secondary" style={{ padding: "8px 12px", fontSize: 13.5 }} disabled={!!busy} onClick={() => oeffnen(x.id, false)} aria-label={t("Herunterladen", "Download")}>{busy === "d" + x.id ? "…" : <>↓ <span className="pt-hide-s">{t("Herunterladen", "Download")}</span></>}</button>
+              </div>
             </div>
           ))}
         </div>
@@ -4017,9 +4031,32 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       </div>);
     }
 
+    // Fotos auswählen oder hineinziehen, mit Vorschau und Entfernen
+    function FotoDrop({ fotos, setFotos, max, t }) {
+      const [ueber, setUeber] = useState(false);
+      const urls = React.useMemo(() => fotos.map(f => URL.createObjectURL(f)), [fotos]);
+      useEffect(() => () => urls.forEach(u => URL.revokeObjectURL(u)), [urls]);
+      const dazu = (liste) => {
+        const bilder = Array.from(liste || []).filter(f => /^image\//.test(f.type) || /\.(jpe?g|png|heic|heif|webp)$/i.test(f.name || ""));
+        if (bilder.length) setFotos(prev => [...prev, ...bilder].slice(0, max));
+      };
+      return (<div>
+        <label className={"pt-drop" + (ueber ? " on" : "")}
+          onDragOver={e => { e.preventDefault(); setUeber(true); }} onDragLeave={() => setUeber(false)}
+          onDrop={e => { e.preventDefault(); setUeber(false); dazu(e.dataTransfer && e.dataTransfer.files); }}>
+          <input type="file" accept="image/*" multiple style={{ display: "none" }} onChange={e => { dazu(e.target.files); e.target.value = ""; }} disabled={fotos.length >= max} />
+          <span className="pt-drop-i">📷</span>
+          <span><b>{t("Fotos auswählen", "Choose photos")}</b> {t("oder hierher ziehen", "or drag them here")}</span>
+          <span className="pt-sub" style={{ fontSize: 12.5 }}>{fotos.length}/{max} {t("Fotos", "photos")}</span>
+        </label>
+        {fotos.length > 0 && <div className="pt-thumbs">{urls.map((u, i) => <div key={u} className="pt-thumb"><img src={u} alt="" /><button type="button" aria-label={t("Entfernen", "Remove")} onClick={() => setFotos(prev => prev.filter((_, j) => j !== i))}>×</button></div>)}</div>}
+      </div>);
+    }
+
     function PortalSchaden({ d, t, sitzung, neuLaden }) {
       const [neu, setNeu] = useState(false);
       const [f, setF] = useState({ titel: "", ort: "", beschreibung: "", dringlichkeit: "normal" });
+      const [freigabe, setFreigabe] = useState(false);
       const [fotos, setFotos] = useState([]);
       const [busy, setBusy] = useState(false);
       const [msg, setMsg] = useState("");
@@ -4029,9 +4066,10 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
         try {
           const fd = new FormData(); fd.append("aktion", "schaden");
           Object.entries(f).forEach(([k, v]) => fd.append(k, v));
+          fd.append("freigabe", freigabe ? "1" : "0");
           for (const x of fotos) fd.append("fotos", await verkleinere(x));
           await portalForm(fd, sitzung);
-          setNeu(false); setF({ titel: "", ort: "", beschreibung: "", dringlichkeit: "normal" }); setFotos([]);
+          setNeu(false); setF({ titel: "", ort: "", beschreibung: "", dringlichkeit: "normal" }); setFotos([]); setFreigabe(false);
           setMsg(t("Danke! Deine Meldung ist bei uns eingegangen. Wir melden uns so rasch wie möglich.", "Thank you! We received your report and will get back to you as soon as possible."));
           await neuLaden();
         } catch (e2) { setMsg(e2.message); }
@@ -4052,11 +4090,14 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
           <label className="pt-lbl">{t("Wie dringend?", "How urgent?")}</label>
           <div className="pt-chips">{[["normal", t("Normal", "Normal")], ["dringend", t("Dringend", "Urgent")], ["notfall", t("Notfall", "Emergency")]].map(([k, l]) => <button type="button" key={k} className={"pt-chip" + (f.dringlichkeit === k ? " on" : "")} onClick={() => setF({ ...f, dringlichkeit: k })}>{l}</button>)}</div>
           <label className="pt-lbl">{t("Fotos (max. 6)", "Photos (max. 6)")}</label>
-          <input type="file" accept="image/*" multiple onChange={e => setFotos(Array.from(e.target.files || []).slice(0, 6))} />
-          {fotos.length > 0 && <div className="pt-sub" style={{ marginTop: 6 }}>{fotos.length} {t("Foto(s) ausgewählt", "photo(s) selected")}</div>}
+          <FotoDrop fotos={fotos} setFotos={setFotos} max={6} t={t} />
+          <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 14, marginTop: 18, lineHeight: 1.5 }}>
+            <input type="checkbox" checked={freigabe} onChange={e => setFreigabe(e.target.checked)} style={{ marginTop: 3 }} />
+            <span>{t("Ich bin einverstanden, dass D&T Homes meine Meldung und meine Kontaktdaten (Name, Telefon, E-Mail) an die Verwaltung bzw. den Handwerker weiterleitet, damit direkt ein Termin mit mir vereinbart werden kann.", "I agree that D&T Homes may forward my report and my contact details (name, phone, email) to the property management or the tradesperson so that an appointment can be arranged with me directly.")}</span>
+          </label>
           <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
             <button type="button" className="btn-secondary" disabled={busy} onClick={() => setNeu(false)}>{t("Abbrechen", "Cancel")}</button>
-            <button type="submit" className="btn-primary" style={{ flex: 1 }} disabled={busy || !f.titel.trim()}>{busy ? t("Wird gesendet…", "Sending…") : t("Meldung senden", "Send report")}</button>
+            <button type="submit" className="btn-primary" style={{ flex: 1 }} disabled={busy || !f.titel.trim() || !freigabe}>{busy ? t("Wird gesendet…", "Sending…") : t("Meldung senden", "Send report")}</button>
           </div>
         </form>}
         {msg && <div className={/Danke|Thank/.test(msg) ? "pt-ok" : "pt-err"}>{msg}</div>}
