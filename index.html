@@ -456,6 +456,7 @@
     // WhatsApp etc.). Uebernahme-Links sollen nicht "Vertrag unterschreiben" zeigen.
     (() => {
       const istUebernahme = window.location.pathname.replace(/^\//, "").startsWith("uebernahme/");
+      if (/^\/(p|portal)(\/|$)/.test(window.location.pathname) || window.location.pathname === "/") { document.title = "Mieterportal - D&T Homes"; return; }
       document.title = istUebernahme
         ? "Übernahmeprotokoll - D&T Homes"
         : "Vertrag unterschreiben - D&T Homes";
@@ -3480,6 +3481,392 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
     // ════════════════════════════════════════════════════════════════════════
     // APP ROOT
     // ════════════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════════════════
+    // MIETERPORTAL  /p/{portal_token}
+    // Login: Code per E-Mail (einmal pro Geraet) oder Face ID (Passkey).
+    // Alle Daten ueber die Server-Funktion mieter-portal.
+    // ════════════════════════════════════════════════════════════════════════
+    const PORTAL_API = `${SUPABASE_URL}/functions/v1/mieter-portal`;
+    const PORTAL_HDR = { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` };
+    const pSpeicher = {
+      get(k) { try { return localStorage.getItem(k); } catch (_) { return null; } },
+      set(k, v) { try { localStorage.setItem(k, v); } catch (_) {} },
+      del(k) { try { localStorage.removeItem(k); } catch (_) {} },
+    };
+    async function portalPost(body, sitzung) {
+      const r = await fetch(PORTAL_API, { method: "POST", headers: { ...PORTAL_HDR, "Content-Type": "application/json", ...(sitzung ? { "x-portal-sitzung": sitzung } : {}) }, body: JSON.stringify(body) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { const e = new Error(j.error || "Fehler"); e.status = r.status; throw e; }
+      return j;
+    }
+    async function portalForm(fd, sitzung) {
+      const r = await fetch(PORTAL_API, { method: "POST", headers: { ...PORTAL_HDR, "x-portal-sitzung": sitzung }, body: fd });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { const e = new Error(j.error || "Fehler"); e.status = r.status; throw e; }
+      return j;
+    }
+    function geraetName() {
+      const u = navigator.userAgent || "";
+      const os = /iPhone/.test(u) ? "iPhone" : /iPad/.test(u) ? "iPad" : /Android/.test(u) ? "Android" : /Mac OS X/.test(u) ? "Mac" : /Windows/.test(u) ? "Windows" : "Gerät";
+      const br = /Edg\//.test(u) ? "Edge" : /Chrome\//.test(u) ? "Chrome" : /Firefox\//.test(u) ? "Firefox" : /Safari\//.test(u) ? "Safari" : "Browser";
+      return `${os} · ${br}`;
+    }
+    // Fotos vor dem Hochladen verkleinern (spart Daten), HEIC unveraendert lassen
+    async function verkleinere(file, max = 1600) {
+      if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return file;
+      try {
+        const bmp = await createImageBitmap(file);
+        const f = Math.min(1, max / Math.max(bmp.width, bmp.height));
+        const c = document.createElement("canvas"); c.width = Math.round(bmp.width * f); c.height = Math.round(bmp.height * f);
+        c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+        const blob = await new Promise(res => c.toBlob(res, "image/jpeg", 0.82));
+        return blob ? new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" }) : file;
+      } catch (_) { return file; }
+    }
+    // WebAuthn-Hilfen (base64url <-> ArrayBuffer)
+    const b64u = {
+      toBuf(s) { s = s.replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "="; const b = atob(s); const a = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a.buffer; },
+      fromBuf(buf) { const a = new Uint8Array(buf); let s = ""; for (let i = 0; i < a.length; i++) s += String.fromCharCode(a[i]); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); },
+    };
+    const passkeyMoeglich = () => !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.create);
+
+    function PortalApp({ token }) {
+      const sKey = `dt_portal_${token}`;
+      const [sitzung, setSitzung] = useState(() => pSpeicher.get(sKey));
+      const [info, setInfo] = useState(null);       // start-Infos (vor Login)
+      const [daten, setDaten] = useState(null);     // Uebersicht (nach Login)
+      const [fehler, setFehler] = useState("");
+      const [seite, setSeite] = useState("start");
+      const lang = (daten && daten.mieter.sprache) || (info && info.sprache) || "de";
+      const t = (de, en) => (lang === "en" ? en : de);
+
+      useEffect(() => { pSpeicher.set("dt_portal_letzter", token); }, [token]);
+      async function laden(s = sitzung) {
+        try { setDaten(await portalPost({ aktion: "uebersicht" }, s)); setFehler(""); }
+        catch (e) { if (e.status === 401) { pSpeicher.del(sKey); setSitzung(null); } else setFehler(e.message); }
+      }
+      useEffect(() => {
+        if (sitzung) laden(sitzung);
+        else portalPost({ aktion: "start", token }).then(setInfo).catch(e => setFehler(e.message));
+      }, [sitzung]);
+
+      function angemeldet(s) { pSpeicher.set(sKey, s); setSitzung(s); }
+      async function abmelden() { try { await portalPost({ aktion: "abmelden" }, sitzung); } catch (_) {} pSpeicher.del(sKey); setSitzung(null); setDaten(null); setInfo(null); setSeite("start"); }
+
+      if (fehler && !info && !daten) return <StatusScreen icon="🔗" title={t("Link nicht gültig", "Link not valid")} message={fehler}><div style={{ marginTop: 18 }}><a className="btn-secondary" href="/p">{t("Neuen Link anfordern", "Request a new link")}</a></div></StatusScreen>;
+      if (!sitzung) return info ? <PortalLogin token={token} info={info} t={t} onOk={angemeldet} /> : <PortalRahmen><div className="loading-center"><div className="spinner"></div></div></PortalRahmen>;
+      if (!daten) return <PortalRahmen><div className="loading-center"><div className="spinner"></div><div className="loading-text">{t("Wird geladen…", "Loading…")}</div></div></PortalRahmen>;
+
+      const zurueck = <button className="pt-back" onClick={() => setSeite("start")}>← {t("Übersicht", "Overview")}</button>;
+      return (
+        <PortalRahmen>
+          {seite === "start" && <PortalStart d={daten} t={t} onSeite={setSeite} />}
+          {seite === "miete" && <>{zurueck}<PortalMiete d={daten} t={t} /></>}
+          {seite === "dokumente" && <>{zurueck}<PortalDokumente d={daten} t={t} sitzung={sitzung} neuLaden={laden} /></>}
+          {seite === "schaden" && <>{zurueck}<PortalSchaden d={daten} t={t} sitzung={sitzung} neuLaden={laden} /></>}
+          {seite === "sicherheit" && <>{zurueck}<PortalSicherheit d={daten} t={t} sitzung={sitzung} neuLaden={laden} onAbmelden={abmelden} /></>}
+          {fehler && <div className="pt-err">{fehler}</div>}
+        </PortalRahmen>
+      );
+    }
+
+    function PortalRahmen({ children }) {
+      return (
+        <div className="container">
+          <style>{`
+            .pt-tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+            .pt-tile{background:#fff;border:1px solid #e1d8c5;border-radius:14px;padding:18px 16px;text-align:left;cursor:pointer;font:inherit;color:inherit;min-height:104px;display:flex;flex-direction:column;justify-content:space-between}
+            .pt-tile:hover{border-color:#b9ad95}
+            .pt-tile .i{font-size:22px}
+            .pt-tile .h{font-weight:700;font-size:15px;margin-top:10px}
+            .pt-tile .s{font-size:12.5px;color:#6e6a62;margin-top:3px}
+            .pt-back{background:none;border:none;color:#6e6a62;font:inherit;font-size:13.5px;cursor:pointer;padding:6px 0;margin:4px 0 6px}
+            .pt-h1{font-size:22px;font-weight:600;margin:6px 0 2px}
+            .pt-sub{font-size:13.5px;color:#6e6a62;line-height:1.5}
+            .pt-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #f0eadd;font-size:14px}
+            .pt-row:last-child{border-bottom:none}
+            .pt-row span:first-child{color:#6e6a62}
+            .pt-row span:last-child{text-align:right;font-weight:500}
+            .pt-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #f0eadd}
+            .pt-item:last-child{border-bottom:none}
+            .pt-in{width:100%;box-sizing:border-box;padding:12px 13px;border:1px solid #d8d0c0;border-radius:10px;font:inherit;font-size:15px;background:#fff}
+            .pt-lbl{font-size:12.5px;font-weight:600;color:#5a5448;margin:14px 0 6px;display:block}
+            .pt-err{color:#9b4a3e;font-size:13.5px;margin-top:10px}
+            .pt-ok{color:#4f6b3f;font-size:13.5px;margin-top:10px}
+            .pt-badge{font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:99px;white-space:nowrap}
+            .pt-code{font-size:28px;letter-spacing:.4em;text-align:center;font-weight:600}
+            .pt-chips{display:flex;gap:8px;flex-wrap:wrap}
+            .pt-chip{border:1px solid #d8d0c0;background:#fff;border-radius:99px;padding:8px 14px;font:inherit;font-size:13.5px;cursor:pointer}
+            .pt-chip.on{background:#1a1814;color:#fff;border-color:#1a1814}
+          `}</style>
+          <Header />
+          {children}
+        </div>
+      );
+    }
+
+    function PortalLogin({ token, info, t, onOk }) {
+      const [schritt, setSchritt] = useState("wahl");   // wahl | code
+      const [code, setCode] = useState("");
+      const [busy, setBusy] = useState(false);
+      const [msg, setMsg] = useState("");
+      async function codeSenden() {
+        setBusy(true); setMsg("");
+        try { await portalPost({ aktion: "code_senden", token }); setSchritt("code"); }
+        catch (e) { setMsg(e.message); }
+        setBusy(false);
+      }
+      async function codePruefen(e) {
+        e && e.preventDefault(); if (code.replace(/\D/g, "").length !== 6) return;
+        setBusy(true); setMsg("");
+        try { const r = await portalPost({ aktion: "code_pruefen", token, code, geraet: geraetName() }); onOk(r.sitzung); }
+        catch (e2) { setMsg(e2.message); }
+        setBusy(false);
+      }
+      async function faceId() {
+        setBusy(true); setMsg("");
+        try {
+          const o = await portalPost({ aktion: "pk_login_optionen", token });
+          const cred = await navigator.credentials.get({ publicKey: {
+            challenge: b64u.toBuf(o.challenge), rpId: o.rpId, timeout: o.timeout, userVerification: o.userVerification,
+            allowCredentials: (o.allowCredentials || []).map(c => ({ type: "public-key", id: b64u.toBuf(c.id), transports: c.transports })) } });
+          const antwort = { id: cred.id, rawId: b64u.fromBuf(cred.rawId), type: cred.type, clientExtensionResults: {},
+            response: { clientDataJSON: b64u.fromBuf(cred.response.clientDataJSON), authenticatorData: b64u.fromBuf(cred.response.authenticatorData),
+              signature: b64u.fromBuf(cred.response.signature), userHandle: cred.response.userHandle ? b64u.fromBuf(cred.response.userHandle) : undefined } };
+          const r = await portalPost({ aktion: "pk_login", token, antwort, geraet: geraetName() });
+          onOk(r.sitzung);
+        } catch (e) { setMsg(e.name === "NotAllowedError" ? t("Abgebrochen.", "Cancelled.") : (e.message || t("Face ID hat nicht geklappt.", "Face ID did not work."))); }
+        setBusy(false);
+      }
+      return (
+        <PortalRahmen>
+          <div className="card" style={{ maxWidth: 440, margin: "24px auto 0" }}>
+            <div className="pt-h1">{t(`Hallo ${info.vorname}`, `Hi ${info.vorname}`)}</div>
+            <div className="pt-sub" style={{ marginTop: 6 }}>{t("Willkommen im D&T Homes Mieterportal. Zu deinem Schutz bestätigen wir auf jedem neuen Gerät kurz, dass du es bist.", "Welcome to the D&T Homes tenant portal. To protect your data, we briefly confirm it's you on every new device.")}</div>
+            {schritt === "wahl" && <>
+              {info.passkey && passkeyMoeglich() && <button className="btn-primary" style={{ marginTop: 20, width: "100%" }} disabled={busy} onClick={faceId}>{t("Mit Face ID / Fingerabdruck anmelden", "Sign in with Face ID / fingerprint")}</button>}
+              <button className={info.passkey && passkeyMoeglich() ? "btn-secondary" : "btn-primary"} style={{ marginTop: 12, width: "100%" }} disabled={busy || !info.hatEmail} onClick={codeSenden}>
+                {busy ? t("Wird gesendet…", "Sending…") : t(`Code an ${info.email} senden`, `Send code to ${info.email}`)}
+              </button>
+            </>}
+            {schritt === "code" && <form onSubmit={codePruefen}>
+              <div className="pt-sub" style={{ marginTop: 18 }}>{t(`Wir haben dir einen 6-stelligen Code an ${info.email} geschickt.`, `We sent a 6-digit code to ${info.email}.`)}</div>
+              <input className="pt-in pt-code" style={{ marginTop: 14 }} inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} autoFocus
+                onChange={e => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="••••••" />
+              <button className="btn-primary" type="submit" style={{ marginTop: 14, width: "100%" }} disabled={busy || code.length !== 6}>{busy ? t("Wird geprüft…", "Checking…") : t("Anmelden", "Sign in")}</button>
+              <button type="button" className="pt-back" style={{ marginTop: 8 }} disabled={busy} onClick={codeSenden}>{t("Neuen Code senden", "Send a new code")}</button>
+            </form>}
+            {msg && <div className="pt-err">{msg}</div>}
+          </div>
+        </PortalRahmen>
+      );
+    }
+
+    const chfP = v => (v == null || v === "" || isNaN(+v)) ? "–" : "CHF " + Number(v).toLocaleString("de-CH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const datP = v => { if (!v) return ""; const d = new Date(v); return isNaN(d) ? String(v) : d.toLocaleDateString("de-CH"); };
+
+    function PortalStart({ d, t, onSeite }) {
+      const offen = (d.schaeden || []).filter(s => s.status !== "erledigt").length;
+      const fehlt = !d.unterlagen.ausweis;
+      const kachel = (k, i, h, s) => <button className="pt-tile" onClick={() => onSeite(k)}><span className="i">{i}</span><span><div className="h">{h}</div><div className="s">{s}</div></span></button>;
+      return (
+        <div style={{ marginTop: 10 }}>
+          <div className="pt-h1">{t(`Hallo ${d.mieter.vorname}`, `Hi ${d.mieter.vorname}`)}</div>
+          <div className="pt-sub">{d.miete.adresse}{d.miete.objekt ? ` · ${t("Zimmer", "Room")} ${d.miete.objekt}` : ""}</div>
+          <div className="pt-tiles">
+            {kachel("miete", "🏠", t("Meine Miete", "My rental"), d.miete.mietzins != null ? `${chfP(d.miete.mietzins)} / ${t("Monat", "month")}` : t("Mietdetails", "Rental details"))}
+            {kachel("dokumente", "📄", t("Dokumente", "Documents"), fehlt ? t("Ausweis fehlt noch", "ID still missing") : `${d.dokumente.length} ${t("Dokument(e)", "document(s)")}`)}
+            {kachel("schaden", "🔧", t("Schaden melden", "Report damage"), offen ? `${offen} ${t("offen", "open")}` : t("Etwas kaputt?", "Something broken?"))}
+            {kachel("sicherheit", "🔒", t("Sicherheit", "Security"), d.passkey ? t("Face ID aktiv", "Face ID active") : t("Geräte & Face ID", "Devices & Face ID"))}
+          </div>
+          <div className="pt-sub" style={{ marginTop: 22, textAlign: "center" }}>{t("Fragen? ", "Questions? ")}<a href="mailto:info@dthomes.ch" style={{ color: "#5a5448" }}>info@dthomes.ch</a> · <a href="https://wa.me/41766887091" style={{ color: "#5a5448" }}>WhatsApp</a></div>
+        </div>
+      );
+    }
+
+    function PortalMiete({ d, t }) {
+      const m = d.miete;
+      const row = (a, b) => b ? <div className="pt-row"><span>{a}</span><span>{b}</span></div> : null;
+      return (
+        <div className="card">
+          <div className="card-title">{t("Meine Miete", "My rental")}</div>
+          {row(t("Objekt", "Property"), m.wohnung ? t("Ganze Wohnung", "Entire apartment") : `${t("Zimmer", "Room")} ${m.objekt || ""}`)}
+          {row(t("Adresse", "Address"), m.adresse)}
+          {row(t("Stockwerk", "Floor"), m.stockwerk)}
+          {row(t("Mietzins brutto / Monat", "Gross rent / month"), m.mietzins != null ? chfP(m.mietzins) : null)}
+          {row(t("Strom (pauschal) / Monat", "Electricity (flat) / month"), m.strom ? chfP(m.strom) : null)}
+          {row(t("Einzug", "Move-in"), m.einzug)}
+          {row(t("Auszug", "Move-out"), m.auszug)}
+          {row(t("Befristet bis", "Fixed term until"), !m.auszug ? m.mietende : null)}
+          {row(t("Kaution", "Deposit"), m.kaution != null ? chfP(m.kaution) : null)}
+          <div className="pt-sub" style={{ marginTop: 12 }}>{t("Stimmt etwas nicht? Schreib uns an info@dthomes.ch.", "Something not right? Write to info@dthomes.ch.")}</div>
+        </div>
+      );
+    }
+
+    function PortalDokumente({ d, t, sitzung, neuLaden }) {
+      const [busy, setBusy] = useState("");
+      const [msg, setMsg] = useState("");
+      async function oeffnen(id) {
+        setBusy("d" + id); setMsg("");
+        try { const r = await portalPost({ aktion: "dokument", id }, sitzung); window.location.href = r.url; }
+        catch (e) { setMsg(e.message); }
+        setBusy("");
+      }
+      async function hoch(art, file) {
+        if (!file) return; setBusy(art); setMsg("");
+        try { const fd = new FormData(); fd.append("aktion", "hochladen"); fd.append("art", art); fd.append("file", await verkleinere(file, 2400)); await portalForm(fd, sitzung); setMsg(t("Danke, das Dokument ist angekommen.", "Thank you, the document has been received.")); await neuLaden(); }
+        catch (e) { setMsg(e.message); }
+        setBusy("");
+      }
+      const name = k => ({ "Untermietvertrag (unterzeichnet)": t("Mietvertrag (unterzeichnet)", "Rental agreement (signed)"), "Anfangsmietzinsformular (unterzeichnet)": t("Anfangsmietzinsformular", "Initial rent form"), "Verlängerung (unterzeichnet)": t("Verlängerung (unterzeichnet)", "Extension (signed)"), "Übergabeprotokoll": t("Übergabeprotokoll", "Handover report"), "Kautionsbestätigung": t("Kautionsbestätigung", "Deposit confirmation") }[k] || k);
+      const upl = (art, titel, da) => (
+        <div className="pt-item">
+          <div><div style={{ fontWeight: 600, fontSize: 14.5 }}>{da ? "✓ " : ""}{titel}</div><div className="pt-sub" style={{ fontSize: 12.5 }}>{da ? t("Hochgeladen. Aus Datenschutzgründen nicht mehr abrufbar.", "Uploaded. Not viewable again for privacy reasons.") : t("Als PDF oder Foto", "As PDF or photo")}</div></div>
+          <label className="btn-secondary" style={{ cursor: "pointer", whiteSpace: "nowrap" }}>{busy === art ? t("Lädt…", "Uploading…") : (da ? t("Ersetzen", "Replace") : t("Hochladen", "Upload"))}
+            <input type="file" accept="application/pdf,image/*" style={{ display: "none" }} disabled={!!busy} onChange={e => { const f = e.target.files && e.target.files[0]; e.target.value = ""; hoch(art, f); }} /></label>
+        </div>
+      );
+      return (<>
+        <div className="card">
+          <div className="card-title">{t("Meine Dokumente", "My documents")}</div>
+          {d.dokumente.length === 0 && <div className="pt-sub">{t("Noch keine Dokumente vorhanden.", "No documents yet.")}</div>}
+          {d.dokumente.map(x => (
+            <div className="pt-item" key={x.id}>
+              <div><div style={{ fontWeight: 600, fontSize: 14.5 }}>{name(x.kategorie)}</div><div className="pt-sub" style={{ fontSize: 12.5 }}>{datP(x.datum)}</div></div>
+              <button className="btn-secondary" disabled={!!busy} onClick={() => oeffnen(x.id)}>{busy === "d" + x.id ? "…" : t("Öffnen", "Open")}</button>
+            </div>
+          ))}
+        </div>
+        <div className="card">
+          <div className="card-title">{t("Unterlagen von dir", "Your documents")}</div>
+          {upl("ausweis", t("Pass oder ID", "Passport or ID card"), d.unterlagen.ausweis)}
+          {upl("betreibung", t("Betreibungsregister-Auszug", "Debt collection register extract"), d.unterlagen.betreibung)}
+        </div>
+        {msg && <div className={/Danke|Thank/.test(msg) ? "pt-ok" : "pt-err"}>{msg}</div>}
+      </>);
+    }
+
+    function PortalSchaden({ d, t, sitzung, neuLaden }) {
+      const [neu, setNeu] = useState(false);
+      const [f, setF] = useState({ titel: "", ort: "", beschreibung: "", dringlichkeit: "normal" });
+      const [fotos, setFotos] = useState([]);
+      const [busy, setBusy] = useState(false);
+      const [msg, setMsg] = useState("");
+      async function senden(e) {
+        e.preventDefault(); if (!f.titel.trim()) return;
+        setBusy(true); setMsg("");
+        try {
+          const fd = new FormData(); fd.append("aktion", "schaden");
+          Object.entries(f).forEach(([k, v]) => fd.append(k, v));
+          for (const x of fotos) fd.append("fotos", await verkleinere(x));
+          await portalForm(fd, sitzung);
+          setNeu(false); setF({ titel: "", ort: "", beschreibung: "", dringlichkeit: "normal" }); setFotos([]);
+          setMsg(t("Danke! Deine Meldung ist bei uns eingegangen. Wir melden uns so rasch wie möglich.", "Thank you! We received your report and will get back to you as soon as possible."));
+          await neuLaden();
+        } catch (e2) { setMsg(e2.message); }
+        setBusy(false);
+      }
+      const status = s => s === "erledigt" ? [t("Erledigt", "Done"), "#e6eedc", "#3a5230"] : s === "in_arbeit" ? [t("In Arbeit", "In progress"), "#f6edd6", "#7a5b14"] : [t("Eingegangen", "Received"), "#ece8df", "#5a5448"];
+      return (<>
+        {!neu && <button className="btn-primary" style={{ width: "100%" }} onClick={() => { setNeu(true); setMsg(""); }}>{t("Neuen Schaden melden", "Report new damage")}</button>}
+        {neu && <form className="card" onSubmit={senden}>
+          <div className="card-title">{t("Schaden melden", "Report damage")}</div>
+          <div className="pt-sub" style={{ background: "#f6e3df", color: "#7a3328", padding: "10px 12px", borderRadius: 10 }}>{t("Bei Wasserschaden, Gasgeruch oder Feuer: sofort Notruf (112 / 118) und uns per WhatsApp informieren.", "For water damage, gas smell or fire: call emergency services (112 / 118) immediately and notify us via WhatsApp.")}</div>
+          <label className="pt-lbl">{t("Was ist kaputt?", "What is broken?")} *</label>
+          <input className="pt-in" value={f.titel} maxLength={140} required onChange={e => setF({ ...f, titel: e.target.value })} placeholder={t("z.B. Dusche tropft", "e.g. shower is dripping")} />
+          <label className="pt-lbl">{t("Wo?", "Where?")}</label>
+          <input className="pt-in" value={f.ort} maxLength={140} onChange={e => setF({ ...f, ort: e.target.value })} placeholder={t("z.B. Bad, Küche, mein Zimmer", "e.g. bathroom, kitchen, my room")} />
+          <label className="pt-lbl">{t("Beschreibung", "Description")}</label>
+          <textarea className="pt-in" rows={4} value={f.beschreibung} maxLength={4000} onChange={e => setF({ ...f, beschreibung: e.target.value })} placeholder={t("Seit wann? Was hast du schon versucht?", "Since when? What have you tried?")} />
+          <label className="pt-lbl">{t("Wie dringend?", "How urgent?")}</label>
+          <div className="pt-chips">{[["normal", t("Normal", "Normal")], ["dringend", t("Dringend", "Urgent")], ["notfall", t("Notfall", "Emergency")]].map(([k, l]) => <button type="button" key={k} className={"pt-chip" + (f.dringlichkeit === k ? " on" : "")} onClick={() => setF({ ...f, dringlichkeit: k })}>{l}</button>)}</div>
+          <label className="pt-lbl">{t("Fotos (max. 6)", "Photos (max. 6)")}</label>
+          <input type="file" accept="image/*" multiple onChange={e => setFotos(Array.from(e.target.files || []).slice(0, 6))} />
+          {fotos.length > 0 && <div className="pt-sub" style={{ marginTop: 6 }}>{fotos.length} {t("Foto(s) ausgewählt", "photo(s) selected")}</div>}
+          <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+            <button type="button" className="btn-secondary" disabled={busy} onClick={() => setNeu(false)}>{t("Abbrechen", "Cancel")}</button>
+            <button type="submit" className="btn-primary" style={{ flex: 1 }} disabled={busy || !f.titel.trim()}>{busy ? t("Wird gesendet…", "Sending…") : t("Meldung senden", "Send report")}</button>
+          </div>
+        </form>}
+        {msg && <div className={/Danke|Thank/.test(msg) ? "pt-ok" : "pt-err"}>{msg}</div>}
+        <div className="card" style={{ marginTop: 14 }}>
+          <div className="card-title">{t("Meine Meldungen", "My reports")}</div>
+          {(d.schaeden || []).length === 0 && <div className="pt-sub">{t("Noch keine Meldungen.", "No reports yet.")}</div>}
+          {(d.schaeden || []).map(s => { const [l, bg, c] = status(s.status); return (
+            <div className="pt-item" key={s.id} style={{ alignItems: "flex-start" }}>
+              <div><div style={{ fontWeight: 600, fontSize: 14.5 }}>{s.titel}</div>
+                <div className="pt-sub" style={{ fontSize: 12.5 }}>{datP(s.created_at)}{s.ort_im_objekt ? ` · ${s.ort_im_objekt}` : ""}{s.fotos ? ` · ${s.fotos} ${t("Foto(s)", "photo(s)")}` : ""}</div>
+                {s.antwort && <div className="pt-sub" style={{ marginTop: 6, color: "#1a1814" }}>💬 {s.antwort}</div>}</div>
+              <span className="pt-badge" style={{ background: bg, color: c }}>{l}</span>
+            </div>); })}
+        </div>
+      </>);
+    }
+
+    function PortalSicherheit({ d, t, sitzung, neuLaden, onAbmelden }) {
+      const [busy, setBusy] = useState(false);
+      const [msg, setMsg] = useState("");
+      async function faceIdEinrichten() {
+        setBusy(true); setMsg("");
+        try {
+          const o = await portalPost({ aktion: "pk_reg_optionen" }, sitzung);
+          const cred = await navigator.credentials.create({ publicKey: {
+            challenge: b64u.toBuf(o.challenge), rp: o.rp, user: { id: b64u.toBuf(o.user.id), name: o.user.name, displayName: o.user.displayName },
+            pubKeyCredParams: o.pubKeyCredParams, timeout: o.timeout, attestation: o.attestation, authenticatorSelection: o.authenticatorSelection,
+            excludeCredentials: (o.excludeCredentials || []).map(c => ({ type: "public-key", id: b64u.toBuf(c.id) })) } });
+          const antwort = { id: cred.id, rawId: b64u.fromBuf(cred.rawId), type: cred.type, clientExtensionResults: {},
+            response: { clientDataJSON: b64u.fromBuf(cred.response.clientDataJSON), attestationObject: b64u.fromBuf(cred.response.attestationObject),
+              transports: cred.response.getTransports ? cred.response.getTransports() : undefined } };
+          await portalPost({ aktion: "pk_reg", antwort, geraet: geraetName() }, sitzung);
+          setMsg(t("Face ID ist eingerichtet. Beim nächsten Mal kannst du dich damit anmelden.", "Face ID is set up. Next time you can sign in with it."));
+          await neuLaden();
+        } catch (e) { setMsg(e.name === "NotAllowedError" ? t("Abgebrochen.", "Cancelled.") : (e.message || t("Hat nicht geklappt.", "Did not work."))); }
+        setBusy(false);
+      }
+      async function geraetAbmelden(id) { setBusy(true); try { await portalPost({ aktion: "geraet_abmelden", id }, sitzung); await neuLaden(); } catch (e) { setMsg(e.message); } setBusy(false); }
+      return (<>
+        <div className="card">
+          <div className="card-title">{t("Face ID / Fingerabdruck", "Face ID / fingerprint")}</div>
+          <div className="pt-sub">{d.passkey ? t("Ist eingerichtet. Du kannst dich ohne Code anmelden.", "Is set up. You can sign in without a code.") : t("Melde dich beim nächsten Mal ohne Code an, sicher und schnell.", "Sign in next time without a code, safely and quickly.")}</div>
+          {passkeyMoeglich() && <button className="btn-secondary" style={{ marginTop: 12 }} disabled={busy} onClick={faceIdEinrichten}>{d.passkey ? t("Auf diesem Gerät zusätzlich einrichten", "Also set up on this device") : t("Jetzt einrichten", "Set up now")}</button>}
+        </div>
+        <div className="card">
+          <div className="card-title">{t("Angemeldete Geräte", "Signed-in devices")}</div>
+          {(d.sitzungen || []).map(s => (
+            <div className="pt-item" key={s.id}>
+              <div><div style={{ fontWeight: 600, fontSize: 14 }}>{s.geraet || t("Gerät", "Device")}{s.aktuell ? ` · ${t("dieses Gerät", "this device")}` : ""}</div>
+                <div className="pt-sub" style={{ fontSize: 12.5 }}>{t("Zuletzt aktiv", "Last active")}: {datP(s.zuletzt)} · {s.art === "passkey" ? "Face ID" : "Code"}</div></div>
+              {!s.aktuell && <button className="btn-secondary" disabled={busy} onClick={() => geraetAbmelden(s.id)}>{t("Abmelden", "Sign out")}</button>}
+            </div>
+          ))}
+          <div className="pt-sub" style={{ marginTop: 10 }}>{t("Ein Gerät, das du nicht kennst? Melde es hier ab und schreib uns.", "A device you don't recognise? Sign it out here and let us know.")}</div>
+        </div>
+        <button className="btn-secondary" style={{ width: "100%" }} onClick={onAbmelden}>{t("Auf diesem Gerät abmelden", "Sign out on this device")}</button>
+        {msg && <div className={/eingerichtet|set up/.test(msg) ? "pt-ok" : "pt-err"}>{msg}</div>}
+      </>);
+    }
+
+    // Startseite ohne Link: letzten Portal-Link oeffnen oder Link per Mail anfordern
+    function PortalOhneLink() {
+      const [email, setEmail] = useState("");
+      const [ok, setOk] = useState(false);
+      const [busy, setBusy] = useState(false);
+      async function anfordern(e) { e.preventDefault(); setBusy(true); try { await portalPost({ aktion: "link_anfordern", email }); } catch (_) {} setOk(true); setBusy(false); }
+      return (
+        <PortalRahmen>
+          <form className="card" style={{ maxWidth: 440, margin: "24px auto 0" }} onSubmit={anfordern}>
+            <div className="pt-h1">Mieterportal · Tenant portal</div>
+            <div className="pt-sub" style={{ marginTop: 6 }}>Gib die E-Mail-Adresse aus deinem Mietvertrag ein. Wir schicken dir deinen persönlichen Link. · Enter the email address from your rental agreement and we'll send you your personal link.</div>
+            {!ok ? <>
+              <input className="pt-in" type="email" required style={{ marginTop: 16 }} value={email} onChange={e => setEmail(e.target.value)} placeholder="name@beispiel.ch" />
+              <button className="btn-primary" type="submit" style={{ marginTop: 12, width: "100%" }} disabled={busy}>{busy ? "…" : "Link senden · Send link"}</button>
+            </> : <div className="pt-ok">Falls die Adresse bei uns hinterlegt ist, ist der Link unterwegs. Schau auch im Spam-Ordner nach. · If the address is registered with us, the link is on its way. Please also check your spam folder.</div>}
+          </form>
+        </PortalRahmen>
+      );
+    }
+
     function App() {
       // Extract token from URL pathname
       const path = window.location.pathname.replace(/^\//, "").replace(/\/$/, "");
@@ -3500,6 +3887,20 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
         return <UebernahmePage token={handoverToken} />;
       }
       
+      // Mieterportal: /p/{portal_token}, /p ohne Link = Link per Mail anfordern
+      if (path === "p" || path === "portal") return <PortalOhneLink />;
+      if (path.startsWith("p/")) {
+        const pt = path.substring(2);
+        if (!/^[a-f0-9]{32}$/.test(pt)) return <PortalOhneLink />;
+        return <PortalApp token={pt} />;
+      }
+      // Startseite ohne Token: zuletzt benutztes Portal oeffnen
+      if (!path) {
+        const letzter = pSpeicher.get("dt_portal_letzter");
+        if (letzter && /^[a-f0-9]{32}$/.test(letzter)) { window.location.replace("/p/" + letzter); return null; }
+        return <PortalOhneLink />;
+      }
+
       // Dokumente-Route: /dokumente/{token} (Betreibungsauszug + Ausweis hochladen)
       if (path.startsWith("dokumente/")) {
         return <DokumentePage token={path.substring("dokumente/".length)} />;
