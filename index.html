@@ -3698,7 +3698,20 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             .pt-tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
             .pt-tile{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 16px;text-align:left;cursor:pointer;font:inherit;color:inherit;min-height:108px;display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;transition:border-color .15s,transform .15s}
             .pt-tile:hover{border-color:var(--sand-deep);transform:translateY(-1px)}
-            .pt-tile .i{font-size:22px;line-height:1;height:24px;margin-bottom:16px}
+            .pt-tile .i{width:42px;height:42px;border-radius:12px;background:#F3EEE4;color:var(--brass);display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;flex:none;transition:background .15s,color .15s}
+            .pt-tile:hover .i{background:var(--espresso);color:#fff}
+            .pt-drop-i{color:var(--brass);line-height:0;margin-bottom:2px}
+            .pt-an{margin-top:30px}
+            .pt-an-list{display:grid;gap:8px;margin-top:12px}
+            .pt-an-item{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:#fff;border:1px solid var(--line);border-left:3px solid var(--brass);border-radius:14px;padding:14px 16px;cursor:pointer;font:inherit;color:inherit;transition:border-color .15s}
+            .pt-an-item:hover{border-color:var(--sand-deep);border-left-color:var(--espresso)}
+            .pt-an-item.warn{border-left-color:#c9a24a}
+            .pt-an-item.ok{border-left-color:#7a9a64}
+            .pt-an-item .ai{width:36px;height:36px;border-radius:10px;background:#F3EEE4;color:var(--brass);display:inline-flex;align-items:center;justify-content:center;flex:none}
+            .pt-an-item .at{flex:1;min-width:0}
+            .pt-an-item .h{font-weight:600;font-size:15px}
+            .pt-an-item .s{font-size:13px;color:var(--ink-soft);margin-top:2px}
+            .pt-an-item .ar{color:var(--ink-soft);opacity:.6;flex:none;line-height:0}
             .pt-tile .h{font-family:var(--grotesk);font-weight:600;font-size:15.5px;letter-spacing:-.01em;margin-top:0}
             .pt-tile .s{font-size:12.5px;color:var(--ink-soft);opacity:.85;margin-top:3px}
             .pt-back{background:none;border:none;color:var(--ink-soft);font-family:var(--grotesk);font-size:14px;cursor:pointer;padding:6px 0;margin:4px 0 6px}
@@ -3798,6 +3811,12 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       const ende = m.auszug || (kdOffen && kdOffen.datum) || (d.kuendigung && d.kuendigung.vertragsende) || m.mietende || "";
       const objekt = m.wohnung ? t("deine Wohnung", "your apartment") : t("dein Zimmer", "your room");
       const zeile = (a, b) => b ? <div className="pt-row"><span>{a}</span><span>{b}</span></div> : null;
+      // Was ansteht: nur Dinge, die gerade laufen oder zu tun sind
+      const ansteht = [];
+      const hoE = hoEinzug(d);
+      if (hoE && hoE.offen) ansteht.push({ seite: "uebergabe", icon: "uebergabe", art: "warn", h: hoE.frist ? t(`Übergabeprotokoll ausfüllen bis ${datP(hoE.frist)}`, `Complete the handover report by ${datP(hoE.frist)}`) : t("Übergabeprotokoll ausfüllen", "Complete the handover report"), s: t("Mängel mit Fotos und Schlüsselnummern festhalten", "Record defects with photos and key numbers") });
+      (d.schaeden || []).filter(x => x.status !== "erledigt").forEach(x => ansteht.push({ seite: "schaden", icon: "schaden", h: x.status === "in_arbeit" ? t(`Schadenmeldung in Arbeit: ${x.titel}`, `Damage report in progress: ${x.titel}`) : t(`Schadenmeldung eingegangen: ${x.titel}`, `Damage report received: ${x.titel}`), s: x.status === "in_arbeit" ? t("Wir kümmern uns darum.", "We are taking care of it.") : t("Wir schauen sie uns an und melden uns.", "We will look into it and get back to you.") }));
+      if (kdOffen) ansteht.push({ seite: "kuendigung", icon: "kuendigung", art: kdOffen.status === "bestaetigt" ? "ok" : "", h: kdOffen.status === "bestaetigt" ? t(`Kündigung bestätigt per ${kdOffen.datum}`, `Notice confirmed for ${kdOffen.datum}`) : t(`Kündigung eingegangen per ${kdOffen.datum}`, `Notice received for ${kdOffen.datum}`), s: kdOffen.status === "bestaetigt" ? t("Wir melden uns rechtzeitig wegen der Übergabe.", "We will contact you about the handover in good time.") : t("Wir prüfen sie und bestätigen sie per E-Mail.", "We will check it and confirm by email.") });
       return (
         <div>
           <div className="pt-hero">
@@ -3808,7 +3827,12 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             </div>
             <div className="card pt-glance" style={{ marginBottom: 0 }}>
               <div className="card-title">{t("Auf einen Blick", "At a glance")}</div>
-              {zeile(m.wohnung ? t("Wohnung", "Apartment") : t("Zimmer", "Room"), [m.adresse, m.wohnung ? "" : m.objekt].filter(Boolean).join(" · "))}
+              {zeile(t("Objekt", "Property"), m.wohnung
+                ? [m.zimmer && t(`${m.zimmer}-Zimmer-Wohnung`, `${m.zimmer}-room apartment`), m.flaeche && `${m.flaeche} m²`].filter(Boolean).join(" · ") || t("Wohnung", "Apartment")
+                : [t(`Zimmer ${m.objekt || ""}`.trim(), `Room ${m.objekt || ""}`.trim()), m.flaeche && `${m.flaeche} m²`, m.balkon && t("mit Balkon", "with balcony")].filter(Boolean).join(" · "))}
+              {!m.wohnung && m.zimmer && zeile(t("WG", "Shared flat"), t(`${m.zimmer}-Zimmer-Wohnung`, `${m.zimmer}-room apartment`))}
+              {zeile(t("Adresse", "Address"), m.adresse)}
+              {zeile(t("Stockwerk", "Floor"), m.stockwerk)}
               {zeile(t("Miete pro Monat", "Rent per month"), d.kosten && d.kosten.total ? chfP(d.kosten.total) : "")}
               {zeile(t("Fällig", "Due"), t("bis 25. des Vormonats", "by the 25th of the previous month"))}
               {zeile(t("Einzug", "Move-in"), m.einzug)}
@@ -3816,19 +3840,24 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
               {d.wlan && zeile("WLAN", `${d.wlan.name} · ${d.wlan.passwort}`)}
             </div>
           </div>
-          {hoOffen && <div className="pt-warn" style={{ marginTop: 20, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <div><b>{t("Übergabeprotokoll ausfüllen", "Complete the handover report")}</b><br />{t("Bitte halte Mängel beim Einzug fest", "Please record any defects at move-in")}{hoOffen.frist ? t(` bis ${datP(hoOffen.frist)}`, ` by ${datP(hoOffen.frist)}`) : ""}.</div>
-            <a className="btn-primary" href={hoOffen.link}>{t("Jetzt ausfüllen", "Fill in now")}</a>
+          {ansteht.length > 0 && <div className="pt-an">
+            <div className="pt-sec" style={{ marginTop: 0 }}>{t("Was ansteht", "Coming up")}</div>
+            <div className="pt-an-list">{ansteht.map((x, i) => (
+              <button key={i} className={"pt-an-item" + (x.art ? " " + x.art : "")} onClick={() => onSeite(x.seite)}>
+                <span className="ai"><PtIcon n={x.icon} size={19} /></span>
+                <span className="at"><div className="h">{x.h}</div>{x.s && <div className="s">{x.s}</div>}</span>
+                <span className="ar"><PtIcon n="pfeil" size={18} /></span>
+              </button>))}</div>
           </div>}
           <div className="pt-sec">{t("Was möchtest du tun?", "What would you like to do?")}</div>
           <div className="pt-tiles">
-            {kachel("miete", "🏠", t("Miete & Zahlung", "Rent & payment"), d.kosten && d.kosten.total ? `${chfP(d.kosten.total)} / ${t("Monat", "month")}` : t("Mietdetails", "Rental details"))}
-            {kachel("dokumente", "📄", t("Dokumente", "Documents"), `${d.dokumente.length} ${t("Dokument(e)", "document(s)")}`)}
-            {kachel("uebergabe", "📋", t("Übergabeprotokoll", "Handover report"), hoStatusText(d, t))}
-            {kachel("schaden", "🔧", t("Schaden melden", "Report damage"), offen ? `${offen} ${t("offen", "open")}` : t("Etwas kaputt?", "Something broken?"))}
-            {(d.hausinfos || d.wlan) ? kachel("hausinfos", "📌", d.wlan ? t("WLAN & Hausinfos", "Wi-Fi & house info") : t("Hausinfos", "House info"), d.wlan ? t("Netzwerk und Passwort", "Network and password") : t("Abfall, Waschküche & mehr", "Waste, laundry & more")) : null}
-            {kachel("service", "🧽", t("Reinigung & Umzug", "Cleaning & moving"), t("Endreinigung, Umzug, Parkplatz", "Final cleaning, moving, parking"))}
-            {kachel("kuendigung", "📤", t("Auszug", "Moving out"), kdOffen ? (kdOffen.status === "bestaetigt" ? t(`Bestätigt per ${kdOffen.datum}`, `Confirmed for ${kdOffen.datum}`) : t("Kündigung eingereicht", "Notice submitted")) : t("Kündigen oder Nachmieter stellen", "Give notice or find a successor"))}
+            {kachel("miete", <PtIcon n="miete" />, t("Miete & Zahlung", "Rent & payment"), d.kosten && d.kosten.total ? `${chfP(d.kosten.total)} / ${t("Monat", "month")}` : t("Mietdetails", "Rental details"))}
+            {kachel("dokumente", <PtIcon n="dokumente" />, t("Dokumente", "Documents"), `${d.dokumente.length} ${t("Dokument(e)", "document(s)")}`)}
+            {kachel("uebergabe", <PtIcon n="uebergabe" />, t("Übergabeprotokoll", "Handover report"), hoStatusText(d, t))}
+            {kachel("schaden", <PtIcon n="schaden" />, t("Schaden melden", "Report damage"), offen ? `${offen} ${t("offen", "open")}` : t("Etwas kaputt?", "Something broken?"))}
+            {(d.hausinfos || d.wlan) ? kachel("hausinfos", <PtIcon n={d.wlan ? "hausinfos" : "info"} />, d.wlan ? t("WLAN & Hausinfos", "Wi-Fi & house info") : t("Hausinfos", "House info"), d.wlan ? t("Netzwerk und Passwort", "Network and password") : t("Abfall, Waschküche & mehr", "Waste, laundry & more")) : null}
+            {kachel("service", <PtIcon n="service" />, t("Reinigung & Umzug", "Cleaning & moving"), t("Endreinigung, Umzug, Parkplatz", "Final cleaning, moving, parking"))}
+            {kachel("kuendigung", <PtIcon n="kuendigung" />, t("Auszug", "Moving out"), kdOffen ? (kdOffen.status === "bestaetigt" ? t(`Bestätigt per ${kdOffen.datum}`, `Confirmed for ${kdOffen.datum}`) : t("Kündigung eingereicht", "Notice submitted")) : t("Kündigen oder Nachmieter stellen", "Give notice or find a successor"))}
           </div>
           <div className="pt-fuss">
             <span>{t("Fragen? ", "Questions? ")}<a href="https://wa.me/41766887091" target="_blank" rel="noopener noreferrer">WhatsApp</a> · <a href="mailto:info@dthomes.ch">info@dthomes.ch</a></span>
@@ -3836,6 +3865,26 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
           </div>
         </div>
       );
+    }
+
+    // Schlichte Linien-Symbole im Stil der Webseite
+    const PT_ICONS = {
+      miete: "M3 10.5 12 3l9 7.5M5 9v11h14V9M10 20v-6h4v6",
+      dokumente: "M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h6",
+      uebergabe: "M9 4h6v3H9zM9 5.5H6.5A1.5 1.5 0 0 0 5 7v12.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V7a1.5 1.5 0 0 0-1.5-1.5H15M9 14l2 2 4-4.5",
+      schaden: "M14.7 6.3a4 4 0 0 0-5.4 5.1L3.5 17.2a1.8 1.8 0 0 0 2.5 2.5l5.8-5.8a4 4 0 0 0 5.1-5.4l-2.6 2.6-2.3-.4-.4-2.3z",
+      hausinfos: "M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.8 15.8a4.8 4.8 0 0 1 6.4 0M12 19.2h.01",
+      info: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 11v5M12 7.5h.01",
+      service: "M12 3v4M12 17v4M3 12h4M17 12h4M6.3 6.3l2.4 2.4M15.3 15.3l2.4 2.4M6.3 17.7l2.4-2.4M15.3 8.7l2.4-2.4",
+      kuendigung: "M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M9 16l-4-4 4-4M5 12h10",
+      kuendigen: "M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z",
+      nachmieter: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6",
+      kamera: "M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
+      geld: "M3 6h18v12H3zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 9.5v5M18 9.5v5",
+      pfeil: "M9 6l6 6-6 6",
+    };
+    function PtIcon({ n, size = 22 }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={PT_ICONS[n] || PT_ICONS.info} /></svg>;
     }
 
     function hoEinzug(d) { return (d.uebergabe || []).find(h => (h.typ || "einzug") === "einzug"); }
@@ -4045,7 +4094,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
           onDragOver={e => { e.preventDefault(); setUeber(true); }} onDragLeave={() => setUeber(false)}
           onDrop={e => { e.preventDefault(); setUeber(false); dazu(e.dataTransfer && e.dataTransfer.files); }}>
           <input type="file" accept="image/*" multiple style={{ display: "none" }} onChange={e => { dazu(e.target.files); e.target.value = ""; }} disabled={fotos.length >= max} />
-          <span className="pt-drop-i">📷</span>
+          <span className="pt-drop-i"><PtIcon n="kamera" size={26} /></span>
           <span><b>{t("Fotos auswählen", "Choose photos")}</b> {t("oder hierher ziehen", "or drag them here")}</span>
           <span className="pt-sub" style={{ fontSize: 12.5 }}>{fotos.length}/{max} {t("Fotos", "photos")}</span>
         </label>
@@ -4246,8 +4295,8 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
         {!modus && !hilfe && <>
           <div className="pt-sub" style={{ marginTop: 6 }}>{offen ? t("Du kannst trotzdem einen Nachmieter vorschlagen, wenn du früher raus möchtest.", "You can still suggest a successor if you want to leave earlier.") : t("Wie möchtest du ausziehen?", "How would you like to move out?")}</div>
           <div className="pt-tiles" style={{ gridTemplateColumns: "1fr 1fr" }}>
-            {!offen && wahl("kuendigen", "📝", t("Kündigen", "Give notice"), kannKuendigen ? t(`Frühestens per ${k.termine[0]}`, `Earliest ${k.termine[0]}`) : t("Bei deinem Vertrag nicht möglich", "Not possible with your contract"), !kannKuendigen)}
-            {wahl("nachmieter", "🤝", t("Nachmieter stellen", "Find a successor"), t("Jemanden gefunden? Link schicken", "Found someone? Send the link"))}
+            {!offen && wahl("kuendigen", <PtIcon n="kuendigen" />, t("Kündigen", "Give notice"), kannKuendigen ? t(`Frühestens per ${k.termine[0]}`, `Earliest ${k.termine[0]}`) : t("Bei deinem Vertrag nicht möglich", "Not possible with your contract"), !kannKuendigen)}
+            {wahl("nachmieter", <PtIcon n="nachmieter" />, t("Nachmieter stellen", "Find a successor"), t("Jemanden gefunden? Link schicken", "Found someone? Send the link"))}
           </div>
           {!offen && !kannKuendigen && grundKurz && <div className="pt-sub" style={{ marginTop: 12 }}>{grundKurz} {k.hinweis !== "endet" ? t(`Mit einem Nachmieter kannst du trotzdem früher ausziehen.`, `With a successor you can still move out earlier.`) : ""}</div>}
         </>}
