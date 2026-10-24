@@ -21,6 +21,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300&display=swap" rel="stylesheet">
   
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
@@ -3579,51 +3580,74 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       return (
         <div className="container pt-wrap">
           <style>{`
-            .pt-wrap{max-width:1120px}
-            .pt-lang{position:absolute;right:0;top:50%;transform:translateY(-70%);display:flex;border:1px solid #e1d8c5;border-radius:99px;overflow:hidden;background:#fff}
-            .pt-lang button{border:none;background:none;font:inherit;font-size:12.5px;font-weight:600;padding:6px 11px;cursor:pointer;color:#8a8174}
-            .pt-lang button.on{background:#1a1814;color:#fff}
+            body:has(.pt-wrap){background:#FBFAF6}
+            .pt-wrap{--paper:#FBFAF6;--ink:#1C1B17;--ink-soft:#54503F;--espresso:#211E19;--sand:#EAE1D2;--sand-deep:#DED2BD;--brass:#6B5F49;--line:#E4DDD0;--grotesk:'Space Grotesk',system-ui,sans-serif;--serif:'Newsreader',Georgia,serif;
+              max-width:1120px;font-family:var(--grotesk);color:var(--ink)}
+            .pt-wrap .header{border-bottom:1px solid var(--line);padding:4px 0 16px;margin-bottom:22px}
+            .pt-wrap .header img{height:24px!important}
+            .pt-lang{position:absolute;right:0;top:4px;display:inline-flex;align-items:center;font-family:var(--grotesk)}
+            .pt-lang button{border:none;background:none;font-family:var(--grotesk);font-size:12.5px;font-weight:600;letter-spacing:.04em;padding:6px 7px;cursor:pointer;color:var(--ink);opacity:.55}
+            .pt-lang button:hover{opacity:.85}
+            .pt-lang button.on{opacity:1;text-decoration:underline;text-underline-offset:5px;text-decoration-thickness:1.5px}
+            .pt-wrap .card{border:1px solid var(--line);border-radius:16px;background:#fff}
+            .pt-wrap .card-title{font-family:var(--grotesk);font-size:14px;font-weight:500;color:var(--brass);text-transform:none;letter-spacing:0;margin:0 0 10px}
+            .pt-wrap .h1{font-family:var(--grotesk);font-weight:600;letter-spacing:-.02em}
+            .pt-wrap .btn-primary{font-family:var(--grotesk);font-size:15px;font-weight:500;letter-spacing:0;background:var(--espresso);color:#fff;border-radius:12px;padding:13px 24px}
+            .pt-wrap .btn-primary:hover:not(:disabled){background:#000;transform:none}
+            .pt-wrap .btn-primary:disabled{background:#c9bfae}
+            .pt-wrap .btn-secondary{font-family:var(--grotesk);font-size:14.5px;font-weight:500;letter-spacing:0;background:#fff;color:var(--ink);border:1px solid var(--sand-deep);border-radius:12px;padding:12px 20px}
+            .pt-wrap .btn-secondary:hover{border-color:var(--brass)}
             .pt-wrap a.btn-primary,.pt-wrap a.btn-secondary{text-decoration:none;display:inline-flex;align-items:center;justify-content:center;width:auto;white-space:nowrap;padding-left:20px;padding-right:20px}
             .pt-nav{display:none;gap:6px;flex-wrap:wrap;margin:0 0 20px}
-            .pt-nav button{border:1px solid #e1d8c5;background:#fff;border-radius:99px;padding:8px 14px;font:inherit;font-size:13.5px;cursor:pointer;color:#3a352d}
-            .pt-nav button.on{background:#1a1814;color:#fff;border-color:#1a1814}
-            .pt-warn{background:#fbf3e2;border:1px solid #ecd9ae;border-radius:10px;padding:14px 16px;color:#5c4512;font-size:14px;line-height:1.55}
-            .pt-info{background:#f4f0e8;border-radius:10px;padding:12px 14px;font-size:13.5px;line-height:1.55;color:#3a352d;margin-top:12px}
+            .pt-nav button{border:1px solid var(--line);background:#fff;border-radius:99px;padding:8px 14px;font:inherit;font-size:13.5px;cursor:pointer;color:var(--ink-soft)}
+            .pt-nav button.on{background:var(--espresso);color:#fff;border-color:var(--espresso)}
+            .pt-warn{background:#fbf3e2;border:1px solid #ecd9ae;border-radius:12px;padding:14px 16px;color:#5c4512;font-size:14px;line-height:1.55}
+            .pt-info{background:#F3EEE4;border-radius:12px;padding:12px 14px;font-size:13.5px;line-height:1.55;color:var(--ink-soft);margin-top:12px}
+            .pt-big{font-family:var(--serif);font-size:19px;line-height:1.45;color:var(--ink);margin:2px 0 16px}
+            .pt-link{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--paper);border-radius:12px;padding:6px 6px 6px 14px}
+            .pt-link span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;color:var(--ink-soft)}
+            .pt-link button{border:none;background:var(--sand);color:var(--ink);border-radius:9px;padding:9px 14px;font-family:var(--grotesk);font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+            .pt-send{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+            .pt-send>*{flex:1 1 0;min-width:110px}
+            .pt-steps{margin-top:22px;border-top:1px solid var(--line);padding-top:16px;display:grid;gap:10px}
+            .pt-steps div{display:flex;gap:12px;align-items:baseline;font-size:14.5px;color:var(--ink-soft)}
+            .pt-steps b{flex:none;width:22px;height:22px;border-radius:50%;background:var(--sand);color:var(--ink);font-size:12px;display:inline-flex;align-items:center;justify-content:center;transform:translateY(-1px)}
             @media (min-width: 900px){
               .pt-wrap .pt-tiles{grid-template-columns:repeat(4,1fr);gap:16px}
-              .pt-wrap .pt-tile{min-height:132px;padding:22px 20px}
+              .pt-wrap .pt-tile{min-height:140px;padding:22px 20px}
               .pt-wrap .pt-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
               .pt-wrap .pt-cols>.card{margin-bottom:0}
               .pt-wrap .pt-cols>div>.card:last-child{margin-bottom:0}
               .pt-wrap .pt-cols>.pt-ok,.pt-wrap .pt-cols>.pt-err,.pt-wrap .pt-cols>.pt-full{grid-column:1/-1}
               .pt-wrap .pt-back{font-size:14.5px}
-              .pt-wrap .pt-h1{font-size:28px}
+              .pt-wrap .pt-h1{font-size:34px}
               .pt-wrap .pt-solo{max-width:760px}
             }
             .pt-tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
-            .pt-tile{background:#fff;border:1px solid #e1d8c5;border-radius:14px;padding:18px 16px;text-align:left;cursor:pointer;font:inherit;color:inherit;min-height:104px;display:flex;flex-direction:column;justify-content:space-between}
-            .pt-tile:hover{border-color:#b9ad95}
+            .pt-tile{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 16px;text-align:left;cursor:pointer;font:inherit;color:inherit;min-height:108px;display:flex;flex-direction:column;justify-content:space-between;transition:border-color .15s,transform .15s}
+            .pt-tile:hover{border-color:var(--sand-deep);transform:translateY(-1px)}
             .pt-tile .i{font-size:22px}
-            .pt-tile .h{font-weight:700;font-size:15px;margin-top:10px}
-            .pt-tile .s{font-size:12.5px;color:#6e6a62;margin-top:3px}
-            .pt-back{background:none;border:none;color:#6e6a62;font:inherit;font-size:13.5px;cursor:pointer;padding:6px 0;margin:4px 0 6px}
-            .pt-h1{font-size:22px;font-weight:600;margin:6px 0 2px}
-            .pt-sub{font-size:13.5px;color:#6e6a62;line-height:1.5}
-            .pt-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #f0eadd;font-size:14px}
+            .pt-tile .h{font-family:var(--grotesk);font-weight:600;font-size:15.5px;letter-spacing:-.01em;margin-top:10px}
+            .pt-tile .s{font-size:12.5px;color:var(--ink-soft);opacity:.85;margin-top:3px}
+            .pt-back{background:none;border:none;color:var(--ink-soft);font-family:var(--grotesk);font-size:14px;cursor:pointer;padding:6px 0;margin:4px 0 6px}
+            .pt-h1{font-family:var(--grotesk);font-size:26px;font-weight:600;letter-spacing:-.02em;line-height:1.1;margin:6px 0 6px}
+            .pt-sub{font-size:14px;color:var(--ink-soft);line-height:1.55}
+            .pt-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14.5px}
             .pt-row:last-child{border-bottom:none}
-            .pt-row span:first-child{color:#6e6a62}
+            .pt-row span:first-child{color:var(--ink-soft)}
             .pt-row span:last-child{text-align:right;font-weight:500}
-            .pt-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #f0eadd}
+            .pt-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
             .pt-item:last-child{border-bottom:none}
-            .pt-in{width:100%;box-sizing:border-box;padding:12px 13px;border:1px solid #d8d0c0;border-radius:10px;font:inherit;font-size:15px;background:#fff}
-            .pt-lbl{font-size:12.5px;font-weight:600;color:#5a5448;margin:14px 0 6px;display:block}
+            .pt-in{width:100%;box-sizing:border-box;padding:12px 13px;border:1px solid var(--line);border-radius:10px;font-family:var(--grotesk);font-size:15px;color:var(--ink);background:var(--paper)}
+            .pt-in:focus{outline:none;border-color:var(--brass)}
+            .pt-lbl{font-size:13px;font-weight:500;color:var(--ink-soft);margin:14px 0 6px;display:block}
             .pt-err{color:#9b4a3e;font-size:13.5px;margin-top:10px}
             .pt-ok{color:#4f6b3f;font-size:13.5px;margin-top:10px}
             .pt-badge{font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:99px;white-space:nowrap}
             .pt-code{font-size:28px;letter-spacing:.4em;text-align:center;font-weight:600}
             .pt-chips{display:flex;gap:8px;flex-wrap:wrap}
-            .pt-chip{border:1px solid #d8d0c0;background:#fff;border-radius:99px;padding:8px 14px;font:inherit;font-size:13.5px;cursor:pointer}
-            .pt-chip.on{background:#1a1814;color:#fff;border-color:#1a1814}
+            .pt-chip{border:1px solid var(--line);background:#fff;border-radius:99px;padding:8px 14px;font-family:var(--grotesk);font-size:13.5px;cursor:pointer;color:var(--ink)}
+            .pt-chip.on{background:var(--espresso);color:#fff;border-color:var(--espresso)}
           `}</style>
           <div style={{ position: "relative" }}>
             <Header />
@@ -3948,13 +3972,10 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       const [datum, setDatum] = useState(k.termine[0] || "");
       const [grund, setGrund] = useState("");
       const [ok, setOk] = useState(false);
-      const [perMail, setPerMail] = useState(false);
-      const [nm, setNm] = useState({ name: "", email: "" });
       const [busy, setBusy] = useState("");
       const [msg, setMsg] = useState("");
       const [kopiert, setKopiert] = useState(false);
       const link = d.nachfolge && d.nachfolge.link;
-      const nachmieterListe = eintraege.filter(e => e.art === "nachmieter");
 
       async function kuendigen(e) {
         e.preventDefault(); if (!ok || !datum) return;
@@ -3963,19 +3984,15 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
         catch (e2) { setMsg(e2.message); }
         setBusy("");
       }
-      async function nachmieterMail(e) {
-        e.preventDefault();
-        setBusy("n"); setMsg("");
-        try { await portalPost({ aktion: "nachmieter", ...nm }, sitzung); setMsg(t(`Erledigt! ${nm.name} hat den Link per E-Mail bekommen.`, `Done! ${nm.name} has received the link by email.`)); setNm({ name: "", email: "" }); setPerMail(false); await neuLaden(); }
-        catch (e2) { setMsg(e2.message); }
-        setBusy("");
-      }
       async function kopieren() { try { await navigator.clipboard.writeText(link); setKopiert(true); setTimeout(() => setKopiert(false), 2000); } catch (_) { window.prompt(t("Link kopieren:", "Copy link:"), link); } }
+      const teilText = d.miete.wohnung ? t("Hier kannst du dich direkt auf meine Wohnung bewerben:", "You can apply for my apartment directly here:") : t("Hier kannst du dich direkt auf mein Zimmer bewerben:", "You can apply for my room directly here:");
+      const kannTeilen = typeof navigator !== "undefined" && !!navigator.share;
       async function teilen() {
-        const text = d.miete.wohnung ? t("Hier kannst du dich direkt auf meine Wohnung bewerben:", "You can apply for my apartment directly here:") : t("Hier kannst du dich direkt auf mein Zimmer bewerben:", "You can apply for my room directly here:");
-        if (navigator.share) { try { await navigator.share({ title: "D&T Homes", text, url: link }); return; } catch (e) { if (e && e.name === "AbortError") return; } }
+        if (kannTeilen) { try { await navigator.share({ title: "D&T Homes", text: teilText, url: link }); return; } catch (e) { if (e && e.name === "AbortError") return; } }
         kopieren();
       }
+      const waLink = link ? "https://wa.me/?text=" + encodeURIComponent(teilText + " " + link) : "";
+      const mailLink = link ? "mailto:?subject=" + encodeURIComponent(d.miete.wohnung ? t("Meine Wohnung bei D&T Homes", "My apartment at D&T Homes") : t("Mein Zimmer bei D&T Homes", "My room at D&T Homes")) + "&body=" + encodeURIComponent(teilText + "\n\n" + link) : "";
       const grundKurz = {
         kurz: t(`Dein Vertrag läuft fest bis ${k.vertragsende}.`, `Your contract runs for a fixed term until ${k.vertragsende}.`),
         verlaengerung: t(`Dein Vertrag ist bis ${k.vertragsende} verlängert.`, `Your contract is extended until ${k.vertragsende}.`),
@@ -4004,7 +4021,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
           <div className="pt-sub" style={{ marginTop: 6 }}>{offen ? t("Du kannst trotzdem einen Nachmieter vorschlagen, wenn du früher raus möchtest.", "You can still suggest a successor if you want to leave earlier.") : t("Wie möchtest du ausziehen?", "How would you like to move out?")}</div>
           <div className="pt-tiles" style={{ gridTemplateColumns: "1fr 1fr" }}>
             {!offen && wahl("kuendigen", "📝", t("Kündigen", "Give notice"), kannKuendigen ? t(`Frühestens per ${k.termine[0]}`, `Earliest ${k.termine[0]}`) : t("Bei deinem Vertrag nicht möglich", "Not possible with your contract"), !kannKuendigen)}
-            {wahl("nachmieter", "🤝", t("Nachmieter stellen", "Find a successor"), t("Jederzeit, auch früher", "Any time, also earlier"))}
+            {wahl("nachmieter", "🤝", t("Nachmieter stellen", "Find a successor"), t("Jemanden gefunden? Link schicken", "Found someone? Send the link"))}
           </div>
           {!offen && !kannKuendigen && grundKurz && <div className="pt-sub" style={{ marginTop: 12 }}>{grundKurz} {k.hinweis !== "endet" ? t(`Mit einem Nachmieter kannst du trotzdem früher ausziehen.`, `With a successor you can still move out earlier.`) : ""}</div>}
         </>}
@@ -4026,25 +4043,21 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
 
         {modus === "nachmieter" && <div className="card" style={{ marginTop: 10 }}>
           {zurueck}
-          <div className="card-title">{t("Nachmieter stellen", "Find a successor")}</div>
-          <ol style={{ margin: "0 0 4px", paddingLeft: 20, fontSize: 14.5, lineHeight: 1.7 }}>
-            <li>{t("Teile deinen Link mit Interessierten.", "Share your link with anyone interested.")}</li>
-            <li>{d.miete.wohnung ? t("Sie bewerben sich direkt auf deine Wohnung.", "They apply directly for your apartment.") : t("Sie bewerben sich direkt auf dein Zimmer.", "They apply directly for your room.")}</li>
-            <li>{t("Wir prüfen die Bewerbung und melden uns bei dir.", "We review the application and get back to you.")}</li>
-          </ol>
-          {link && <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
-            <button className="btn-primary" style={{ flex: 1 }} onClick={teilen}>{t("Link teilen", "Share link")}</button>
-            <button className="btn-secondary" onClick={kopieren}>{kopiert ? t("Kopiert ✓", "Copied ✓") : t("Link kopieren", "Copy link")}</button>
-          </div>}
-          {!perMail && <button className="pt-back" style={{ marginTop: 10 }} onClick={() => setPerMail(true)}>{t("Oder wir schicken den Link per E-Mail →", "Or we send the link by email →")}</button>}
-          {perMail && <form onSubmit={nachmieterMail} style={{ marginTop: 6 }}>
-            <label className="pt-lbl">{t("Name", "Name")}</label>
-            <input className="pt-in" required maxLength={120} value={nm.name} onChange={e => setNm({ ...nm, name: e.target.value })} />
-            <label className="pt-lbl">{t("E-Mail", "Email")}</label>
-            <input className="pt-in" type="email" required value={nm.email} onChange={e => setNm({ ...nm, email: e.target.value })} />
-            <button type="submit" className="btn-secondary" style={{ marginTop: 12, width: "100%" }} disabled={!!busy}>{busy === "n" ? t("Wird gesendet…", "Sending…") : t("Link per E-Mail senden", "Send link by email")}</button>
-          </form>}
-          {nachmieterListe.length > 0 && <div className="pt-sub" style={{ marginTop: 14, fontSize: 13 }}>{t("Bereits per E-Mail eingeladen:", "Already invited by email:")} {nachmieterListe.map(e => e.nachmieter_name).join(", ")}</div>}
+          <div className="card-title">{t("Nachmieter gefunden?", "Found a successor?")}</div>
+          <div className="pt-big">{d.miete.wohnung ? t("Schick ihr oder ihm diesen Link. Damit bewirbt sie oder er sich direkt auf deine Wohnung.", "Send them this link. They can use it to apply directly for your apartment.") : t("Schick ihr oder ihm diesen Link. Damit bewirbt sie oder er sich direkt auf dein Zimmer.", "Send them this link. They can use it to apply directly for your room.")}</div>
+          {link ? <>
+            <div className="pt-link"><span>{link.replace(/^https?:\/\//, "")}</span><button type="button" onClick={kopieren}>{kopiert ? t("Kopiert ✓", "Copied ✓") : t("Kopieren", "Copy")}</button></div>
+            <div className="pt-send">
+              {kannTeilen && <button type="button" className="btn-primary" onClick={teilen}>{t("Link senden", "Send link")}</button>}
+              <a className={kannTeilen ? "btn-secondary" : "btn-primary"} href={waLink} target="_blank" rel="noopener noreferrer">WhatsApp</a>
+              <a className="btn-secondary" href={mailLink}>{t("E-Mail", "Email")}</a>
+            </div>
+          </> : <div className="pt-err">{t("Der Link ist gerade nicht verfügbar. Bitte melde dich bei uns.", "The link is not available right now. Please contact us.")}</div>}
+          <div className="pt-steps">
+            <div><b>1</b><span>{t("Du schickst den Link an deinen Nachmieter.", "You send the link to your successor.")}</span></div>
+            <div><b>2</b><span>{t("Sie oder er füllt die Bewerbung aus.", "They fill in the application.")}</span></div>
+            <div><b>3</b><span>{t("Wir prüfen die Bewerbung und melden uns bei dir.", "We review the application and get back to you.")}</span></div>
+          </div>
         </div>}
 
         {msg && <div className={/Danke|Thank|Erledigt|Done/.test(msg) ? "pt-ok" : "pt-err"}>{msg}</div>}
