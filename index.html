@@ -3557,7 +3557,12 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       if (!sitzung) return info ? <PortalLogin token={token} info={info} t={t} onOk={angemeldet} /> : <PortalRahmen><div className="loading-center"><div className="spinner"></div></div></PortalRahmen>;
       if (!daten) return <PortalRahmen><div className="loading-center"><div className="spinner"></div><div className="loading-text">{t("Wird geladen…", "Loading…")}</div></div></PortalRahmen>;
 
-      const zurueck = <button className="pt-back" onClick={() => setSeite("start")}>← {t("Übersicht", "Overview")}</button>;
+      const navPunkte = [["start", t("Übersicht", "Overview")], ["miete", t("Meine Miete", "My rental")], ["dokumente", t("Dokumente", "Documents")], ["schaden", t("Schaden melden", "Report damage")],
+        ...(daten.hausinfos ? [["hausinfos", t("Hausinfos", "House info")]] : []), ["service", t("Reinigung & Umzug", "Cleaning & moving")], ["kuendigung", t("Auszug & Kündigung", "Moving out")], ["sicherheit", t("Sicherheit", "Security")]];
+      const zurueck = <>
+        <div className="pt-nav">{navPunkte.map(([k, l]) => <button key={k} className={seite === k ? "on" : ""} onClick={() => setSeite(k)}>{l}</button>)}</div>
+        <button className="pt-back" onClick={() => setSeite("start")}>← {t("Übersicht", "Overview")}</button>
+      </>;
       return (
         <PortalRahmen>
           {seite === "start" && <PortalStart d={daten} t={t} onSeite={setSeite} />}
@@ -3575,8 +3580,25 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
 
     function PortalRahmen({ children }) {
       return (
-        <div className="container">
+        <div className="container pt-wrap">
           <style>{`
+            .pt-wrap{max-width:1120px}
+            .pt-nav{display:none;gap:6px;flex-wrap:wrap;margin:0 0 20px}
+            .pt-nav button{border:1px solid #e1d8c5;background:#fff;border-radius:99px;padding:8px 14px;font:inherit;font-size:13.5px;cursor:pointer;color:#3a352d}
+            .pt-nav button.on{background:#1a1814;color:#fff;border-color:#1a1814}
+            .pt-warn{background:#fbf3e2;border:1px solid #ecd9ae;border-radius:10px;padding:14px 16px;color:#5c4512;font-size:14px;line-height:1.55}
+            .pt-info{background:#f4f0e8;border-radius:10px;padding:12px 14px;font-size:13.5px;line-height:1.55;color:#3a352d;margin-top:12px}
+            @media (min-width: 900px){
+              .pt-tiles{grid-template-columns:repeat(4,1fr);gap:16px}
+              .pt-tile{min-height:132px;padding:22px 20px}
+              .pt-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+              .pt-cols>.card{margin-bottom:0}
+              .pt-cols>.pt-ok,.pt-cols>.pt-err,.pt-cols>.pt-full{grid-column:1/-1}
+              .pt-back{display:none}
+              .pt-nav{display:flex}
+              .pt-h1{font-size:28px}
+              .pt-solo{max-width:760px}
+            }
             .pt-tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
             .pt-tile{background:#fff;border:1px solid #e1d8c5;border-radius:14px;padding:18px 16px;text-align:left;cursor:pointer;font:inherit;color:inherit;min-height:104px;display:flex;flex-direction:column;justify-content:space-between}
             .pt-tile:hover{border-color:#b9ad95}
@@ -3695,7 +3717,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       const m = d.miete;
       const row = (a, b) => b ? <div className="pt-row"><span>{a}</span><span>{b}</span></div> : null;
       return (
-        <div className="card">
+        <div className="card pt-solo">
           <div className="card-title">{t("Meine Miete", "My rental")}</div>
           {row(t("Objekt", "Property"), m.wohnung ? t("Ganze Wohnung", "Entire apartment") : `${t("Zimmer", "Room")} ${m.objekt || ""}`)}
           {row(t("Adresse", "Address"), m.adresse)}
@@ -3704,7 +3726,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
           {row(t("Strom (pauschal) / Monat", "Electricity (flat) / month"), m.strom ? chfP(m.strom) : null)}
           {row(t("Einzug", "Move-in"), m.einzug)}
           {row(t("Auszug", "Move-out"), m.auszug)}
-          {row(t("Befristet bis", "Fixed term until"), !m.auszug ? m.mietende : null)}
+          {row(t("Befristet bis", "Fixed term until"), !m.auszug ? ((d.kuendigung && d.kuendigung.vertragsende) || m.mietende) : null)}
           {row(t("Kaution", "Deposit"), m.kaution != null ? chfP(m.kaution) : null)}
           <div className="pt-sub" style={{ marginTop: 12 }}>{t("Stimmt etwas nicht? Schreib uns an info@dthomes.ch.", "Something not right? Write to info@dthomes.ch.")}</div>
         </div>
@@ -3734,7 +3756,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             <input type="file" accept="application/pdf,image/*" style={{ display: "none" }} disabled={!!busy} onChange={e => { const f = e.target.files && e.target.files[0]; e.target.value = ""; hoch(art, f); }} /></label>
         </div>
       );
-      return (<>
+      return (<div className="pt-cols">
         <div className="card">
           <div className="card-title">{t("Meine Dokumente", "My documents")}</div>
           {d.dokumente.length === 0 && <div className="pt-sub">{t("Noch keine Dokumente vorhanden.", "No documents yet.")}</div>}
@@ -3751,7 +3773,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
           {upl("betreibung", t("Betreibungsregister-Auszug", "Debt collection register extract"), d.unterlagen.betreibung)}
         </div>
         {msg && <div className={/Danke|Thank/.test(msg) ? "pt-ok" : "pt-err"}>{msg}</div>}
-      </>);
+      </div>);
     }
 
     function PortalSchaden({ d, t, sitzung, neuLaden }) {
@@ -3775,7 +3797,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
         setBusy(false);
       }
       const status = s => s === "erledigt" ? [t("Erledigt", "Done"), "#e6eedc", "#3a5230"] : s === "in_arbeit" ? [t("In Arbeit", "In progress"), "#f6edd6", "#7a5b14"] : [t("Eingegangen", "Received"), "#ece8df", "#5a5448"];
-      return (<>
+      return (<div className="pt-cols">
         {!neu && <button className="btn-primary" style={{ width: "100%" }} onClick={() => { setNeu(true); setMsg(""); }}>{t("Neuen Schaden melden", "Report new damage")}</button>}
         {neu && <form className="card" onSubmit={senden}>
           <div className="card-title">{t("Schaden melden", "Report damage")}</div>
@@ -3808,7 +3830,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
               <span className="pt-badge" style={{ background: bg, color: c }}>{l}</span>
             </div>); })}
         </div>
-      </>);
+      </div>);
     }
 
     function PortalSicherheit({ d, t, sitzung, neuLaden, onAbmelden }) {
@@ -3832,7 +3854,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
         setBusy(false);
       }
       async function geraetAbmelden(id) { setBusy(true); try { await portalPost({ aktion: "geraet_abmelden", id }, sitzung); await neuLaden(); } catch (e) { setMsg(e.message); } setBusy(false); }
-      return (<>
+      return (<div className="pt-cols">
         <div className="card">
           <div className="card-title">{t("Face ID / Fingerabdruck", "Face ID / fingerprint")}</div>
           <div className="pt-sub">{d.passkey ? t("Ist eingerichtet. Du kannst dich ohne Code anmelden.", "Is set up. You can sign in without a code.") : t("Melde dich beim nächsten Mal ohne Code an, sicher und schnell.", "Sign in next time without a code, safely and quickly.")}</div>
@@ -3851,7 +3873,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
         </div>
         <button className="btn-secondary" style={{ width: "100%" }} onClick={onAbmelden}>{t("Auf diesem Gerät abmelden", "Sign out on this device")}</button>
         {msg && <div className={/eingerichtet|set up/.test(msg) ? "pt-ok" : "pt-err"}>{msg}</div>}
-      </>);
+      </div>);
     }
 
 
@@ -3889,7 +3911,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
         if (navigator.share) { try { await navigator.share({ title: "D&T Homes", text, url: l }); return; } catch (e) { if (e && e.name === "AbortError") return; } }
         kopieren(l);
       }
-      return (<>
+      return (<div className="pt-cols">
         <div className="card">
           <div className="card-title">{t("Kündigung", "Notice of termination")}</div>
           {eintraege.filter(e => e.art === "kuendigung").map(e => { const [l, bg, c] = st(e.status); return (
@@ -3899,16 +3921,30 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
                 {e.status === "abgelehnt" && e.antwort && <div className="pt-sub" style={{ marginTop: 6, color: "#1a1814" }}>💬 {e.antwort}</div>}</div>
               <span className="pt-badge" style={{ background: bg, color: c }}>{l}</span>
             </div>); })}
-          {!offen && k.nurNachmieter && <div className="pt-sub">
-            {k.hinweis === "endet"
-              ? t(`Dein Mietverhältnis endet am ${k.auszug}. Eine Kündigung ist nicht nötig.`, `Your tenancy ends on ${k.auszug}. No notice is needed.`)
-              : t(`Dein Vertrag läuft fest bis ${k.vertragsende}. Eine Kündigung ist nur auf einen Termin möglich, der mindestens 12 Monate vor Vertragsende liegt. Du kannst aber jederzeit einen geeigneten Nachmieter vorschlagen.`, `Your contract runs for a fixed term until ${k.vertragsende}. Notice is only possible for a date at least 12 months before the end of the contract. You can, however, suggest a suitable successor tenant at any time.`)}
-          </div>}
+          {!offen && k.nurNachmieter && <>
+            <div className="pt-warn">
+              <div style={{ fontWeight: 700, marginBottom: 4 }}>{k.hinweis === "endet" ? t("Eine Kündigung ist nicht nötig", "No notice needed") : t("Eine Kündigung ist laut deinem Vertrag nicht möglich", "Your contract does not allow notice of termination")}</div>
+              {k.hinweis === "kurz" && t(`Dein Vertrag ist befristet bis ${k.vertragsende} und läuft weniger als 12 Monate. Für solche Verträge ist eine ordentliche Kündigung ausgeschlossen (Ziffer 9.1).`, `Your contract runs for a fixed term until ${k.vertragsende}, which is less than 12 months. Ordinary notice is excluded for such contracts (clause 9.1).`)}
+              {k.hinweis === "verlaengerung" && t(`Dein Vertrag wurde bis ${k.vertragsende} verlängert. Während der Verlängerung ist eine ordentliche Kündigung ausgeschlossen (Nachtrag, Ziffer 1).`, `Your contract has been extended until ${k.vertragsende}. Ordinary notice is excluded during the extension (addendum, clause 1).`)}
+              {k.hinweis === "fest" && t(`Dein Vertrag ist befristet bis ${k.vertragsende}. Kündigen kann man nur auf einen Termin, der mindestens ${k.wohnung ? 12 : 6} Monate vor Vertragsende liegt. Dieser Termin ist bereits vorbei (Ziffer 9.1).`, `Your contract is fixed until ${k.vertragsende}. Notice is only possible for a date at least ${k.wohnung ? 12 : 6} months before the end of the contract, and that date has passed (clause 9.1).`)}
+              {k.hinweis === "endet" && t(`Die Liegenschaft steht nur bis ${k.vertragsende} zur Verfügung. Dein Mietverhältnis endet spätestens dann, wir melden uns rechtzeitig wegen der Übergabe.`, `The property is only available until ${k.vertragsende}. Your tenancy ends then at the latest, and we will contact you in good time about the handover.`)}
+              {k.hinweis === "keine" && t("Für dein Mietverhältnis gibt es keinen möglichen Kündigungstermin mehr.", "There is no possible notice date left for your tenancy.")}
+            </div>
+            {k.hinweis !== "endet" && <div className="pt-info">
+              <b>{t("Trotzdem früher ausziehen? Stell einen Nachmieter.", "Want to move out earlier? Find a successor tenant.")}</b><br />
+              {t("Wenn eine geeignete Person dein " + (k.wohnung ? "Wohnung" : "Zimmer") + " zu den gleichen Bedingungen übernimmt, kannst du jederzeit früher ausziehen. Bis dahin bleibt die Miete geschuldet. Teile dafür einfach deinen Nachfolge-Link.", "If a suitable person takes over your " + (k.wohnung ? "apartment" : "room") + " on the same terms, you can move out earlier at any time. Until then the rent remains due. Just share your successor link.")}
+              <div><button className="btn-primary" style={{ marginTop: 12 }} onClick={() => { const el = document.getElementById("pt-nachmieter"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }}>{t("Nachmieter vorschlagen", "Suggest a successor")}</button></div>
+            </div>}
+          </>}
           {!offen && !k.nurNachmieter && <>
             <div className="pt-sub">
-              {t(`Die Kündigungsfrist beträgt ${k.frist} Monate auf ein Monatsende.`, `The notice period is ${k.frist} months to the end of a month.`)}
-              {k.wohnung && k.vertragsende ? " " + t(`Dein Vertrag ist befristet bis ${k.vertragsende}. Kündigen kannst du auf einen Termin, der mindestens 12 Monate vor Vertragsende liegt, danach nur noch mit Nachmieter.`, `Your contract is fixed until ${k.vertragsende}. You can give notice for a date at least 12 months before the end of the contract, after that only with a successor tenant.`) : ""}
+              {t(`Kündigungsfrist: ${k.frist} Monate auf ein Monatsende, nicht auf Ende Dezember.`, `Notice period: ${k.frist} months to the end of a month, not to the end of December.`)}
+              {k.minBis ? " " + t(`Die Mindestmietdauer läuft bis ${k.minBis}, deshalb ist der früheste Termin später.`, `The minimum rental period runs until ${k.minBis}, so the earliest date is later.`) : ""}
             </div>
+            {k.letzterTermin && <div className="pt-info">
+              {t(`Dein Vertrag ist befristet bis ${k.vertragsende}. Der letztmögliche Kündigungstermin ist der `, `Your contract is fixed until ${k.vertragsende}. The last possible notice date is `)}<b>{k.letzterTermin}</b>{t(`; die Kündigung muss bis spätestens ${k.spaetestens} bei uns sein. Danach ist ein früherer Auszug nur noch mit Nachmieter möglich.`, `; your notice must reach us by ${k.spaetestens} at the latest. After that, moving out early is only possible with a successor tenant.`)}
+            </div>}
+            <div className="pt-sub" style={{ marginTop: 10 }}>{t("Du möchtest früher raus, als die Frist erlaubt? Mit einem Nachmieter geht das jederzeit.", "Want to leave earlier than the notice period allows? With a successor tenant that is possible at any time.")}</div>
             {!formular && <button className="btn-secondary" style={{ marginTop: 14 }} onClick={() => { setFormular(true); setMsg(""); }}>{t("Kündigung einreichen", "Submit notice")}</button>}
             {formular && <form onSubmit={kuendigen}>
               <label className="pt-lbl">{t("Auszug per", "Move out on")}</label>
@@ -3926,7 +3962,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             </form>}
           </>}
         </div>
-        <form className="card" onSubmit={nachmieter}>
+        <form className="card" id="pt-nachmieter" onSubmit={nachmieter} style={offen || !k.nurNachmieter ? undefined : { borderColor: "#c9b98f" }}>
           <div className="card-title">{t("Nachmieter vorschlagen", "Suggest a successor tenant")}</div>
           <div className="pt-sub">{d.miete.wohnung
             ? t("Kennst du jemanden, der deine Wohnung übernehmen möchte? Teile diesen Link. Darüber kann sich die Person direkt auf deine Wohnung bewerben, auch wenn sie nicht ausgeschrieben ist. Wir prüfen die Bewerbung und melden uns.", "Do you know someone who would like to take over your apartment? Share this link. They can apply for your apartment directly, even if it is not listed. We will review the application and get in touch.")
@@ -3951,7 +3987,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
           </div>}
         </form>
         {msg && <div className={/Danke|Thank/.test(msg) ? "pt-ok" : "pt-err"}>{msg}</div>}
-      </>);
+      </div>);
     }
 
     function PortalService({ d, t, sitzung }) {
@@ -3966,7 +4002,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
         setBusy(false);
       }
       const umzug = art !== "reinigung";
-      return (<>
+      return (<div className="pt-cols">
         <form className="card" onSubmit={senden}>
           <div className="card-title">{t("Reinigung & Umzug anfragen", "Request cleaning & moving")}</div>
           <div className="pt-sub">{t("Wir organisieren auf Wunsch die Endreinigung und deinen Umzug. Du bekommst von uns eine Offerte.", "On request, we organise your final cleaning and your move. We will send you a quote.")}</div>
@@ -3986,13 +4022,13 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
           <div className="pt-sub">{t("Freie Parkplätze und das Anfrageformular findest du auf unserer Webseite.", "You can find available parking spaces and the request form on our website.")}</div>
           <a className="btn-secondary" style={{ marginTop: 12, display: "inline-block" }} href={d.mieter.sprache === "en" ? "https://www.dthomes.ch/en/parkplaetze.html" : "https://www.dthomes.ch/parkplaetze.html"} target="_blank" rel="noopener noreferrer">{t("Parkplätze ansehen", "View parking spaces")}</a>
         </div>
-      </>);
+      </div>);
     }
 
     function PortalHausinfos({ d, t }) {
       const teile = String(d.hausinfos || "").split(/(https?:\/\/[^\s]+)/g);
       return (
-        <div className="card">
+        <div className="card pt-solo">
           <div className="card-title">{t("Hausinfos", "House info")}</div>
           <div className="pt-sub" style={{ marginBottom: 10 }}>{d.miete.adresse}</div>
           <div style={{ whiteSpace: "pre-wrap", fontSize: 14.5, lineHeight: 1.6 }}>{teile.map((x, i) => /^https?:\/\//.test(x) ? <a key={i} href={x} target="_blank" rel="noopener noreferrer" style={{ color: "#5a5448", wordBreak: "break-all" }}>{x}</a> : x)}</div>
