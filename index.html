@@ -3714,7 +3714,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             {kachel("schaden", "🔧", t("Schaden melden", "Report damage"), offen ? `${offen} ${t("offen", "open")}` : t("Etwas kaputt?", "Something broken?"))}
             {(d.hausinfos || d.wlan) ? kachel("hausinfos", "📌", d.wlan ? t("WLAN & Hausinfos", "Wi-Fi & house info") : t("Hausinfos", "House info"), d.wlan ? t("Netzwerk und Passwort", "Network and password") : t("Abfall, Waschküche & mehr", "Waste, laundry & more")) : null}
             {kachel("service", "🧽", t("Reinigung & Umzug", "Cleaning & moving"), t("Endreinigung, Umzug, Parkplatz", "Final cleaning, moving, parking"))}
-            {kachel("kuendigung", "📤", t("Auszug & Kündigung", "Moving out"), kdOffen ? (kdOffen.status === "bestaetigt" ? t(`Bestätigt per ${kdOffen.datum}`, `Confirmed for ${kdOffen.datum}`) : t("Kündigung eingereicht", "Notice submitted")) : t("Kündigen oder Nachmieter", "Give notice or successor"))}
+            {kachel("kuendigung", "📤", t("Auszug", "Moving out"), kdOffen ? (kdOffen.status === "bestaetigt" ? t(`Bestätigt per ${kdOffen.datum}`, `Confirmed for ${kdOffen.datum}`) : t("Kündigung eingereicht", "Notice submitted")) : t("Kündigen oder Nachmieter stellen", "Give notice or find a successor"))}
           </div>
           <div className="pt-sub" style={{ marginTop: 22, textAlign: "center" }}>{t("Fragen? ", "Questions? ")}<a href="mailto:info@dthomes.ch" style={{ color: "#5a5448" }}>info@dthomes.ch</a> · <a href="https://wa.me/41766887091" style={{ color: "#5a5448" }}>WhatsApp</a>{onAbmelden && <> · <a href="#" style={{ color: "#5a5448" }} onClick={e => { e.preventDefault(); onAbmelden(); }}>{t("Abmelden", "Sign out")}</a></>}</div>
         </div>
@@ -3942,112 +3942,112 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       const k = d.kuendigung || { termine: [], eintraege: [] };
       const eintraege = k.eintraege || [];
       const offen = eintraege.find(e => e.art === "kuendigung" && e.status !== "abgelehnt");
+      const abgelehnt = !offen && eintraege.find(e => e.art === "kuendigung" && e.status === "abgelehnt");
+      const kannKuendigen = !offen && !k.nurNachmieter && k.termine.length > 0;
+      const [modus, setModus] = useState(null);          // null | "kuendigen" | "nachmieter"
       const [datum, setDatum] = useState(k.termine[0] || "");
       const [grund, setGrund] = useState("");
       const [ok, setOk] = useState(false);
-      const [nm, setNm] = useState({ name: "", email: "", telefon: "" });
+      const [perMail, setPerMail] = useState(false);
+      const [nm, setNm] = useState({ name: "", email: "" });
       const [busy, setBusy] = useState("");
       const [msg, setMsg] = useState("");
-      const [formular, setFormular] = useState(false);
+      const [kopiert, setKopiert] = useState(false);
+      const link = d.nachfolge && d.nachfolge.link;
+      const nachmieterListe = eintraege.filter(e => e.art === "nachmieter");
+
       async function kuendigen(e) {
         e.preventDefault(); if (!ok || !datum) return;
         setBusy("k"); setMsg("");
-        try { await portalPost({ aktion: "kuendigen", datum, grund, bestaetigt: true }, sitzung); setMsg(t("Danke. Deine Kündigung ist bei uns eingegangen, du erhältst eine Bestätigung per E-Mail.", "Thank you. We have received your notice and will send you a confirmation by email.")); setFormular(false); await neuLaden(); }
+        try { await portalPost({ aktion: "kuendigen", datum, grund, bestaetigt: true }, sitzung); setModus(null); setMsg(t("Danke! Deine Kündigung ist eingegangen. Du bekommst eine Bestätigung per E-Mail.", "Thank you! We have received your notice and will confirm it by email.")); await neuLaden(); }
         catch (e2) { setMsg(e2.message); }
         setBusy("");
       }
-      async function nachmieter(e) {
+      async function nachmieterMail(e) {
         e.preventDefault();
         setBusy("n"); setMsg("");
-        try { await portalPost({ aktion: "nachmieter", ...nm }, sitzung); setMsg(t(`Danke! Wir haben ${nm.name} den Link zur Bewerbung geschickt.`, `Thank you! We have sent ${nm.name} the link to apply.`)); setNm({ name: "", email: "", telefon: "" }); await neuLaden(); }
+        try { await portalPost({ aktion: "nachmieter", ...nm }, sitzung); setMsg(t(`Erledigt! ${nm.name} hat den Link per E-Mail bekommen.`, `Done! ${nm.name} has received the link by email.`)); setNm({ name: "", email: "" }); setPerMail(false); await neuLaden(); }
         catch (e2) { setMsg(e2.message); }
         setBusy("");
       }
-      const st = s => s === "bestaetigt" ? [t("Bestätigt", "Confirmed"), "#e6eedc", "#3a5230"] : s === "abgelehnt" ? [t("Nicht möglich", "Not possible"), "#f6e3df", "#9b4a3e"] : [t("Eingegangen", "Received"), "#ece8df", "#5a5448"];
-      const nachmieterListe = eintraege.filter(e => e.art === "nachmieter");
-      const [kopiert, setKopiert] = useState(false);
-      async function kopieren(l) { try { await navigator.clipboard.writeText(l); setKopiert(true); setTimeout(() => setKopiert(false), 2000); } catch (_) { window.prompt(t("Link kopieren:", "Copy link:"), l); } }
-      async function teilen(l) {
+      async function kopieren() { try { await navigator.clipboard.writeText(link); setKopiert(true); setTimeout(() => setKopiert(false), 2000); } catch (_) { window.prompt(t("Link kopieren:", "Copy link:"), link); } }
+      async function teilen() {
         const text = d.miete.wohnung ? t("Hier kannst du dich direkt auf meine Wohnung bewerben:", "You can apply for my apartment directly here:") : t("Hier kannst du dich direkt auf mein Zimmer bewerben:", "You can apply for my room directly here:");
-        if (navigator.share) { try { await navigator.share({ title: "D&T Homes", text, url: l }); return; } catch (e) { if (e && e.name === "AbortError") return; } }
-        kopieren(l);
+        if (navigator.share) { try { await navigator.share({ title: "D&T Homes", text, url: link }); return; } catch (e) { if (e && e.name === "AbortError") return; } }
+        kopieren();
       }
-      return (<div className="pt-cols">
-        <div className="card">
-          <div className="card-title">{t("Kündigung", "Notice of termination")}</div>
-          {eintraege.filter(e => e.art === "kuendigung").map(e => { const [l, bg, c] = st(e.status); return (
-            <div className="pt-item" key={e.id} style={{ alignItems: "flex-start" }}>
-              <div><div style={{ fontWeight: 600, fontSize: 14.5 }}>{t(`Kündigung per ${e.datum}`, `Notice effective ${e.datum}`)}</div>
-                <div className="pt-sub" style={{ fontSize: 12.5 }}>{t("Eingereicht am", "Submitted on")} {datP(e.created_at)}</div>
-                {e.status === "abgelehnt" && e.antwort && <div className="pt-sub" style={{ marginTop: 6, color: "#1a1814" }}>💬 {e.antwort}</div>}</div>
-              <span className="pt-badge" style={{ background: bg, color: c }}>{l}</span>
-            </div>); })}
-          {!offen && k.nurNachmieter && <>
-            <div className="pt-warn">
-              <div style={{ fontWeight: 700, marginBottom: 4 }}>{k.hinweis === "endet" ? t("Eine Kündigung ist nicht nötig", "No notice needed") : t("Eine Kündigung ist laut deinem Vertrag nicht möglich", "Your contract does not allow notice of termination")}</div>
-              {k.hinweis === "kurz" && t(`Dein Vertrag ist befristet bis ${k.vertragsende} und läuft weniger als 12 Monate. Für solche Verträge ist eine ordentliche Kündigung ausgeschlossen (Ziffer 9.1).`, `Your contract runs for a fixed term until ${k.vertragsende}, which is less than 12 months. Ordinary notice is excluded for such contracts (clause 9.1).`)}
-              {k.hinweis === "verlaengerung" && t(`Dein Vertrag wurde bis ${k.vertragsende} verlängert. Während der Verlängerung ist eine ordentliche Kündigung ausgeschlossen (Nachtrag, Ziffer 1).`, `Your contract has been extended until ${k.vertragsende}. Ordinary notice is excluded during the extension (addendum, clause 1).`)}
-              {k.hinweis === "fest" && t(`Dein Vertrag ist befristet bis ${k.vertragsende}. Kündigen kann man nur auf einen Termin, der mindestens ${k.wohnung ? 12 : 6} Monate vor Vertragsende liegt. Dieser Termin ist bereits vorbei (Ziffer 9.1).`, `Your contract is fixed until ${k.vertragsende}. Notice is only possible for a date at least ${k.wohnung ? 12 : 6} months before the end of the contract, and that date has passed (clause 9.1).`)}
-              {k.hinweis === "endet" && t(`Die Liegenschaft steht nur bis ${k.vertragsende} zur Verfügung. Dein Mietverhältnis endet spätestens dann, wir melden uns rechtzeitig wegen der Übergabe.`, `The property is only available until ${k.vertragsende}. Your tenancy ends then at the latest, and we will contact you in good time about the handover.`)}
-              {k.hinweis === "keine" && t("Für dein Mietverhältnis gibt es keinen möglichen Kündigungstermin mehr.", "There is no possible notice date left for your tenancy.")}
-            </div>
-            {k.hinweis !== "endet" && <div className="pt-info">
-              <b>{t("Trotzdem früher ausziehen? Stell einen Nachmieter.", "Want to move out earlier? Find a successor tenant.")}</b><br />
-              {t("Wenn eine geeignete Person dein " + (k.wohnung ? "Wohnung" : "Zimmer") + " zu den gleichen Bedingungen übernimmt, kannst du jederzeit früher ausziehen. Bis dahin bleibt die Miete geschuldet. Teile dafür einfach deinen Nachfolge-Link.", "If a suitable person takes over your " + (k.wohnung ? "apartment" : "room") + " on the same terms, you can move out earlier at any time. Until then the rent remains due. Just share your successor link.")}
-              <div><button className="btn-primary" style={{ marginTop: 12 }} onClick={() => { const el = document.getElementById("pt-nachmieter"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }}>{t("Nachmieter vorschlagen", "Suggest a successor")}</button></div>
-            </div>}
-          </>}
-          {!offen && !k.nurNachmieter && <>
-            <div className="pt-sub">
-              {t(`Kündigungsfrist: ${k.frist} Monate auf ein Monatsende, nicht auf Ende Dezember.`, `Notice period: ${k.frist} months to the end of a month, not to the end of December.`)}
-              {k.minBis ? " " + t(`Die Mindestmietdauer läuft bis ${k.minBis}, deshalb ist der früheste Termin später.`, `The minimum rental period runs until ${k.minBis}, so the earliest date is later.`) : ""}
-            </div>
-            {k.letzterTermin && <div className="pt-info">
-              {t(`Dein Vertrag ist befristet bis ${k.vertragsende}. Der letztmögliche Kündigungstermin ist der `, `Your contract is fixed until ${k.vertragsende}. The last possible notice date is `)}<b>{k.letzterTermin}</b>{t(`; die Kündigung muss bis spätestens ${k.spaetestens} bei uns sein. Danach ist ein früherer Auszug nur noch mit Nachmieter möglich.`, `; your notice must reach us by ${k.spaetestens} at the latest. After that, moving out early is only possible with a successor tenant.`)}
-            </div>}
-            <div className="pt-sub" style={{ marginTop: 10 }}>{t("Du möchtest früher raus, als die Frist erlaubt? Mit einem Nachmieter geht das jederzeit.", "Want to leave earlier than the notice period allows? With a successor tenant that is possible at any time.")}</div>
-            {!formular && <button className="btn-secondary" style={{ marginTop: 14 }} onClick={() => { setFormular(true); setMsg(""); }}>{t("Kündigung einreichen", "Submit notice")}</button>}
-            {formular && <form onSubmit={kuendigen}>
-              <label className="pt-lbl">{t("Auszug per", "Move out on")}</label>
-              <select className="pt-in" value={datum} onChange={e => setDatum(e.target.value)}>{k.termine.map(x => <option key={x} value={x}>{x}</option>)}</select>
-              <label className="pt-lbl">{t("Grund (freiwillig)", "Reason (optional)")}</label>
-              <textarea className="pt-in" rows={3} maxLength={1000} value={grund} onChange={e => setGrund(e.target.value)} />
-              <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 14, marginTop: 14, lineHeight: 1.45 }}>
-                <input type="checkbox" checked={ok} onChange={e => setOk(e.target.checked)} style={{ marginTop: 3 }} />
-                <span>{t(`Hiermit kündige ich meinen Mietvertrag per ${datum}.`, `I hereby give notice to terminate my rental agreement effective ${datum}.`)}</span>
-              </label>
-              <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-                <button type="button" className="btn-secondary" disabled={!!busy} onClick={() => setFormular(false)}>{t("Abbrechen", "Cancel")}</button>
-                <button type="submit" className="btn-primary" style={{ flex: 1 }} disabled={!!busy || !ok}>{busy === "k" ? t("Wird gesendet…", "Sending…") : t("Verbindlich kündigen", "Submit notice")}</button>
-              </div>
-            </form>}
-          </>}
-        </div>
-        <form className="card" id="pt-nachmieter" onSubmit={nachmieter} style={offen || !k.nurNachmieter ? undefined : { borderColor: "#c9b98f" }}>
-          <div className="card-title">{t("Nachmieter vorschlagen", "Suggest a successor tenant")}</div>
-          <div className="pt-sub">{d.miete.wohnung
-            ? t("Kennst du jemanden, der deine Wohnung übernehmen möchte? Teile diesen Link. Darüber kann sich die Person direkt auf deine Wohnung bewerben, auch wenn sie nicht ausgeschrieben ist. Wir prüfen die Bewerbung und melden uns.", "Do you know someone who would like to take over your apartment? Share this link. They can apply for your apartment directly, even if it is not listed. We will review the application and get in touch.")
-            : t("Kennst du jemanden, der dein Zimmer übernehmen möchte? Teile diesen Link. Darüber kann sich die Person direkt auf dein Zimmer bewerben, auch wenn es nicht ausgeschrieben ist. Wir prüfen die Bewerbung und melden uns.", "Do you know someone who would like to take over your room? Share this link. They can apply for your room directly, even if it is not listed. We will review the application and get in touch.")}</div>
-          {d.nachfolge && d.nachfolge.link && <>
-            <div style={{ marginTop: 12, padding: "10px 12px", background: "#f4f0e8", borderRadius: 10, fontSize: 13, wordBreak: "break-all" }}>{d.nachfolge.link}</div>
-            <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-              <button type="button" className="btn-primary" style={{ flex: 1 }} onClick={() => teilen(d.nachfolge.link)}>{t("Link teilen", "Share link")}</button>
-              <button type="button" className="btn-secondary" onClick={() => kopieren(d.nachfolge.link)}>{kopiert ? t("Kopiert ✓", "Copied ✓") : t("Kopieren", "Copy")}</button>
-            </div>
-          </>}
-          <div className="pt-sub" style={{ marginTop: 18, fontWeight: 600, color: "#5a5448" }}>{t("Oder wir schicken den Link per E-Mail:", "Or we send the link by email:")}</div>
-          <label className="pt-lbl">{t("Name", "Name")} *</label>
-          <input className="pt-in" required maxLength={120} value={nm.name} onChange={e => setNm({ ...nm, name: e.target.value })} />
-          <label className="pt-lbl">{t("E-Mail", "Email")} *</label>
-          <input className="pt-in" type="email" required value={nm.email} onChange={e => setNm({ ...nm, email: e.target.value })} />
-          <label className="pt-lbl">{t("Telefon (freiwillig)", "Phone (optional)")}</label>
-          <input className="pt-in" type="tel" value={nm.telefon} onChange={e => setNm({ ...nm, telefon: e.target.value })} />
-          <button type="submit" className="btn-primary" style={{ marginTop: 16, width: "100%" }} disabled={!!busy}>{busy === "n" ? t("Wird gesendet…", "Sending…") : t("Link zur Bewerbung senden", "Send application link")}</button>
-          {nachmieterListe.length > 0 && <div style={{ marginTop: 14 }}>
-            {nachmieterListe.map(e => <div className="pt-item" key={e.id}><div style={{ fontSize: 14 }}>{e.nachmieter_name}</div><div className="pt-sub" style={{ fontSize: 12.5 }}>{t("vorgeschlagen am", "suggested on")} {datP(e.created_at)}</div></div>)}
+      const grundKurz = {
+        kurz: t(`Dein Vertrag läuft fest bis ${k.vertragsende}.`, `Your contract runs for a fixed term until ${k.vertragsende}.`),
+        verlaengerung: t(`Dein Vertrag ist bis ${k.vertragsende} verlängert.`, `Your contract is extended until ${k.vertragsende}.`),
+        fest: t(`Der letzte Kündigungstermin vor Vertragsende (${k.vertragsende}) ist vorbei.`, `The last notice date before the end of the contract (${k.vertragsende}) has passed.`),
+        endet: t(`Dein Mietverhältnis endet ohnehin am ${k.vertragsende}.`, `Your tenancy ends on ${k.vertragsende} anyway.`),
+      }[k.hinweis] || "";
+      const zurueck = <button className="pt-back" onClick={() => { setModus(null); setMsg(""); }}>← {t("Zurück", "Back")}</button>;
+      const wahl = (key, icon, titel, sub, aus) => (
+        <button className="pt-tile" style={aus ? { opacity: .55, cursor: "default" } : undefined} onClick={() => { if (!aus) { setModus(key); setMsg(""); } }}>
+          <span className="i">{icon}</span><span><div className="h">{titel}</div><div className="s">{sub}</div></span>
+        </button>);
+
+      return (<div className="pt-solo">
+        <div className="pt-h1">{t("Auszug", "Moving out")}</div>
+
+        {offen && <div className="card" style={{ marginTop: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+            <div><div style={{ fontWeight: 600, fontSize: 15 }}>{t(`Kündigung per ${offen.datum}`, `Notice effective ${offen.datum}`)}</div>
+              <div className="pt-sub" style={{ fontSize: 13 }}>{offen.status === "bestaetigt" ? t("Von uns bestätigt. Wir melden uns wegen der Übergabe.", "Confirmed by us. We will contact you about the handover.") : t("Eingegangen, wir prüfen sie und bestätigen per E-Mail.", "Received. We will check it and confirm by email.")}</div></div>
+            <span className="pt-badge" style={offen.status === "bestaetigt" ? { background: "#e6eedc", color: "#3a5230" } : { background: "#ece8df", color: "#5a5448" }}>{offen.status === "bestaetigt" ? t("Bestätigt", "Confirmed") : t("Eingegangen", "Received")}</span>
+          </div>
+        </div>}
+        {abgelehnt && abgelehnt.antwort && <div className="pt-warn" style={{ marginTop: 14 }}>{t("Deine letzte Kündigung war so nicht möglich:", "Your last notice was not possible:")} {abgelehnt.antwort}</div>}
+
+        {!modus && <>
+          <div className="pt-sub" style={{ marginTop: 6 }}>{offen ? t("Du kannst trotzdem einen Nachmieter vorschlagen, wenn du früher raus möchtest.", "You can still suggest a successor if you want to leave earlier.") : t("Wie möchtest du ausziehen?", "How would you like to move out?")}</div>
+          <div className="pt-tiles" style={{ gridTemplateColumns: "1fr 1fr" }}>
+            {!offen && wahl("kuendigen", "📝", t("Kündigen", "Give notice"), kannKuendigen ? t(`Frühestens per ${k.termine[0]}`, `Earliest ${k.termine[0]}`) : t("Bei deinem Vertrag nicht möglich", "Not possible with your contract"), !kannKuendigen)}
+            {wahl("nachmieter", "🤝", t("Nachmieter stellen", "Find a successor"), t("Jederzeit, auch früher", "Any time, also earlier"))}
+          </div>
+          {!offen && !kannKuendigen && grundKurz && <div className="pt-sub" style={{ marginTop: 12 }}>{grundKurz} {k.hinweis !== "endet" ? t(`Mit einem Nachmieter kannst du trotzdem früher ausziehen.`, `With a successor you can still move out earlier.`) : ""}</div>}
+        </>}
+
+        {modus === "kuendigen" && <form className="card" style={{ marginTop: 10 }} onSubmit={kuendigen}>
+          {zurueck}
+          <div className="card-title">{t("Kündigen", "Give notice")}</div>
+          <div className="pt-sub">{t(`${k.frist} Monate Frist auf Monatsende.`, `${k.frist} months' notice to the end of a month.`)}{k.letzterTermin ? " " + t(`Spätester Termin: ${k.letzterTermin}.`, `Latest date: ${k.letzterTermin}.`) : ""}</div>
+          <label className="pt-lbl">{t("Auszug per", "Move out on")}</label>
+          <select className="pt-in" value={datum} onChange={e => setDatum(e.target.value)}>{k.termine.map(x => <option key={x} value={x}>{x}</option>)}</select>
+          <label className="pt-lbl">{t("Grund (freiwillig)", "Reason (optional)")}</label>
+          <input className="pt-in" maxLength={300} value={grund} onChange={e => setGrund(e.target.value)} />
+          <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 14, marginTop: 16, lineHeight: 1.45 }}>
+            <input type="checkbox" checked={ok} onChange={e => setOk(e.target.checked)} style={{ marginTop: 3 }} />
+            <span>{t(`Ich kündige meinen Mietvertrag per ${datum}.`, `I give notice to terminate my rental agreement effective ${datum}.`)}</span>
+          </label>
+          <button type="submit" className="btn-primary" style={{ marginTop: 16, width: "100%" }} disabled={!!busy || !ok}>{busy === "k" ? t("Wird gesendet…", "Sending…") : t("Kündigung senden", "Send notice")}</button>
+        </form>}
+
+        {modus === "nachmieter" && <div className="card" style={{ marginTop: 10 }}>
+          {zurueck}
+          <div className="card-title">{t("Nachmieter stellen", "Find a successor")}</div>
+          <ol style={{ margin: "0 0 4px", paddingLeft: 20, fontSize: 14.5, lineHeight: 1.7 }}>
+            <li>{t("Teile deinen Link mit Interessierten.", "Share your link with anyone interested.")}</li>
+            <li>{d.miete.wohnung ? t("Sie bewerben sich direkt auf deine Wohnung.", "They apply directly for your apartment.") : t("Sie bewerben sich direkt auf dein Zimmer.", "They apply directly for your room.")}</li>
+            <li>{t("Wir prüfen die Bewerbung und melden uns bei dir.", "We review the application and get back to you.")}</li>
+          </ol>
+          {link && <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
+            <button className="btn-primary" style={{ flex: 1 }} onClick={teilen}>{t("Link teilen", "Share link")}</button>
+            <button className="btn-secondary" onClick={kopieren}>{kopiert ? t("Kopiert ✓", "Copied ✓") : t("Link kopieren", "Copy link")}</button>
           </div>}
-        </form>
-        {msg && <div className={/Danke|Thank/.test(msg) ? "pt-ok" : "pt-err"}>{msg}</div>}
+          {!perMail && <button className="pt-back" style={{ marginTop: 10 }} onClick={() => setPerMail(true)}>{t("Oder wir schicken den Link per E-Mail →", "Or we send the link by email →")}</button>}
+          {perMail && <form onSubmit={nachmieterMail} style={{ marginTop: 6 }}>
+            <label className="pt-lbl">{t("Name", "Name")}</label>
+            <input className="pt-in" required maxLength={120} value={nm.name} onChange={e => setNm({ ...nm, name: e.target.value })} />
+            <label className="pt-lbl">{t("E-Mail", "Email")}</label>
+            <input className="pt-in" type="email" required value={nm.email} onChange={e => setNm({ ...nm, email: e.target.value })} />
+            <button type="submit" className="btn-secondary" style={{ marginTop: 12, width: "100%" }} disabled={!!busy}>{busy === "n" ? t("Wird gesendet…", "Sending…") : t("Link per E-Mail senden", "Send link by email")}</button>
+          </form>}
+          {nachmieterListe.length > 0 && <div className="pt-sub" style={{ marginTop: 14, fontSize: 13 }}>{t("Bereits per E-Mail eingeladen:", "Already invited by email:")} {nachmieterListe.map(e => e.nachmieter_name).join(", ")}</div>}
+        </div>}
+
+        {msg && <div className={/Danke|Thank|Erledigt|Done/.test(msg) ? "pt-ok" : "pt-err"}>{msg}</div>}
       </div>);
     }
 
