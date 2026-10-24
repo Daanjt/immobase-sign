@@ -3565,6 +3565,9 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
           {seite === "dokumente" && <>{zurueck}<PortalDokumente d={daten} t={t} sitzung={sitzung} neuLaden={laden} /></>}
           {seite === "schaden" && <>{zurueck}<PortalSchaden d={daten} t={t} sitzung={sitzung} neuLaden={laden} /></>}
           {seite === "sicherheit" && <>{zurueck}<PortalSicherheit d={daten} t={t} sitzung={sitzung} neuLaden={laden} onAbmelden={abmelden} /></>}
+          {seite === "kuendigung" && <>{zurueck}<PortalKuendigung d={daten} t={t} sitzung={sitzung} neuLaden={laden} /></>}
+          {seite === "service" && <>{zurueck}<PortalService d={daten} t={t} sitzung={sitzung} /></>}
+          {seite === "hausinfos" && <>{zurueck}<PortalHausinfos d={daten} t={t} /></>}
           {fehler && <div className="pt-err">{fehler}</div>}
         </PortalRahmen>
       );
@@ -3668,6 +3671,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
     function PortalStart({ d, t, onSeite }) {
       const offen = (d.schaeden || []).filter(s => s.status !== "erledigt").length;
       const fehlt = !d.unterlagen.ausweis;
+      const kdOffen = ((d.kuendigung && d.kuendigung.eintraege) || []).find(k => k.art === "kuendigung" && k.status !== "abgelehnt");
       const kachel = (k, i, h, s) => <button className="pt-tile" onClick={() => onSeite(k)}><span className="i">{i}</span><span><div className="h">{h}</div><div className="s">{s}</div></span></button>;
       return (
         <div style={{ marginTop: 10 }}>
@@ -3677,6 +3681,9 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             {kachel("miete", "🏠", t("Meine Miete", "My rental"), d.miete.mietzins != null ? `${chfP(d.miete.mietzins)} / ${t("Monat", "month")}` : t("Mietdetails", "Rental details"))}
             {kachel("dokumente", "📄", t("Dokumente", "Documents"), fehlt ? t("Ausweis fehlt noch", "ID still missing") : `${d.dokumente.length} ${t("Dokument(e)", "document(s)")}`)}
             {kachel("schaden", "🔧", t("Schaden melden", "Report damage"), offen ? `${offen} ${t("offen", "open")}` : t("Etwas kaputt?", "Something broken?"))}
+            {d.hausinfos ? kachel("hausinfos", "📌", t("Hausinfos", "House info"), t("Abfall, Waschküche & mehr", "Waste, laundry & more")) : null}
+            {kachel("service", "🧽", t("Reinigung & Umzug", "Cleaning & moving"), t("Endreinigung, Umzug, Parkplatz", "Final cleaning, moving, parking"))}
+            {kachel("kuendigung", "📤", t("Auszug & Kündigung", "Moving out"), kdOffen ? (kdOffen.status === "bestaetigt" ? t(`Bestätigt per ${kdOffen.datum}`, `Confirmed for ${kdOffen.datum}`) : t("Kündigung eingereicht", "Notice submitted")) : t("Kündigen oder Nachmieter", "Give notice or successor"))}
             {kachel("sicherheit", "🔒", t("Sicherheit", "Security"), d.passkey ? t("Face ID aktiv", "Face ID active") : t("Geräte & Face ID", "Devices & Face ID"))}
           </div>
           <div className="pt-sub" style={{ marginTop: 22, textAlign: "center" }}>{t("Fragen? ", "Questions? ")}<a href="mailto:info@dthomes.ch" style={{ color: "#5a5448" }}>info@dthomes.ch</a> · <a href="https://wa.me/41766887091" style={{ color: "#5a5448" }}>WhatsApp</a></div>
@@ -3845,6 +3852,135 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
         <button className="btn-secondary" style={{ width: "100%" }} onClick={onAbmelden}>{t("Auf diesem Gerät abmelden", "Sign out on this device")}</button>
         {msg && <div className={/eingerichtet|set up/.test(msg) ? "pt-ok" : "pt-err"}>{msg}</div>}
       </>);
+    }
+
+
+    function PortalKuendigung({ d, t, sitzung, neuLaden }) {
+      const k = d.kuendigung || { termine: [], eintraege: [] };
+      const eintraege = k.eintraege || [];
+      const offen = eintraege.find(e => e.art === "kuendigung" && e.status !== "abgelehnt");
+      const [datum, setDatum] = useState(k.termine[0] || "");
+      const [grund, setGrund] = useState("");
+      const [ok, setOk] = useState(false);
+      const [nm, setNm] = useState({ name: "", email: "", telefon: "" });
+      const [busy, setBusy] = useState("");
+      const [msg, setMsg] = useState("");
+      const [formular, setFormular] = useState(false);
+      async function kuendigen(e) {
+        e.preventDefault(); if (!ok || !datum) return;
+        setBusy("k"); setMsg("");
+        try { await portalPost({ aktion: "kuendigen", datum, grund, bestaetigt: true }, sitzung); setMsg(t("Danke. Deine Kündigung ist bei uns eingegangen, du erhältst eine Bestätigung per E-Mail.", "Thank you. We have received your notice and will send you a confirmation by email.")); setFormular(false); await neuLaden(); }
+        catch (e2) { setMsg(e2.message); }
+        setBusy("");
+      }
+      async function nachmieter(e) {
+        e.preventDefault();
+        setBusy("n"); setMsg("");
+        try { await portalPost({ aktion: "nachmieter", ...nm }, sitzung); setMsg(t(`Danke! Wir haben ${nm.name} den Link zur Bewerbung geschickt.`, `Thank you! We have sent ${nm.name} the link to apply.`)); setNm({ name: "", email: "", telefon: "" }); await neuLaden(); }
+        catch (e2) { setMsg(e2.message); }
+        setBusy("");
+      }
+      const st = s => s === "bestaetigt" ? [t("Bestätigt", "Confirmed"), "#e6eedc", "#3a5230"] : s === "abgelehnt" ? [t("Nicht möglich", "Not possible"), "#f6e3df", "#9b4a3e"] : [t("Eingegangen", "Received"), "#ece8df", "#5a5448"];
+      const nachmieterListe = eintraege.filter(e => e.art === "nachmieter");
+      return (<>
+        <div className="card">
+          <div className="card-title">{t("Kündigung", "Notice of termination")}</div>
+          {eintraege.filter(e => e.art === "kuendigung").map(e => { const [l, bg, c] = st(e.status); return (
+            <div className="pt-item" key={e.id} style={{ alignItems: "flex-start" }}>
+              <div><div style={{ fontWeight: 600, fontSize: 14.5 }}>{t(`Kündigung per ${e.datum}`, `Notice effective ${e.datum}`)}</div>
+                <div className="pt-sub" style={{ fontSize: 12.5 }}>{t("Eingereicht am", "Submitted on")} {datP(e.created_at)}</div>
+                {e.status === "abgelehnt" && e.antwort && <div className="pt-sub" style={{ marginTop: 6, color: "#1a1814" }}>💬 {e.antwort}</div>}</div>
+              <span className="pt-badge" style={{ background: bg, color: c }}>{l}</span>
+            </div>); })}
+          {!offen && k.nurNachmieter && <div className="pt-sub">
+            {k.hinweis === "endet"
+              ? t(`Dein Mietverhältnis endet am ${k.auszug}. Eine Kündigung ist nicht nötig.`, `Your tenancy ends on ${k.auszug}. No notice is needed.`)
+              : t(`Dein Vertrag läuft fest bis ${k.vertragsende}. Eine Kündigung ist nur auf einen Termin möglich, der mindestens 12 Monate vor Vertragsende liegt. Du kannst aber jederzeit einen geeigneten Nachmieter vorschlagen.`, `Your contract runs for a fixed term until ${k.vertragsende}. Notice is only possible for a date at least 12 months before the end of the contract. You can, however, suggest a suitable successor tenant at any time.`)}
+          </div>}
+          {!offen && !k.nurNachmieter && <>
+            <div className="pt-sub">
+              {t(`Die Kündigungsfrist beträgt ${k.frist} Monate auf ein Monatsende.`, `The notice period is ${k.frist} months to the end of a month.`)}
+              {k.wohnung && k.vertragsende ? " " + t(`Dein Vertrag ist befristet bis ${k.vertragsende}. Kündigen kannst du auf einen Termin, der mindestens 12 Monate vor Vertragsende liegt, danach nur noch mit Nachmieter.`, `Your contract is fixed until ${k.vertragsende}. You can give notice for a date at least 12 months before the end of the contract, after that only with a successor tenant.`) : ""}
+            </div>
+            {!formular && <button className="btn-secondary" style={{ marginTop: 14 }} onClick={() => { setFormular(true); setMsg(""); }}>{t("Kündigung einreichen", "Submit notice")}</button>}
+            {formular && <form onSubmit={kuendigen}>
+              <label className="pt-lbl">{t("Auszug per", "Move out on")}</label>
+              <select className="pt-in" value={datum} onChange={e => setDatum(e.target.value)}>{k.termine.map(x => <option key={x} value={x}>{x}</option>)}</select>
+              <label className="pt-lbl">{t("Grund (freiwillig)", "Reason (optional)")}</label>
+              <textarea className="pt-in" rows={3} maxLength={1000} value={grund} onChange={e => setGrund(e.target.value)} />
+              <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 14, marginTop: 14, lineHeight: 1.45 }}>
+                <input type="checkbox" checked={ok} onChange={e => setOk(e.target.checked)} style={{ marginTop: 3 }} />
+                <span>{t(`Hiermit kündige ich meinen Mietvertrag per ${datum}.`, `I hereby give notice to terminate my rental agreement effective ${datum}.`)}</span>
+              </label>
+              <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+                <button type="button" className="btn-secondary" disabled={!!busy} onClick={() => setFormular(false)}>{t("Abbrechen", "Cancel")}</button>
+                <button type="submit" className="btn-primary" style={{ flex: 1 }} disabled={!!busy || !ok}>{busy === "k" ? t("Wird gesendet…", "Sending…") : t("Verbindlich kündigen", "Submit notice")}</button>
+              </div>
+            </form>}
+          </>}
+        </div>
+        <form className="card" onSubmit={nachmieter}>
+          <div className="card-title">{t("Nachmieter vorschlagen", "Suggest a successor tenant")}</div>
+          <div className="pt-sub">{t("Kennst du jemanden, der übernehmen möchte? Wir schicken der Person den Link zur Bewerbung. Ob sie übernehmen kann, entscheiden wir nach der Bewerbung.", "Do you know someone who would like to take over? We will send them the link to apply. We decide after their application whether they can take over.")}</div>
+          <label className="pt-lbl">{t("Name", "Name")} *</label>
+          <input className="pt-in" required maxLength={120} value={nm.name} onChange={e => setNm({ ...nm, name: e.target.value })} />
+          <label className="pt-lbl">{t("E-Mail", "Email")} *</label>
+          <input className="pt-in" type="email" required value={nm.email} onChange={e => setNm({ ...nm, email: e.target.value })} />
+          <label className="pt-lbl">{t("Telefon (freiwillig)", "Phone (optional)")}</label>
+          <input className="pt-in" type="tel" value={nm.telefon} onChange={e => setNm({ ...nm, telefon: e.target.value })} />
+          <button type="submit" className="btn-primary" style={{ marginTop: 16, width: "100%" }} disabled={!!busy}>{busy === "n" ? t("Wird gesendet…", "Sending…") : t("Link zur Bewerbung senden", "Send application link")}</button>
+          {nachmieterListe.length > 0 && <div style={{ marginTop: 14 }}>
+            {nachmieterListe.map(e => <div className="pt-item" key={e.id}><div style={{ fontSize: 14 }}>{e.nachmieter_name}</div><div className="pt-sub" style={{ fontSize: 12.5 }}>{t("vorgeschlagen am", "suggested on")} {datP(e.created_at)}</div></div>)}
+          </div>}
+        </form>
+        {msg && <div className={/Danke|Thank/.test(msg) ? "pt-ok" : "pt-err"}>{msg}</div>}
+      </>);
+    }
+
+    function PortalService({ d, t, sitzung }) {
+      const [art, setArt] = useState("reinigung");
+      const [f, setF] = useState({ termin: "", adresse_neu: "", bemerkung: "" });
+      const [busy, setBusy] = useState(false);
+      const [msg, setMsg] = useState("");
+      async function senden(e) {
+        e.preventDefault(); setBusy(true); setMsg("");
+        try { await portalPost({ aktion: "service", art, ...f }, sitzung); setMsg(t("Danke! Deine Anfrage ist eingegangen. Wir melden uns mit einer Offerte.", "Thank you! We received your request and will get back to you with a quote.")); setF({ termin: "", adresse_neu: "", bemerkung: "" }); }
+        catch (e2) { setMsg(e2.message); }
+        setBusy(false);
+      }
+      const umzug = art !== "reinigung";
+      return (<>
+        <form className="card" onSubmit={senden}>
+          <div className="card-title">{t("Reinigung & Umzug anfragen", "Request cleaning & moving")}</div>
+          <div className="pt-sub">{t("Wir organisieren auf Wunsch die Endreinigung und deinen Umzug. Du bekommst von uns eine Offerte.", "On request, we organise your final cleaning and your move. We will send you a quote.")}</div>
+          <label className="pt-lbl">{t("Was brauchst du?", "What do you need?")}</label>
+          <div className="pt-chips">{[["reinigung", t("Endreinigung", "Final cleaning")], ["umzug", t("Umzug", "Move")], ["umzug_reinigung", t("Umzug + Endreinigung", "Move + final cleaning")]].map(([k, l]) => <button type="button" key={k} className={"pt-chip" + (art === k ? " on" : "")} onClick={() => setArt(k)}>{l}</button>)}</div>
+          <label className="pt-lbl">{t("Wunschtermin", "Preferred date")}</label>
+          <input className="pt-in" type="date" value={f.termin} onChange={e => setF({ ...f, termin: e.target.value })} />
+          {umzug && <><label className="pt-lbl">{t("Neue Adresse", "New address")}</label>
+            <input className="pt-in" maxLength={200} value={f.adresse_neu} onChange={e => setF({ ...f, adresse_neu: e.target.value })} placeholder={t("Strasse, PLZ Ort", "Street, postcode, town")} /></>}
+          <label className="pt-lbl">{t("Bemerkung", "Notes")}</label>
+          <textarea className="pt-in" rows={3} maxLength={2000} value={f.bemerkung} onChange={e => setF({ ...f, bemerkung: e.target.value })} placeholder={umzug ? t("z.B. Anzahl Möbel, Stockwerk, Lift", "e.g. amount of furniture, floor, lift") : ""} />
+          <button type="submit" className="btn-primary" style={{ marginTop: 16, width: "100%" }} disabled={busy}>{busy ? t("Wird gesendet…", "Sending…") : t("Anfrage senden", "Send request")}</button>
+        </form>
+        {msg && <div className={/Danke|Thank/.test(msg) ? "pt-ok" : "pt-err"}>{msg}</div>}
+        <div className="card" style={{ marginTop: 14 }}>
+          <div className="card-title">{t("Parkplatz", "Parking")}</div>
+          <div className="pt-sub">{t("Freie Parkplätze und das Anfrageformular findest du auf unserer Webseite.", "You can find available parking spaces and the request form on our website.")}</div>
+          <a className="btn-secondary" style={{ marginTop: 12, display: "inline-block" }} href={d.mieter.sprache === "en" ? "https://www.dthomes.ch/en/parkplaetze.html" : "https://www.dthomes.ch/parkplaetze.html"} target="_blank" rel="noopener noreferrer">{t("Parkplätze ansehen", "View parking spaces")}</a>
+        </div>
+      </>);
+    }
+
+    function PortalHausinfos({ d, t }) {
+      const teile = String(d.hausinfos || "").split(/(https?:\/\/[^\s]+)/g);
+      return (
+        <div className="card">
+          <div className="card-title">{t("Hausinfos", "House info")}</div>
+          <div className="pt-sub" style={{ marginBottom: 10 }}>{d.miete.adresse}</div>
+          <div style={{ whiteSpace: "pre-wrap", fontSize: 14.5, lineHeight: 1.6 }}>{teile.map((x, i) => /^https?:\/\//.test(x) ? <a key={i} href={x} target="_blank" rel="noopener noreferrer" style={{ color: "#5a5448", wordBreak: "break-all" }}>{x}</a> : x)}</div>
+        </div>
+      );
     }
 
     // Startseite ohne Link: letzten Portal-Link oeffnen oder Link per Mail anfordern
