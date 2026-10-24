@@ -1,5 +1,6 @@
 {
-  "buildCommand": "node check.cjs index.html",
+  "buildCommand": "node check.cjs index.html && rm -rf public && mkdir public && cp index.html *.png favicon.ico public/",
+  "outputDirectory": "public",
   "rewrites": [
     {
       "source": "/:token([a-f0-9]{32})",
