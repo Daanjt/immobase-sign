@@ -3589,6 +3589,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
               .pt-tile{min-height:132px;padding:22px 20px}
               .pt-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
               .pt-cols>.card{margin-bottom:0}
+              .pt-cols>div>.card:last-child{margin-bottom:0}
               .pt-cols>.pt-ok,.pt-cols>.pt-err,.pt-cols>.pt-full{grid-column:1/-1}
               .pt-back{font-size:14.5px}
               .pt-h1{font-size:28px}
@@ -3700,7 +3701,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             <a className="btn-primary" href={hoOffen.link}>{t("Jetzt ausfüllen", "Fill in now")}</a>
           </div>}
           <div className="pt-tiles">
-            {kachel("miete", "🏠", t("Meine Miete", "My rental"), d.miete.mietzins != null ? `${chfP(d.miete.mietzins)} / ${t("Monat", "month")}` : t("Mietdetails", "Rental details"))}
+            {kachel("miete", "🏠", t("Miete & Zahlung", "Rent & payment"), d.kosten && d.kosten.total ? `${chfP(d.kosten.total)} / ${t("Monat", "month")}` : t("Mietdetails", "Rental details"))}
             {kachel("dokumente", "📄", t("Dokumente", "Documents"), fehlt ? t("Ausweis fehlt noch", "ID still missing") : `${d.dokumente.length} ${t("Dokument(e)", "document(s)")}`)}
             {kachel("schaden", "🔧", t("Schaden melden", "Report damage"), offen ? `${offen} ${t("offen", "open")}` : t("Etwas kaputt?", "Something broken?"))}
             {d.hausinfos ? kachel("hausinfos", "📌", t("Hausinfos", "House info"), t("Abfall, Waschküche & mehr", "Waste, laundry & more")) : null}
@@ -3714,21 +3715,61 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
     }
 
     function PortalMiete({ d, t }) {
-      const m = d.miete;
-      const row = (a, b) => b ? <div className="pt-row"><span>{a}</span><span>{b}</span></div> : null;
+      const m = d.miete, k = d.kosten || {}, z = d.zahlung || {}, kau = d.kaution || {};
+      const [kopiert, setKopiert] = useState("");
+      const row = (a, b, fett) => b != null && b !== "" ? <div className="pt-row" style={fett ? { borderTop: "2px solid #1a1814", fontWeight: 700 } : undefined}><span style={fett ? { color: "#1a1814" } : undefined}>{a}</span><span>{b}</span></div> : null;
+      const ende = !m.auszug ? ((d.kuendigung && d.kuendigung.vertragsende) || m.mietende) : "";
+      async function kopiere(key, text) { try { await navigator.clipboard.writeText(text); setKopiert(key); setTimeout(() => setKopiert(""), 1800); } catch (_) { window.prompt(t("Kopieren:", "Copy:"), text); } }
+      const feld = (key, label, wert, mono) => wert ? (
+        <div className="pt-item" style={{ padding: "9px 0" }}>
+          <div style={{ minWidth: 0 }}><div className="pt-sub" style={{ fontSize: 11.5, textTransform: "uppercase", letterSpacing: ".1em" }}>{label}</div>
+            <div style={{ fontWeight: 600, fontSize: 14.5, wordBreak: "break-word", fontFamily: mono ? "Menlo,Monaco,monospace" : undefined }}>{wert}</div></div>
+          <button className="btn-secondary" style={{ padding: "6px 12px", fontSize: 12.5 }} onClick={() => kopiere(key, String(wert).replace(/^CHF\s*/, ""))}>{kopiert === key ? "✓" : t("Kopieren", "Copy")}</button>
+        </div>) : null;
       return (
-        <div className="card pt-solo">
-          <div className="card-title">{t("Meine Miete", "My rental")}</div>
-          {row(t("Objekt", "Property"), m.wohnung ? t("Ganze Wohnung", "Entire apartment") : `${t("Zimmer", "Room")} ${m.objekt || ""}`)}
-          {row(t("Adresse", "Address"), m.adresse)}
-          {row(t("Stockwerk", "Floor"), m.stockwerk)}
-          {row(t("Mietzins brutto / Monat", "Gross rent / month"), m.mietzins != null ? chfP(m.mietzins) : null)}
-          {row(t("Strom (pauschal) / Monat", "Electricity (flat) / month"), m.strom ? chfP(m.strom) : null)}
-          {row(t("Einzug", "Move-in"), m.einzug)}
-          {row(t("Auszug", "Move-out"), m.auszug)}
-          {row(t("Befristet bis", "Fixed term until"), !m.auszug ? ((d.kuendigung && d.kuendigung.vertragsende) || m.mietende) : null)}
-          {row(t("Kaution", "Deposit"), m.kaution != null ? chfP(m.kaution) : null)}
-          <div className="pt-sub" style={{ marginTop: 12 }}>{t("Stimmt etwas nicht? Schreib uns an info@dthomes.ch.", "Something not right? Write to info@dthomes.ch.")}</div>
+        <div className="pt-cols">
+          <div>
+            <div className="card">
+              <div className="card-title">{t("Meine Miete", "My rental")}</div>
+              {row(t("Objekt", "Property"), m.wohnung ? t("Ganze Wohnung", "Entire apartment") : `${t("Zimmer", "Room")} ${m.objekt || ""}`)}
+              {row(t("Adresse", "Address"), m.adresse)}
+              {row(t("Stockwerk", "Floor"), m.stockwerk)}
+              {row(t("Einzug", "Move-in"), m.einzug)}
+              {row(t("Auszug", "Move-out"), m.auszug)}
+              {row(t("Befristet bis", "Fixed term until"), ende)}
+              {k.personen ? row(t("Personen", "Persons"), String(k.personen)) : null}
+            </div>
+            <div className="card">
+              <div className="card-title">{t("Kosten pro Monat", "Monthly costs")}</div>
+              {row(t("Nettomiete", "Net rent"), k.netto != null ? chfP(k.netto) : null)}
+              {row(t("Nebenkosten (Akonto)", "Additional costs (on account)"), k.nebenkosten != null ? chfP(k.nebenkosten) : null)}
+              {row(t("Bruttomiete", "Gross rent"), k.brutto != null ? chfP(k.brutto) : null)}
+              {row(t("Strom (pauschal)", "Electricity (flat rate)"), k.strom != null ? chfP(k.strom) : null)}
+              {k.service ? row(t("Servicegebühr Kautionsreduktion", "Service fee deposit reduction"), chfP(k.service)) : null}
+              {row(t("Total pro Monat", "Total per month"), k.total != null ? chfP(k.total) : null, true)}
+            </div>
+            {kau.evorest != null && <div className="card">
+              <div className="card-title">{t("Kaution", "Deposit")}</div>
+              <div className="pt-sub" style={{ color: "#1a1814" }}>{kau.evorest
+                ? t(`Deine Kaution${kau.betrag ? ` von ${chfP(kau.betrag)}` : ""} (${kau.monate} ${kau.monate === 1 ? "Monatsmiete" : "Monatsmieten"}) liegt bei Evorest, einer Schweizer Plattform für Mietkautionen, auf einem Konto auf deinen Namen. Den Link zur Einrichtung hat dir Evorest per E-Mail geschickt.`, `Your deposit${kau.betrag ? ` of ${chfP(kau.betrag)}` : ""} (${kau.monate} ${kau.monate === 1 ? "month's rent" : "months' rent"}) is held by Evorest, a Swiss rental deposit platform, in an account in your name. Evorest sent you the setup link by email.`)
+                : t("Bei deiner Variante ist keine Kaution nötig. Dafür ist die monatliche Servicegebühr im Mietzins enthalten.", "With your option no deposit is required. Instead, the monthly service fee is included in your rent.")}</div>
+            </div>}
+          </div>
+          <div className="card">
+            <div className="card-title">{t("Miete bezahlen", "Paying your rent")}</div>
+            <div className="pt-sub" style={{ color: "#1a1814" }}>{t("Bitte richte einen Dauerauftrag ein. Die Miete ist monatlich im Voraus fällig, jeweils bis zum 25. des Vormonats.", "Please set up a standing order. Rent is payable monthly in advance, by the 25th of the previous month.")}</div>
+            {z.qr && <div style={{ display: "flex", gap: 16, alignItems: "center", margin: "16px 0 6px", flexWrap: "wrap" }}>
+              <img src={z.qr} alt="QR" style={{ width: 168, height: 168, border: "1px solid #e1d8c5", borderRadius: 8, background: "#fff", padding: 6 }} />
+              <div className="pt-sub" style={{ flex: "1 1 180px" }}>{t("Mit der Banking-App scannen: Konto, Betrag und Referenz sind schon ausgefüllt. Danach als Dauerauftrag speichern.", "Scan with your banking app: account, amount and reference are pre-filled. Then save it as a standing order.")}</div>
+            </div>}
+            {feld("emp", t("Empfänger", "Payee"), z.empfaenger)}
+            {feld("bank", "Bank", z.bank)}
+            {feld("iban", "IBAN", z.iban, true)}
+            {feld("bic", "BIC / SWIFT", z.bic, true)}
+            {feld("betrag", t("Betrag pro Monat", "Amount per month"), z.betrag != null ? chfP(z.betrag) : null)}
+            {feld("ref", t("Mitteilung / Referenz", "Message / reference"), z.referenz)}
+            <div className="pt-sub" style={{ marginTop: 10 }}>{t("Stimmt etwas nicht? Schreib uns an info@dthomes.ch.", "Something not right? Write to info@dthomes.ch.")}</div>
+          </div>
         </div>
       );
     }
