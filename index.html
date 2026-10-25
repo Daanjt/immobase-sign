@@ -3923,7 +3923,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
           <a key={a.id} className="pt-angebot" href={link(a.link)} target="_blank" rel="noopener noreferrer">
             <span className="ai"><PtIcon n="miete" size={19} /></span>
             <span className="at">
-              <div className="h">{a.wohnung ? (a.zimmer ? t(`${a.zimmer}-Zimmer-Wohnung`, `${a.zimmer}-room apartment`) : t("Wohnung", "Apartment")) : (a.anzahl > 1 ? t(`${a.anzahl} WG-Zimmer`, `${a.anzahl} rooms in a shared flat`) : t("WG-Zimmer", "Room in a shared flat"))}{a.ab ? ` · ${a.wohnung ? "" : t("ab ", "from ")}CHF ${Number(a.ab).toLocaleString("de-CH")}` : ""}</div>
+              <div className="h">{a.wohnung ? (a.zimmer ? t(`${a.zimmer}-Zimmer-Wohnung`, `${a.zimmer}-room apartment`) : t("Wohnung", "Apartment")) : (a.anzahl > 1 ? t(`${a.anzahl} WG-Zimmer`, `${a.anzahl} rooms in a shared flat`) : t("WG-Zimmer", "Room in a shared flat"))}{a.ab ? ` · ${a.wohnung ? "" : t("ab ", "from ")}CHF ${Math.round(Number(a.ab)).toLocaleString("de-CH")}` : ""}</div>
               <div className="s">{[a.adresse, a.ort].filter(Boolean).join(", ")}{a.wohnung && a.flaeche ? ` · ${a.flaeche} m²` : ""}</div>
             </span>
             <span className="ar"><PtIcon n="pfeil" size={18} /></span>
