@@ -3625,6 +3625,15 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             .pt-kontakt a.g{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35)}
             .pt-fuss{display:flex;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;margin-top:36px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-soft)}
             .pt-fuss a{color:var(--ink-soft)}
+            .pt-angebote{display:grid;gap:10px;margin-top:12px}
+            .pt-angebot{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;text-decoration:none;color:var(--ink)}
+            .pt-angebot:hover{border-color:var(--ink-soft)}
+            .pt-angebot .ai{flex:none;width:38px;height:38px;border-radius:10px;background:#F3EEE4;display:flex;align-items:center;justify-content:center}
+            .pt-angebot .at{flex:1}
+            .pt-angebot .h{font-weight:600;font-size:15px}
+            .pt-angebot .s{font-size:13px;color:var(--ink-soft);margin-top:2px}
+            .pt-angebot .ar{flex:none;color:var(--ink-soft)}
+            @media (min-width: 900px){ .pt-angebote{grid-template-columns:1fr 1fr} }
             @media (min-width: 900px){
               .pt-wrap{padding-top:44px}
               .pt-hero{grid-template-columns:1.1fr 1fr;grid-template-areas:"txt bild" "glance bild";gap:28px 32px;align-items:start}
@@ -3840,6 +3849,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       // ausgezogen: Auszug liegt in der Vergangenheit (oder archiviert ohne Auszugsdatum)
       const ausgezogen = !!d.zugang_bis && (!_aus || _aus < _heute);
       if (ausgezogen) ansteht.push({ seite: "dokumente", icon: "dokumente", art: "warn", h: t(`Dein Zugang zum Mieterportal läuft bis ${d.zugang_bis}`, `Your access to the tenant portal ends on ${d.zugang_bis}`), s: t("Lade dir wichtige Dokumente wie Vertrag und Übergabeprotokoll bis dahin herunter.", "Please download important documents such as your contract and handover report before then.") });
+      if (d.kaution_abrechnung) ansteht.push({ seite: "miete", icon: "geld", h: t("Deine Kautionsabrechnung ist da", "Your deposit settlement is ready"), s: t(`Rückzahlung ${chfP(d.kaution_abrechnung.rueckzahlung)}`, `Refund ${chfP(d.kaution_abrechnung.rueckzahlung)}`) });
       const nst = d.nachfolge && d.nachfolge.stand;
       if (nst) {
         const vn = nst.vorname ? " " + nst.vorname : "";
@@ -3891,12 +3901,34 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             {kachel("service", <PtIcon n="service" />, t("Reinigung & Umzug", "Cleaning & moving"), t("Endreinigung, Umzug, Parkplatz", "Final cleaning, moving, parking"))}
             {kachel("kuendigung", <PtIcon n="kuendigung" />, t("Auszug", "Moving out"), kdOffen ? (kdOffen.status === "bestaetigt" ? t(`Bestätigt per ${kdOffen.datum}`, `Confirmed for ${kdOffen.datum}`) : t("Kündigung eingereicht", "Notice submitted")) : t("Kündigen oder Nachmieter stellen", "Give notice or find a successor"))}
           </div>
+          <PortalAngebote d={d} t={t} />
           <div className="pt-fuss">
             <span>{t("Fragen? ", "Questions? ")}<a href="https://wa.me/41766887091" target="_blank" rel="noopener noreferrer">WhatsApp</a> · <a href="mailto:info@dthomes.ch">info@dthomes.ch</a></span>
             <span><a href="https://www.dthomes.ch" target="_blank" rel="noopener noreferrer">dthomes.ch</a>{onAbmelden && <> · <a href="#" onClick={e => { e.preventDefault(); onAbmelden(); }}>{t("Abmelden", "Sign out")}</a></>}</span>
           </div>
         </div>
       );
+    }
+
+    // Für Mieter mit Kündigung oder Auszug: freie Zimmer und Wohnungen von der Webseite
+    function PortalAngebote({ d, t }) {
+      const liste = d.angebote || [];
+      if (!liste.length) return null;
+      const en = t("de", "en") === "en";
+      const link = (u) => en ? u.replace("https://www.dthomes.ch/", "https://www.dthomes.ch/en/") : u;
+      return (<>
+        <div className="pt-sec">{t("Suchst du etwas Neues?", "Looking for a new place?")}</div>
+        <div className="pt-sub" style={{ marginTop: 4 }}>{t("Aktuell frei bei D&T Homes. Als bestehende Mieterin oder bestehender Mieter melde dich gerne direkt bei uns.", "Currently available at D&T Homes. As an existing tenant, feel free to contact us directly.")}</div>
+        <div className="pt-angebote">{liste.map(a => (
+          <a key={a.id} className="pt-angebot" href={link(a.link)} target="_blank" rel="noopener noreferrer">
+            <span className="ai"><PtIcon n="miete" size={19} /></span>
+            <span className="at">
+              <div className="h">{a.wohnung ? (a.zimmer ? t(`${a.zimmer}-Zimmer-Wohnung`, `${a.zimmer}-room apartment`) : t("Wohnung", "Apartment")) : (a.anzahl > 1 ? t(`${a.anzahl} WG-Zimmer`, `${a.anzahl} rooms in a shared flat`) : t("WG-Zimmer", "Room in a shared flat"))}{a.ab ? ` · ${a.wohnung ? "" : t("ab ", "from ")}CHF ${Number(a.ab).toLocaleString("de-CH")}` : ""}</div>
+              <div className="s">{[a.adresse, a.ort].filter(Boolean).join(", ")}{a.wohnung && a.flaeche ? ` · ${a.flaeche} m²` : ""}</div>
+            </span>
+            <span className="ar"><PtIcon n="pfeil" size={18} /></span>
+          </a>))}</div>
+      </>);
     }
 
     // Schlichte Linien-Symbole im Stil der Webseite
@@ -4053,6 +4085,18 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
               {k.service ? row(t("Servicegebühr Kautionsreduktion", "Service fee deposit reduction"), chfP(k.service)) : null}
               {row(t("Total pro Monat", "Total per month"), k.total != null ? chfP(k.total) : null, true)}
             </div>
+            {d.kaution_abrechnung && <div className="card">
+              <div className="card-title">{t("Kautionsabrechnung", "Deposit settlement")}</div>
+              <div className="pt-sub" style={{ marginBottom: 8 }}>{t(`Abgerechnet am ${d.kaution_abrechnung.datum}`, `Settled on ${d.kaution_abrechnung.datum}`)}</div>
+              <div className="pt-row"><span>{t("Kaution", "Deposit")}</span><span>{chfP(d.kaution_abrechnung.betrag)}</span></div>
+              {d.kaution_abrechnung.abzuege.map((a, i) => <div key={i} className="pt-row"><span>{t("Abzug", "Deduction")}{a.grund ? `: ${a.grund}` : ""}</span><span>− {chfP(a.betrag)}</span></div>)}
+              <div className="pt-row" style={{ fontWeight: 600, borderTop: "1.5px solid #1a1814" }}><span>{t("Rückzahlung an dich", "Refund to you")}</span><span>{chfP(d.kaution_abrechnung.rueckzahlung)}</span></div>
+              {kau.evorest && <div className="pt-sub" style={{ marginTop: 10 }}>{mitEvorest(t("Die Rückzahlung erfolgt über Evorest auf dein dort hinterlegtes Konto.", "The refund is paid out via Evorest to the account you provided there."))}</div>}
+            </div>}
+            {!d.kaution_abrechnung && kau.evorest && m.auszug && /^\d{1,2}\.\d{1,2}\.\d{4}$/.test(m.auszug) && (() => { const [dd, mm, yy] = m.auszug.split("."); return new Date(+yy, +mm - 1, +dd) < new Date(); })() && <div className="card">
+              <div className="card-title">{t("Kautionsabrechnung", "Deposit settlement")}</div>
+              <div className="pt-sub">{t("Nach der Wohnungsabnahme erstellen wir deine Kautionsabrechnung. Sobald sie fertig ist, siehst du sie hier.", "After the final inspection we prepare your deposit settlement. You will see it here as soon as it is ready.")}</div>
+            </div>}
             {kau.evorest != null && <div className="card">
               <div className="card-title">{t("Kaution", "Deposit")}</div>
               <div className="pt-sub" style={{ color: "#1a1814" }}>{kau.evorest
