@@ -3601,7 +3601,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       const L = [
         [w("/"), "Startseite", "Home"], [w("/wohnen-auf-zeit"), "Wohnen auf Zeit", "Furnished stays"], [w("/zimmer"), "WG-Zimmer", "Rooms"],
         [w("/wohnungen"), "Wohnungen", "Apartments"], [w("/parkplaetze"), "Parkplätze", "Parking"],
-        [w("/verwaltungen"), "Für Eigentümer und Verwaltungen", "For owners and property managers"], [w("/ueber-uns"), "Über uns", "About us"],
+        [w("/verwaltungen"), "Für Eigentümer und Verwaltungen", "For owners and property managers"],
       ];
       return (
         <div className="pt-menu">
@@ -3609,6 +3609,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
           {offen && <nav className="pt-webnav">
             {L.map(([h, de, enT]) => <a key={h} href={h}>{en ? enT : de}</a>)}
             <a href={"/p" + (en ? "?lang=en" : "")} className="on">{en ? "Tenant portal" : "Mieterportal"}</a>
+            <a href={w("/ueber-uns")}>{en ? "About us" : "Über uns"}</a>
             <a href={w("/kontakt")} className="pill">{en ? "Contact" : "Kontakt"}</a>
             {onLang && <div className="pt-webnav-lang">{["de", "en"].map(l => <button key={l} type="button" className={lang === l ? "on" : ""} onClick={() => { onLang(l); setOffen(false); }}>{l.toUpperCase()}</button>)}</div>}
           </nav>}
