@@ -3587,6 +3587,34 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       );
     }
 
+    // Menü wie auf der Webseite: zurück zu den anderen Bereichen von dthomes.ch
+    function PtMenu({ en }) {
+      const [offen, setOffen] = useState(false);
+      useEffect(() => {
+        if (!offen) return;
+        const zu = (e) => { if (!e.target.closest || !e.target.closest(".pt-menu")) setOffen(false); };
+        const esc = (e) => { if (e.key === "Escape") setOffen(false); };
+        document.addEventListener("click", zu); document.addEventListener("keydown", esc);
+        return () => { document.removeEventListener("click", zu); document.removeEventListener("keydown", esc); };
+      }, [offen]);
+      const w = (p) => "https://www.dthomes.ch" + (en ? "/en" : "") + p;
+      const L = [
+        [w("/"), "Startseite", "Home"], [w("/wohnen-auf-zeit"), "Wohnen auf Zeit", "Furnished stays"], [w("/zimmer"), "WG-Zimmer", "Rooms"],
+        [w("/wohnungen"), "Wohnungen", "Apartments"], [w("/parkplaetze"), "Parkplätze", "Parking"],
+        [w("/verwaltungen"), "Für Eigentümer und Verwaltungen", "For owners and property managers"], [w("/ueber-uns"), "Über uns", "About us"],
+      ];
+      return (
+        <div className="pt-menu">
+          <button type="button" className="pt-burger" aria-label={en ? "Menu" : "Menü"} aria-expanded={offen} onClick={() => setOffen(o => !o)}><span></span><span></span><span></span></button>
+          {offen && <nav className="pt-webnav">
+            {L.map(([h, de, enT]) => <a key={h} href={h}>{en ? enT : de}</a>)}
+            <a href={"/p" + (en ? "?lang=en" : "")} className="on">{en ? "Tenant portal" : "Mieterportal"}</a>
+            <a href={w("/kontakt")} className="pill">{en ? "Contact" : "Kontakt"}</a>
+          </nav>}
+        </div>
+      );
+    }
+
     function PortalRahmen({ children, lang, onLang }) {
       // Im Portal: kein automatisches Hineinzoomen auf dem Handy (Eingabefelder), kein seitliches Verschieben
       useEffect(() => {
@@ -3596,8 +3624,9 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       return (
         <div className="pt-root">
           <header className="pt-head">
-            <a className="pt-brand" href="https://www.dthomes.ch" target="_blank" rel="noopener noreferrer" aria-label="D&T Homes"><Header /></a>
+            <a className="pt-brand" href={lang === "en" ? "https://www.dthomes.ch/en/" : "https://www.dthomes.ch/"} aria-label="D&T Homes"><Header /></a>
             {onLang && <div className="pt-lang">{["de", "en"].map(l => <button key={l} className={lang === l ? "on" : ""} onClick={() => onLang(l)}>{l.toUpperCase()}</button>)}</div>}
+            <PtMenu en={lang === "en"} />
           </header>
         <div className="container pt-wrap">
           <style>{`
@@ -3668,6 +3697,16 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             .pt-brand{display:block;line-height:0}
             .pt-tag{font-size:13px;font-weight:500;color:#6B5F49;padding-left:14px;border-left:1px solid #DED2BD;line-height:20px}
             .pt-lang{margin-left:auto;display:inline-flex;align-items:center;font-family:var(--grotesk)}
+            .pt-menu{position:relative;margin-left:auto}
+            .pt-lang+.pt-menu{margin-left:2px}
+            .pt-burger{display:flex;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:8px 4px}
+            .pt-burger span{display:block;width:22px;height:2px;background:var(--ink,#1a1814);border-radius:2px}
+            .pt-webnav{position:absolute;top:calc(100% + 10px);right:0;display:flex;flex-direction:column;align-items:flex-start;gap:15px;background:#FBFAF6;border:1px solid #E4DDD0;border-radius:14px;padding:22px 24px;box-shadow:0 16px 40px rgba(0,0,0,.18);min-width:250px;font-family:'Space Grotesk',system-ui,sans-serif;font-size:14.5px;font-weight:500;z-index:30}
+            .pt-webnav a{color:#5a5448;text-decoration:none;white-space:nowrap}
+            .pt-webnav a:hover{color:#1a1814}
+            .pt-webnav a.on{color:#1a1814;font-weight:600}
+            .pt-webnav a.pill{border:1px solid #E4DDD0;border-radius:100px;padding:8px 16px;color:#1a1814}
+            .pt-webnav a.pill:hover{background:#1a1814;color:#FBFAF6;border-color:#1a1814}
             @media (max-width: 700px){ .pt-head{padding:12px 16px;gap:10px} .pt-tag{padding-left:10px;font-size:12.5px} }
             .pt-lang button{border:none;background:none;font-family:var(--grotesk);font-size:12.5px;font-weight:600;letter-spacing:.04em;padding:6px 7px;cursor:pointer;color:var(--ink);opacity:.55}
             .pt-lang button:hover{opacity:.85}
