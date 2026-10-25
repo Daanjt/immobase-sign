@@ -4455,17 +4455,52 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       useEffect(() => { if (letzter && /^[a-f0-9]{32}$/.test(letzter)) window.location.replace("/p/" + letzter); }, []);
       async function anfordern(e) { e.preventDefault(); setBusy(true); try { await portalPost({ aktion: "link_anfordern", email }); } catch (_) {} setOk(true); setBusy(false); }
       if (letzter && /^[a-f0-9]{32}$/.test(letzter)) return <PortalRahmen lang={lang} onLang={wechsle}><div className="loading-center"><div className="spinner"></div></div></PortalRahmen>;
+      const FUNKTIONEN = [
+        { i: "miete", h: t("Miete & Zahlung", "Rent & payment"), s: t("Monatliche Kosten, Zahlungsangaben und QR-Code auf einen Blick.", "Monthly costs, payment details and QR code at a glance.") },
+        { i: "dokumente", h: t("Deine Dokumente", "Your documents"), s: t("Vertrag, Mietzinsformular und Übergabeprotokoll ansehen und herunterladen.", "View and download your contract, rent form and handover report.") },
+        { i: "schaden", h: t("Schaden melden", "Report damage"), s: t("Mit Fotos melden und den Stand der Bearbeitung verfolgen.", "Report with photos and follow the progress.") },
+        { i: "uebergabe", h: t("Übergabeprotokoll", "Handover report"), s: t("Beim Einzug Mängel und Schlüssel direkt festhalten.", "Record defects and keys right when you move in.") },
+        { i: "kuendigung", h: t("Kündigung & Nachmieter", "Notice & successor"), s: t("Kündigen oder deinen Nachmieter-Link teilen.", "Give notice or share your successor link.") },
+        { i: "service", h: t("Reinigung & Umzug", "Cleaning & moving"), s: t("Endreinigung oder Umzugshilfe anfragen.", "Request a final cleaning or help with moving.") },
+      ];
       return (
         <PortalRahmen lang={lang} onLang={wechsle}>
-          <form className="card" style={{ maxWidth: 440, margin: "24px auto 0" }} onSubmit={anfordern}>
-            <div className="pt-portal">{t("Mieterportal", "Tenant portal")}</div>
-            <div className="pt-h1">{t("Anmelden", "Sign in")}</div>
-            <div className="pt-sub" style={{ marginTop: 6 }}>{t("Gib die E-Mail-Adresse aus deinem Mietvertrag ein. Wir schicken dir deinen persönlichen Link zum Mieterportal.", "Enter the email address from your rental agreement and we'll send you your personal link to the tenant portal.")}</div>
-            {!ok ? <>
-              <input className="pt-in" type="email" required style={{ marginTop: 16 }} value={email} onChange={e => setEmail(e.target.value)} placeholder={t("name@beispiel.ch", "name@example.com")} />
-              <button className="btn-primary" type="submit" style={{ marginTop: 12, width: "100%" }} disabled={busy}>{busy ? "…" : t("Link senden", "Send link")}</button>
-            </> : <div className="pt-ok">{t("Falls die Adresse bei uns hinterlegt ist, ist der Link unterwegs. Schau auch im Spam-Ordner nach.", "If the address is registered with us, the link is on its way. Please also check your spam folder.")}</div>}
-          </form>
+          <style>{`
+            .pt-feat{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px}
+            .pt-feat>div{display:flex;gap:14px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+            .pt-feat .fi{flex:none;width:38px;height:38px;border-radius:10px;background:#F3EEE4;display:flex;align-items:center;justify-content:center;color:var(--ink)}
+            .pt-feat .fh{font-weight:600;font-size:15px}
+            .pt-feat .fs{font-size:13.5px;color:var(--ink-soft);margin-top:2px;line-height:1.45}
+            .pt-login-card{margin:0}
+            .pt-sicher{font-size:12.5px;color:var(--ink-soft);margin-top:12px;line-height:1.5}
+            @media (min-width: 700px){ .pt-feat{grid-template-columns:1fr 1fr} }
+            @media (min-width: 1000px){ .pt-feat{grid-template-columns:1fr 1fr 1fr} }
+          `}</style>
+          <div className="pt-hero">
+            <div className="pt-hero-txt">
+              <div className="pt-portal">{t("Mieterportal", "Tenant portal")}</div>
+              <h1>{t("Alles rund um dein Zuhause, an einem Ort.", "Everything about your home, in one place.")}</h1>
+              <p className="pt-intro">{t("Für alle, die bei D&T Homes wohnen: Miete, Dokumente, Schadenmeldungen und dein Auszug, jederzeit auf dem Handy oder Laptop.", "For everyone living with D&T Homes: rent, documents, damage reports and moving out, anytime on your phone or laptop.")}</p>
+            </div>
+            <div className="pt-hero-bild"><img src="/haus.webp" alt="" loading="eager" decoding="async" /></div>
+            <form className="card pt-glance pt-login-card" onSubmit={anfordern}>
+              <div className="card-title">{t("Anmelden", "Sign in")}</div>
+              <div className="pt-sub" style={{ marginTop: 4 }}>{t("Gib die E-Mail-Adresse aus deinem Mietvertrag ein. Wir schicken dir deinen persönlichen Link.", "Enter the email address from your rental agreement and we'll send you your personal link.")}</div>
+              {!ok ? <>
+                <input className="pt-in" type="email" required style={{ marginTop: 14 }} value={email} onChange={e => setEmail(e.target.value)} placeholder={t("name@beispiel.ch", "name@example.com")} />
+                <button className="btn-primary" type="submit" style={{ marginTop: 12, width: "100%" }} disabled={busy}>{busy ? "…" : t("Link senden", "Send link")}</button>
+              </> : <div className="pt-ok">{t("Falls die Adresse bei uns hinterlegt ist, ist der Link unterwegs. Schau auch im Spam-Ordner nach.", "If the address is registered with us, the link is on its way. Please also check your spam folder.")}</div>}
+              <div className="pt-sicher">{t("Zu deinem Schutz bestätigst du dich mit einem Code per E-Mail oder mit Face ID / Fingerabdruck.", "To protect your data, you confirm it's you with a code by email or with Face ID / fingerprint.")}</div>
+            </form>
+          </div>
+          <div className="pt-sec">{t("Das kannst du im Portal machen", "What you can do in the portal")}</div>
+          <div className="pt-feat">{FUNKTIONEN.map(f => (
+            <div key={f.i}><span className="fi"><PtIcon n={f.i} size={20} /></span><span><div className="fh">{f.h}</div><div className="fs">{f.s}</div></span></div>
+          ))}</div>
+          <div className="pt-fuss">
+            <span>{t("Noch keinen Zugang oder Fragen? ", "No access yet or questions? ")}<a href="https://wa.me/41766887091" target="_blank" rel="noopener noreferrer">WhatsApp</a> · <a href="mailto:info@dthomes.ch">info@dthomes.ch</a></span>
+            <a href={lang === "en" ? "https://www.dthomes.ch/en/" : "https://www.dthomes.ch/"}>dthomes.ch</a>
+          </div>
         </PortalRahmen>
       );
     }
