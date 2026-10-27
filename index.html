@@ -3873,6 +3873,8 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
     const chfP = v => (v == null || v === "" || isNaN(+v)) ? "–" : "CHF " + Number(v).toLocaleString("de-CH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const datP = v => { if (!v) return ""; const d = new Date(v); return isNaN(d) ? String(v) : d.toLocaleDateString("de-CH"); };
 
+    // "Josefstrasse 200/202 · Einstellplatz Nr. 10" -> Art und Nummer, Adresse separat
+    function ppKurz(p, t) { const art = p.art === "aussen" ? t("Aussenparkplatz", "Outdoor parking space") : p.art === "motorrad" ? t("Motorradplatz", "Motorbike space") : t("Einstellplatz", "Garage parking space"); return p.nummer != null ? `${art} ${t("Nr.", "no.")} ${p.nummer}` : art; }
     function PortalStart({ d, t, onSeite, onAbmelden }) {
       const offen = (d.schaeden || []).filter(s => s.status !== "erledigt").length;
       const fehlt = !d.unterlagen.ausweis;
@@ -3926,6 +3928,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
               {zeile(t("Stockwerk", "Floor"), m.stockwerk)}
               {zeile(t("Miete pro Monat", "Rent per month"), d.kosten && d.kosten.total ? chfP(d.kosten.total) : "")}
               {zeile(t("Einzug", "Move-in"), m.einzug)}
+              {(d.parkplaetze || []).length > 0 && zeile(t("Parkplatz", "Parking"), d.parkplaetze.map(p => ppKurz(p, t)).join(", "))}
               {zeile(m.auszug || kdOffen ? t("Auszug", "Move-out") : t("Vertrag bis", "Contract until"), ende)}
               {d.wlan && zeile("WLAN", `${d.wlan.name} · ${d.wlan.passwort}`)}
               {ausgezogen && zeile(t("Portal-Zugang bis", "Portal access until"), d.zugang_bis)}
@@ -4134,6 +4137,21 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
               {k.service ? row(t("Servicegebühr Kautionsreduktion", "Service fee deposit reduction"), chfP(k.service)) : null}
               {row(t("Total pro Monat", "Total per month"), k.total != null ? chfP(k.total) : null, true)}
             </div>
+            {(d.parkplaetze || []).map(p => (
+              <div className="card" key={p.id}>
+                <div className="card-title">{t("Mein Parkplatz", "My parking space")}</div>
+                {row(t("Platz", "Space"), ppKurz(p, t))}
+                {row(t("Adresse", "Address"), p.adresse)}
+                {row(t("Fahrzeug", "Vehicle"), p.kennzeichen)}
+                {row(t("Mietbeginn", "Start"), p.ab)}
+                {row(t("Befristet bis", "Fixed term until"), p.bis)}
+                {row(t("Miete pro Monat", "Rent per month"), p.miete != null ? chfP(p.miete) : null, true)}
+                <div className="pt-sub" style={{ marginTop: 12, color: "#1a1814" }}>{t("Der Parkplatz hat einen eigenen Vertrag und wird separat bezahlt, am besten mit einem eigenen Dauerauftrag.", "The parking space has its own agreement and is paid separately, ideally with its own standing order.")}</div>
+                {p.qr && <div style={{ textAlign: "center", margin: "14px 0 6px" }}><img src={p.qr} alt="QR" style={{ width: 160, height: 160, border: "1px solid #e1d8c5", borderRadius: 8, background: "#fff", padding: 6, display: "block", margin: "0 auto" }} /></div>}
+                {feld("ppref" + p.id, t("Mitteilung / Referenz", "Message / reference"), p.referenz)}
+                {feld("ppbetrag" + p.id, t("Betrag pro Monat", "Amount per month"), p.miete != null ? chfP(p.miete) : null)}
+              </div>
+            ))}
             {d.kaution_abrechnung && <div className="card">
               <div className="card-title">{t("Kautionsabrechnung", "Deposit settlement")}</div>
               <div className="pt-sub" style={{ marginBottom: 8 }}>{t(`Abgerechnet am ${d.kaution_abrechnung.datum}`, `Settled on ${d.kaution_abrechnung.datum}`)}</div>
@@ -4188,7 +4206,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
         catch (e) { setMsg(e.message); }
         setBusy("");
       }
-      const name = k => ({ "Untermietvertrag (unterzeichnet)": t("Mietvertrag (unterzeichnet)", "Rental agreement (signed)"), "Anfangsmietzinsformular (unterzeichnet)": t("Anfangsmietzinsformular", "Initial rent form"), "Verlängerung (unterzeichnet)": t("Verlängerung (unterzeichnet)", "Extension (signed)"), "Übergabeprotokoll": t("Übergabeprotokoll", "Handover report"), "Kautionsbestätigung": t("Kautionsbestätigung", "Deposit confirmation") }[k] || k);
+      const name = k => ({ "Untermietvertrag (unterzeichnet)": t("Mietvertrag (unterzeichnet)", "Rental agreement (signed)"), "Anfangsmietzinsformular (unterzeichnet)": t("Anfangsmietzinsformular", "Initial rent form"), "Verlängerung (unterzeichnet)": t("Verlängerung (unterzeichnet)", "Extension (signed)"), "Parkplatzvertrag (unterzeichnet)": t("Parkplatzvertrag (unterzeichnet)", "Parking space agreement (signed)"), "Übergabeprotokoll": t("Übergabeprotokoll", "Handover report"), "Kautionsbestätigung": t("Kautionsbestätigung", "Deposit confirmation") }[k] || k);
       const upl = (art, titel, da) => (
         <div className="pt-item">
           <div><div style={{ fontWeight: 600, fontSize: 14.5 }}>{da ? "✓ " : ""}{titel}</div><div className="pt-sub" style={{ fontSize: 12.5 }}>{da ? t("Hochgeladen. Aus Datenschutzgründen nicht mehr abrufbar.", "Uploaded. Not viewable again for privacy reasons.") : t("Als PDF oder Foto", "As PDF or photo")}</div></div>
