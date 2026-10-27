@@ -3893,6 +3893,10 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       const _aus = _dm(m.auszug), _heute = new Date(); _heute.setHours(0, 0, 0, 0);
       // ausgezogen: Auszug liegt in der Vergangenheit (oder archiviert ohne Auszugsdatum)
       const ausgezogen = !!d.zugang_bis && (!_aus || _aus < _heute);
+      // Vor dem Einzug: Vertrag ist unterschrieben, Einzug steht noch bevor
+      const _ein = _dm(m.einzug);
+      const vorEinzug = !!_ein && _ein > _heute;
+      if (vorEinzug) ansteht.unshift({ seite: "miete", icon: "hausinfos", art: "ok", h: t(`Dein Einzug ist am ${m.einzug}`, `You move in on ${m.einzug}`), s: t("Bis dahin findest du hier schon deinen Vertrag und alle Infos zu " + (m.wohnung ? "deiner Wohnung" : "deinem Zimmer") + ". Das Übergabeprotokoll kannst du ab deinem Einzug ausfüllen.", "Until then you can already find your contract and all information about " + objekt + " here. You can fill in the handover report from your move-in day.") });
       if (ausgezogen) ansteht.push({ seite: "dokumente", icon: "dokumente", art: "warn", h: t(`Dein Zugang zum Mieterportal läuft bis ${d.zugang_bis}`, `Your access to the tenant portal ends on ${d.zugang_bis}`), s: t("Lade dir wichtige Dokumente wie Vertrag und Übergabeprotokoll bis dahin herunter.", "Please download important documents such as your contract and handover report before then.") });
       if (d.kaution_abrechnung) ansteht.push({ seite: "miete", icon: "geld", h: t("Deine Kautionsabrechnung ist da", "Your deposit settlement is ready"), s: t(`Rückzahlung ${chfP(d.kaution_abrechnung.rueckzahlung)}`, `Refund ${chfP(d.kaution_abrechnung.rueckzahlung)}`) });
       const nst = d.nachfolge && d.nachfolge.stand;
