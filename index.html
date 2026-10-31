@@ -4149,6 +4149,11 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
                 {row(t("Befristet bis", "Fixed term until"), p.bis)}
                 {row(t("Miete pro Monat", "Rent per month"), p.miete != null ? chfP(p.miete) : null, true)}
                 <div className="pt-sub" style={{ marginTop: 12, color: "#1a1814" }}>{t("Der Parkplatz hat einen eigenen Vertrag und wird separat bezahlt, am besten mit einem eigenen Dauerauftrag.", "The parking space has its own agreement and is paid separately, ideally with its own standing order.")}</div>
+                {p.schluessel && p.schluessel.offen && <div style={{ margin: "12px 0 4px", padding: "12px 14px", background: "#f6eedb", borderRadius: 8 }}>
+                  <div style={{ fontSize: 13, color: "#1a1814", marginBottom: 8 }}>{t(`Bitte bestätige den Erhalt ${p.schluessel.anzahl === 1 ? "deines Parkplatzschlüssels" : `deiner ${p.schluessel.anzahl} Parkplatzschlüssel`} und trage die Nummer ein.`, `Please confirm receipt of your parking ${p.schluessel.anzahl === 1 ? "key" : `keys (${p.schluessel.anzahl})`} and enter the number.`)}</div>
+                  <a className="btn-primary" style={{ display: "inline-block", textDecoration: "none" }} href={p.schluessel.link + t("", "?lang=en")}>{t("Schlüssel bestätigen", "Confirm key")}</a>
+                </div>}
+                {p.schluessel && p.schluessel.bestaetigt_am && row(t("Schlüssel", "Key"), `${(p.schluessel.nrs || []).length}× (Nr. ${(p.schluessel.nrs || []).join(", ")}) · ${t("bestätigt am", "confirmed on")} ${p.schluessel.bestaetigt_am}`)}
                 {p.qr && <div style={{ textAlign: "center", margin: "14px 0 6px" }}><img src={p.qr} alt="QR" style={{ width: 160, height: 160, border: "1px solid #e1d8c5", borderRadius: 8, background: "#fff", padding: 6, display: "block", margin: "0 auto" }} /></div>}
                 {feld("ppref" + p.id, t("Mitteilung / Referenz", "Message / reference"), p.referenz)}
                 {feld("ppbetrag" + p.id, t("Betrag pro Monat", "Amount per month"), p.miete != null ? chfP(p.miete) : null)}
@@ -4618,6 +4623,84 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       );
     }
 
+    // ════════════════════════════════════════════════════════════════════════
+    // PARKPLATZ-SCHLÜSSEL  /parkplatz-schluessel/{token}
+    // Mieter traegt die Schluesselnummer(n) ein und bestaetigt den Erhalt mit Unterschrift.
+    // ════════════════════════════════════════════════════════════════════════
+    function ParkplatzSchluesselPage({ token }) {
+      const [d, setD] = useState(null);
+      const [err, setErr] = useState("");
+      const [lang, setLang] = useState("de");
+      const [nrs, setNrs] = useState([]);
+      const [sig, setSig] = useState("");
+      const [ok, setOk] = useState(false);
+      const [fehler, setFehler] = useState("");
+      const [busy, setBusy] = useState(false);
+      const t = (de, en) => (lang === "en" ? en : de);
+      useEffect(() => {
+        portalPost({ aktion: "pp_schluessel_laden", token })
+          .then(j => { let q = ""; try { q = new URLSearchParams(location.search).get("lang") || ""; } catch (_) {} setD(j); setLang(q === "en" || q === "de" ? q : (j.en ? "en" : "de")); setNrs(Array.from({ length: j.anzahl || 1 }, () => "")); })
+          .catch(e => setErr(e.message || "Fehler"));
+      }, [token]);
+      async function senden(e) {
+        e.preventDefault();
+        if (nrs.some(x => !String(x || "").trim())) { setFehler(t("Bitte bei jedem Schlüssel die Nummer eintragen.", "Please enter the number of each key.")); return; }
+        if (!sig) { setFehler(t("Bitte unterschreiben.", "Please sign.")); return; }
+        if (!ok) { setFehler(t("Bitte bestätige den Erhalt.", "Please confirm receipt.")); return; }
+        setBusy(true); setFehler("");
+        try { const j = await portalPost({ aktion: "pp_schluessel_bestaetigen", token, nrs, unterschrift: sig }); setD(x => ({ ...x, bestaetigt_am: j.bestaetigt_am, nrs: j.nrs })); }
+        catch (e2) { setFehler(e2.message || t("Fehler", "Error")); }
+        finally { setBusy(false); }
+      }
+      if (err) return <StatusScreen icon="🔗" title={t("Link ungültig", "Invalid link")} message={t("Dieser Link ist nicht gültig. Bitte melde dich bei uns: info@dthomes.ch", "This link is not valid. Please contact us: info@dthomes.ch")} />;
+      if (!d) return <div className="container"><Header /><div className="status-screen"><div className="status-message">{t("Wird geladen…", "Loading…")}</div></div></div>;
+      const platz = lang === "en" ? d.platz_en : d.platz_de;
+      if (d.bestaetigt_am) return (
+        <div className="container">
+          <Header />
+          <div className="status-screen">
+            <div className="success-checkmark"></div>
+            <div className="status-title">{t("Schlüssel bestätigt", "Key confirmed")}</div>
+            <div className="status-message">{platz}</div>
+            <div className="audit-box" style={{ maxWidth: 380, textAlign: "left" }}>
+              {(d.nrs || []).map((n, i) => <div key={i}><strong>{t("Schlüssel", "Key")} {i + 1}:</strong> Nr. {n}</div>)}
+              <div style={{ marginTop: 6 }}><strong>{t("Bestätigt am:", "Confirmed on:")}</strong> {d.bestaetigt_am}</div>
+            </div>
+            <div className="status-message" style={{ marginTop: 14 }}>{t("Eine Bestätigung haben wir dir per E-Mail geschickt.", "We have sent you a confirmation by email.")}</div>
+          </div>
+        </div>
+      );
+      return (
+        <div className="container">
+          <Header />
+          <form onSubmit={senden} style={{ maxWidth: 520, margin: "0 auto", padding: "8px 16px 40px" }}>
+            <div style={{ textAlign: "right", fontSize: 12.5, marginBottom: 6 }}>
+              <span style={{ cursor: "pointer", fontWeight: lang === "de" ? 600 : 400 }} onClick={() => setLang("de")}>DE</span> · <span style={{ cursor: "pointer", fontWeight: lang === "en" ? 600 : 400 }} onClick={() => setLang("en")}>EN</span>
+            </div>
+            <div className="status-title" style={{ textAlign: "left" }}>{t("Parkplatzschlüssel bestätigen", "Confirm parking key")}</div>
+            <div style={{ fontSize: 13.5, color: "#3a352d", margin: "6px 0 18px", lineHeight: 1.55 }}>{d.name ? `${d.name} · ` : ""}{platz}</div>
+            <label style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 8 }}>{t("🔑 Schlüsselnummer", "🔑 Key number")} <span style={{ color: "#b0412e" }}>*</span></label>
+            <div style={{ fontSize: 12.5, color: "#5a5044", marginBottom: 8 }}>{t("Schreibe die ganze Nummer ab, die auf dem Schlüssel steht (eingraviert oder auf dem Anhänger), vollständig und genau.", "Copy the full number shown on the key (engraved or on the tag), completely and exactly.")}</div>
+            {nrs.map((x, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                <span style={{ fontSize: 13, minWidth: 90, color: "#3a352d" }}>{t("Schlüssel", "Key")} {i + 1}</span>
+                <input value={x} maxLength={40} onChange={e => { setNrs(nrs.map((y, j) => j === i ? e.target.value : y)); setFehler(""); }} placeholder={t("Ganze Schlüsselnummer", "Full key number")}
+                  style={{ flex: 1, padding: "10px 12px", border: "1px solid #d8d0c0", background: "#fff", borderRadius: 8, fontSize: 13, fontFamily: "inherit" }} />
+              </div>
+            ))}
+            <label style={{ display: "block", fontSize: 13, fontWeight: 600, margin: "18px 0 8px" }}>{t("Unterschrift", "Signature")} <span style={{ color: "#b0412e" }}>*</span></label>
+            <SignaturePad value={sig} onChange={setSig} lang={lang} placeholder={t("↓ Hier mit Finger oder Maus unterschreiben ↓", "↓ Sign here with finger or mouse ↓")} />
+            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 13, margin: "16px 0", lineHeight: 1.5, cursor: "pointer" }}>
+              <input type="checkbox" checked={ok} onChange={e => { setOk(e.target.checked); setFehler(""); }} style={{ marginTop: 3 }} />
+              <span>{t(`Ich bestätige, dass ich ${nrs.length === 1 ? "diesen Schlüssel" : "diese Schlüssel"} erhalten habe. Bei Vertragsende gebe ich alle Schlüssel zurück, fehlende Schlüssel werden mir in Rechnung gestellt.`, `I confirm that I have received ${nrs.length === 1 ? "this key" : "these keys"}. At the end of the tenancy I will return all keys; missing keys will be charged to me.`)}</span>
+            </label>
+            {fehler && <div style={{ color: "#b0412e", fontSize: 13, marginBottom: 10 }}>{fehler}</div>}
+            <button className="btn-primary" type="submit" style={{ width: "100%" }} disabled={busy}>{busy ? "…" : t("Erhalt bestätigen", "Confirm receipt")}</button>
+          </form>
+        </div>
+      );
+    }
+
     function App() {
       // Extract token from URL pathname
       const path = window.location.pathname.replace(/^\//, "").replace(/\/$/, "");
@@ -4638,6 +4721,9 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
         return <UebernahmePage token={handoverToken} />;
       }
       
+      // Parkplatz-Schluessel bestaetigen: /parkplatz-schluessel/{token}
+      if (path.startsWith("parkplatz-schluessel/")) return <ParkplatzSchluesselPage token={path.substring("parkplatz-schluessel/".length)} />;
+
       // Mieterportal: /p/{portal_token}, /p ohne Link = Link per Mail anfordern
       if (path === "p" || path === "portal") return <PortalOhneLink />;
       if (path.startsWith("p/")) {

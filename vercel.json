@@ -25,6 +25,10 @@
     {
       "source": "/dokumente/:token([a-f0-9]{32})",
       "destination": "/"
+    },
+    {
+      "source": "/parkplatz-schluessel/:token([a-f0-9]{32})",
+      "destination": "/"
     }
   ],
   "headers": [
