@@ -2960,6 +2960,8 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
                 font-size: 12px;
               }
               .info-grid .lbl { font-weight: 600; color: #444; white-space: nowrap; }
+              /* Schluessel: lange Bezeichnungen, deshalb eine Spalte Bezeichnung | Wert */
+              .info-grid.info-grid-1 { grid-template-columns: max-content 1fr; }
 
               .maengel-title {
                 font-size: 9px;
@@ -3098,7 +3100,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
               {(wohnungsSchluesselDE || extraSchluessel || wgSchluessel) && (
                 <div className="info-section">
                   <div className="card-eyebrow">{t("Schlüsselübergabe","Key handover")}</div>
-                  <div className="info-grid">
+                  <div className="info-grid info-grid-1">
                     {wohnungsSchluesselDE && <><span className="lbl">{t("Wohnungsschlüssel:","Apartment keys:")}</span><span>{t(wohnungsSchluesselDE, wohnungsSchluesselEN)}</span></>}
                     {extraSchluessel && <><span className="lbl">{t("Extra-Schlüssel:","Extra keys:")}</span><span style={{whiteSpace:"pre-wrap"}}>{keyEN(extraSchluessel)}</span></>}
                     {wgSchluessel && <><span className="lbl">{t("Gemeinsame WG-Schlüssel:","Shared flat keys:")}</span><span style={{whiteSpace:"pre-wrap"}}>{keyEN(wgSchluessel)} <em style={{color:"#8a8174"}}>{t("(allen Bewohnern der WG gemeinsam anvertraut)","(entrusted jointly to all residents of the flat share)")}</em></span></>}
