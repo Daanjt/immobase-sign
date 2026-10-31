@@ -40,6 +40,34 @@ export default function handler(req, res) {
   });
 }
 
+// Laeuft im Browser (page.evaluate)
+async function verkleinereFotos() {
+  const imgs = Array.from(document.images);
+  await Promise.all(imgs.map(async (img) => {
+    try {
+      if (getComputedStyle(img).objectFit !== 'cover' || /^data:/.test(img.src)) return;
+      const r = img.getBoundingClientRect();
+      const w = Math.round(r.width), h = Math.round(r.height);
+      const nw = img.naturalWidth, nh = img.naturalHeight;
+      if (!w || !h || !nw || !nh) return;
+      const tw = w * 2, th = h * 2;
+      const im = new Image();
+      im.crossOrigin = 'anonymous';
+      await new Promise((ok, no) => { im.onload = ok; im.onerror = no; im.src = img.src + (img.src.includes('?') ? '&' : '?') + 'pdfklein=1'; });
+      const s = Math.max(w / nw, h / nh);
+      const sw = w / s, sh = h / s;
+      const c = document.createElement('canvas');
+      c.width = tw; c.height = th;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, tw, th);
+      ctx.drawImage(im, (nw - sw) / 2, (nh - sh) / 2, sw, sh, 0, 0, tw, th);
+      img.src = c.toDataURL('image/jpeg', 0.78);
+      img.style.objectFit = 'fill';
+      await img.decode().catch(() => {});
+    } catch (e) {}
+  }));
+}
+
 async function generatePdf(req, res) {
   const { html, filename = 'document.pdf', format = 'A4' } = req.body || {};
 
@@ -87,6 +115,11 @@ async function generatePdf(req, res) {
 
     const page = await browser.newPage();
     await page.setContent(htmlR, { waitUntil: 'networkidle0', timeout: 50000 });
+
+    // Fotos (object-fit: cover) auf die doppelte Anzeigegroesse verkleinern und als JPEG einsetzen.
+    // Sonst bettet Chrome die zugeschnittenen Originale unkomprimiert ein (20 Handyfotos = >30 MB).
+    // Die Bilder werden nur hier im Browser verkleinert, kein Dienst von Dritten.
+    try { await page.evaluate(verkleinereFotos); } catch (e) { console.error('Fotos verkleinern:', e && e.message); }
 
     const pdfBuffer = await page.pdf({
       format,
