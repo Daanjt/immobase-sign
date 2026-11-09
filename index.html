@@ -4542,7 +4542,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       const [ok, setOk] = useState(false);
       async function speichern() {
         setBusy(true); setMsg(""); setOk(false);
-        try { await portalPost({ aktion: "namensschild", name }, sitzung); setOk(true); setMsg(t("Danke! Das Namensschild wird so bestellt.", "Thank you! The name sign will be ordered like this.")); await neuLaden(); }
+        try { await portalPost({ aktion: "namensschild", name }, sitzung); setOk(true); setMsg(t("Danke! Wir prüfen den Namen und bestellen das Namensschild.", "Thank you! We will check the name and order the name sign.")); await neuLaden(); }
         catch (e) { setMsg(e.message || t("Hat nicht geklappt.", "Did not work.")); }
         setBusy(false);
       }
