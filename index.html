@@ -4542,7 +4542,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       const [ok, setOk] = useState(false);
       async function speichern() {
         setBusy(true); setMsg(""); setOk(false);
-        try { await portalPost({ aktion: "namensschild", name }, sitzung); setOk(true); setMsg(t("Danke! Wir lassen das Namensschild so machen.", "Thank you! We will have the name sign made like this.")); await neuLaden(); }
+        try { await portalPost({ aktion: "namensschild", name }, sitzung); setOk(true); setMsg(t("Danke! Das Namensschild wird so bestellt.", "Thank you! The name sign will be ordered like this.")); await neuLaden(); }
         catch (e) { setMsg(e.message || t("Hat nicht geklappt.", "Did not work.")); }
         setBusy(false);
       }
@@ -4551,9 +4551,10 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
           <div className="card">
             <div className="card-title">{t("Namensschild für Briefkasten und Klingel", "Name sign for mailbox and doorbell")}</div>
             <div className="pt-sub" style={{ marginBottom: 12 }}>{t("Damit deine Post ankommt und dich Besuch findet, lassen wir für dich ein Namensschild machen. Gib hier an, welcher Name darauf stehen soll. Meistens ist es der erste Buchstabe des Vornamens und der Nachname, z.B. M. Muster, bei zwei Personen M. Muster / A. Beispiel. Die Kosten für das Namensschild werden vom Mieter getragen.", "So that your mail arrives and visitors can find you, we will have a name sign made for you. Enter the name that should be on it. Usually it is the first initial and the surname, e.g. M. Muster, or M. Muster / A. Beispiel for two people. The cost of the name sign is borne by the tenant.")}</div>
+            {ns.bestellt ? <div className="pt-ok">{t(`Bestellt: ${ns.name}. Für eine Änderung schreib uns bitte an info@dthomes.ch.`, `Ordered: ${ns.name}. To change it, please write to info@dthomes.ch.`)}</div> : <>
             <input className="pt-in" maxLength={60} value={name} onChange={e => setName(e.target.value)} placeholder="M. Muster" />
             {ns.name && ns.am && <div className="pt-sub" style={{ marginTop: 8, fontSize: 12.5 }}>{t(`Gespeichert am ${ns.am}: ${ns.name}`, `Saved on ${ns.am}: ${ns.name}`)}</div>}
-            <button className="btn-primary" style={{ marginTop: 14, width: "100%" }} disabled={busy || name.trim().length < 2 || name.trim() === (ns.name || "")} onClick={speichern}>{ns.name ? t("Änderung speichern", "Save change") : t("Speichern", "Save")}</button>
+            <button className="btn-primary" style={{ marginTop: 14, width: "100%" }} disabled={busy || name.trim().length < 2 || name.trim() === (ns.name || "")} onClick={speichern}>{ns.name ? t("Änderung speichern", "Save change") : t("Speichern", "Save")}</button></>}
             {msg && <div className={ok ? "pt-ok" : "pt-err"} style={{ marginTop: 12 }}>{msg}</div>}
           </div>
         </div>
