@@ -3583,6 +3583,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
           {seite === "kuendigung" && <>{zurueck}<PortalKuendigung d={daten} t={t} sitzung={sitzung} neuLaden={laden} /></>}
           {seite === "service" && <>{zurueck}<PortalService d={daten} t={t} sitzung={sitzung} /></>}
           {seite === "hausinfos" && <>{zurueck}<PortalHausinfos d={daten} t={t} /></>}
+          {seite === "namensschild" && <>{zurueck}<PortalNamensschild d={daten} t={t} sitzung={sitzung} neuLaden={laden} /></>}
           {seite === "uebergabe" && <>{zurueck}<PortalUebergabe d={daten} t={t} sitzung={sitzung} /></>}
           {fehler && <div className="pt-err">{fehler}</div>}
         </PortalRahmen>
@@ -3901,6 +3902,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       const _ein = _dm(m.einzug);
       const vorEinzug = !!_ein && _ein > _heute;
       if (vorEinzug) ansteht.unshift({ seite: "miete", icon: "hausinfos", art: "ok", h: t(`Dein Einzug ist am ${m.einzug}`, `You move in on ${m.einzug}`), s: t("Bis dahin findest du hier schon deinen Vertrag und alle Infos zu " + (m.wohnung ? "deiner Wohnung" : "deinem Zimmer") + ". Das Übergabeprotokoll kannst du ab deinem Einzug ausfüllen.", "Until then you can already find your contract and all information about " + objekt + " here. You can fill in the handover report from your move-in day.") });
+      if (d.namensschild && !d.namensschild.name && !ausgezogen) ansteht.push({ seite: "namensschild", icon: "schild", art: "warn", h: t("Name für Briefkasten und Klingel angeben", "Tell us the name for your mailbox and doorbell"), s: t("Damit wir dein Namensschild machen lassen können", "So we can have your name sign made") });
       if (ausgezogen) ansteht.push({ seite: "dokumente", icon: "dokumente", art: "warn", h: t(`Dein Zugang zum Mieterportal läuft bis ${d.zugang_bis}`, `Your access to the tenant portal ends on ${d.zugang_bis}`), s: t("Lade dir wichtige Dokumente wie Vertrag und Übergabeprotokoll bis dahin herunter.", "Please download important documents such as your contract and handover report before then.") });
       if (d.kaution_abrechnung) ansteht.push({ seite: "miete", icon: "geld", h: t("Deine Kautionsabrechnung ist da", "Your deposit settlement is ready"), s: t(`Rückzahlung ${chfP(d.kaution_abrechnung.rueckzahlung)}`, `Refund ${chfP(d.kaution_abrechnung.rueckzahlung)}`) });
       const nst = d.nachfolge && d.nachfolge.stand;
@@ -3952,6 +3954,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
             {kachel("uebergabe", <PtIcon n="uebergabe" />, t("Übergabeprotokoll", "Handover report"), hoStatusText(d, t))}
             {kachel("schaden", <PtIcon n="schaden" />, t("Schaden melden", "Report damage"), offen ? `${offen} ${t("offen", "open")}` : t("Etwas kaputt?", "Something broken?"))}
             {(d.hausinfos || d.wlan) ? kachel("hausinfos", <PtIcon n={d.wlan ? "hausinfos" : "info"} />, d.wlan ? t("WLAN & Hausinfos", "Wi-Fi & house info") : t("Hausinfos", "House info"), d.wlan ? t("Netzwerk und Passwort", "Network and password") : t("Abfall, Waschküche & mehr", "Waste, laundry & more")) : null}
+            {d.namensschild ? kachel("namensschild", <PtIcon n="schild" />, t("Namensschild", "Name sign"), d.namensschild.name ? d.namensschild.name : t("Briefkasten & Klingel", "Mailbox & doorbell")) : null}
             {kachel("service", <PtIcon n="service" />, t("Reinigung & Umzug", "Cleaning & moving"), t("Endreinigung, Umzug, Parkplatz", "Final cleaning, moving, parking"))}
             {kachel("kuendigung", <PtIcon n="kuendigung" />, t("Auszug", "Moving out"), kdOffen ? (kdOffen.status === "bestaetigt" ? t(`Bestätigt per ${kdOffen.datum}`, `Confirmed for ${kdOffen.datum}`) : t("Kündigung eingereicht", "Notice submitted")) : t("Kündigen oder Nachmieter stellen", "Give notice or find a successor"))}
           </div>
@@ -4000,6 +4003,7 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
       kamera: "M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
       geld: "M3 6h18v12H3zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 9.5v5M18 9.5v5",
       pfeil: "M9 6l6 6-6 6",
+      schild: "M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zM7 10h10M7 14h6",
     };
     function PtIcon({ n, size = 22 }) {
       return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={PT_ICONS[n] || PT_ICONS.info} /></svg>;
@@ -4527,6 +4531,33 @@ ${_befEN ? "" : `      <p class="clause"><span class="cn">11.3</span>If an initi
           <a className="btn-secondary" style={{ marginTop: 12, display: "inline-block" }} href={d.mieter.sprache === "en" ? "https://www.dthomes.ch/en/parkplaetze.html" : "https://www.dthomes.ch/parkplaetze.html"} target="_blank" rel="noopener noreferrer">{t("Parkplätze ansehen", "View parking spaces")}</a>
         </div>
       </div>);
+    }
+
+    // Namensschild für Briefkasten und Klingel (nur ganze Wohnungen)
+    function PortalNamensschild({ d, t, sitzung, neuLaden }) {
+      const ns = d.namensschild || {};
+      const [name, setName] = useState(ns.name || ns.vorschlag || "");
+      const [busy, setBusy] = useState(false);
+      const [msg, setMsg] = useState("");
+      const [ok, setOk] = useState(false);
+      async function speichern() {
+        setBusy(true); setMsg(""); setOk(false);
+        try { await portalPost({ aktion: "namensschild", name }, sitzung); setOk(true); setMsg(t("Danke! Wir lassen das Namensschild so machen.", "Thank you! We will have the name sign made like this.")); await neuLaden(); }
+        catch (e) { setMsg(e.message || t("Hat nicht geklappt.", "Did not work.")); }
+        setBusy(false);
+      }
+      return (
+        <div className="pt-solo">
+          <div className="card">
+            <div className="card-title">{t("Namensschild für Briefkasten und Klingel", "Name sign for mailbox and doorbell")}</div>
+            <div className="pt-sub" style={{ marginBottom: 12 }}>{t("Damit deine Post ankommt und dich Besuch findet, lassen wir für dich ein Namensschild machen. Gib hier an, welcher Name darauf stehen soll, z.B. beide Namen, wenn ihr zu zweit wohnt.", "So that your mail arrives and visitors can find you, we will have a name sign made for you. Enter the name that should be on it, e.g. both names if two of you live there.")}</div>
+            <input className="pt-in" maxLength={60} value={name} onChange={e => setName(e.target.value)} placeholder={t("z.B. Muster / Beispiel", "e.g. Smith / Miller")} />
+            {ns.name && ns.am && <div className="pt-sub" style={{ marginTop: 8, fontSize: 12.5 }}>{t(`Gespeichert am ${ns.am}: ${ns.name}`, `Saved on ${ns.am}: ${ns.name}`)}</div>}
+            <button className="btn-primary" style={{ marginTop: 14, width: "100%" }} disabled={busy || name.trim().length < 2 || name.trim() === (ns.name || "")} onClick={speichern}>{ns.name ? t("Änderung speichern", "Save change") : t("Speichern", "Save")}</button>
+            {msg && <div className={ok ? "pt-ok" : "pt-err"} style={{ marginTop: 12 }}>{msg}</div>}
+          </div>
+        </div>
+      );
     }
 
     function PortalHausinfos({ d, t }) {
