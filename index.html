@@ -24,6 +24,17 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300&display=swap" rel="stylesheet">
   
   <script src="/vendor/react-18.3.1.min.js"></script>
+  <script>
+    // Browser-Übersetzung (z.B. Chrome "Seite übersetzen") ersetzt Textknoten, die React danach nicht mehr findet
+    // -> "removeChild/insertBefore: node is not a child". Diese Absicherung verhindert den Absturz der Seite.
+    (function () {
+      if (typeof Node !== "function" || !Node.prototype) return;
+      var rc = Node.prototype.removeChild;
+      Node.prototype.removeChild = function (c) { if (c && c.parentNode !== this) { return c; } return rc.apply(this, arguments); };
+      var ib = Node.prototype.insertBefore;
+      Node.prototype.insertBefore = function (n, r) { if (r && r.parentNode !== this) { return n; } return ib.apply(this, arguments); };
+    })();
+  </script>
   <script src="/vendor/react-dom-18.3.1.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone@7.18.6/babel.min.js"></script>
   <script src="/vendor/supabase-js-2.118.0.js"></script>
